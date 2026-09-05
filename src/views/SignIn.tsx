@@ -39,8 +39,8 @@ export function SignIn({ invited = false }: { invited?: boolean }) {
           <div class="viz__card viz__card--flag">
             <span class="dot dot--accent" />
             <span class="viz__body">
-              <span class="viz__title">mahesh/pocket-journal — 3 commits today</span>
-              <span class="viz__meta">TypeScript · building</span>
+              <span class="viz__title">mahesh/pocket-journal</span>
+              <span class="viz__meta">3 commits today · TypeScript</span>
             </span>
             <span class="viz__claim">Join in</span>
           </div>
