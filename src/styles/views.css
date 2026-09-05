@@ -604,3 +604,26 @@
   align-items: flex-start;
   gap: 12px;
 }
+
+
+/* activity rows: fixed-width time column so sparklines line up down the page */
+.home__repo-meta {
+  gap: 12px;
+  flex: none;
+}
+.home__time {
+  min-width: 62px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+.home__time--wide {
+  min-width: 118px;
+}
+.spark__legend {
+  letter-spacing: 0.04em;
+}
+
+.repodetail__spark {
+  gap: 10px;
+}

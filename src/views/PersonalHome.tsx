@@ -125,7 +125,9 @@ export function PersonalHome() {
                     <span class="mono">{r.fullName.split('/')[1] ?? r.fullName}</span>
                     <Chip>{r.groupName}</Chip>
                   </span>
-                  {r.lastEventAt && <span class="small faint">pushed {relTime(r.lastEventAt)}</span>}
+                  <span class="small faint home__time home__time--wide">
+                {r.lastEventAt ? `pushed ${relTime(r.lastEventAt)}` : ''}
+              </span>
                 </a>
               ))}
             </div>

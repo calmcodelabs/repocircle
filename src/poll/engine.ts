@@ -210,10 +210,10 @@ async function pollRepo(gid: string, repo: Repo): Promise<string> {
   return normalized.length > 0 ? `+${normalized.length} events` : 'no new events';
 }
 
-/** 14-day sparkline series (oldest→newest) from a repo's daily map. */
-export function sparkSeries(daily: Record<string, DailyCounters> | undefined): number[] {
+/** Sparkline series (oldest→newest) from a repo's daily map, over `days`. */
+export function sparkSeries(daily: Record<string, DailyCounters> | undefined, days = 14): number[] {
   const out: number[] = [];
-  for (let i = 13; i >= 0; i--) {
+  for (let i = days - 1; i >= 0; i--) {
     const key = dayKey(new Date(Date.now() - i * 86_400_000));
     const c = daily?.[key];
     out.push(c ? c.commits + c.prsOpened + c.prsMerged + c.issuesOpened + c.releases : 0);

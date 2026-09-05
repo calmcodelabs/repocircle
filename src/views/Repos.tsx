@@ -217,7 +217,7 @@ function RepoCard({
         <Avatar login={repo.githubOwnerLogin} src={`https://avatars.githubusercontent.com/${repo.githubOwnerLogin}`} />
         <span class="mono">@{repo.githubOwnerLogin}</span>
         <span class="topbar__spacer" />
-        <Spark series={sparkSeries(repo.daily)} />
+        <Spark series={sparkSeries(repo.daily, 14)} label={`activity over the last 14 days`} />
       </div>
     </div>
   );

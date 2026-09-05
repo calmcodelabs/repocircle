@@ -101,7 +101,10 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
             </a>
           )}
           <span class="topbar__spacer" />
-          <Spark series={sparkSeries(repo.daily)} width={140} height={30} />
+          <span class="row repodetail__spark">
+            <Spark series={sparkSeries(repo.daily, 14)} width={140} height={30} />
+            <span class="small faint">last 14 days</span>
+          </span>
         </div>
         <div class="row small faint">
           <Avatar login={repo.githubOwnerLogin} src={`https://avatars.githubusercontent.com/${repo.githubOwnerLogin}`} />

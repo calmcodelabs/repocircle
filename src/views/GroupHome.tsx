@@ -116,6 +116,7 @@ export function GroupHome({ gid }: { gid: string }) {
           <span class="sectionhead__title">Active this week</span>
           {active.length > 0 && <span class="sectionhead__count">{active.length}</span>}
           <span class="topbar__spacer" />
+          {active.length > 0 && <span class="small faint spark__legend">last 7 days</span>}
           {repos && repos.length > 0 && (
             <a class="small" href={`#/g/${gid}/repos`}>
               All repos →
@@ -145,9 +146,11 @@ export function GroupHome({ gid }: { gid: string }) {
                   <span class={`langdot ${langClass(r.language)}`} />
                   <span class="mono">{r.fullName.split('/')[1] ?? r.fullName}</span>
                 </span>
-                <span class="row">
-                  <Spark series={sparkSeries(r.daily)} />
-                  {r.lastEventAt && <span class="small faint">{relTime(r.lastEventAt)}</span>}
+                <span class="row home__repo-meta">
+                  <Spark series={sparkSeries(r.daily, 7)} width={84} />
+                  <span class="small faint home__time">
+                    {r.lastEventAt ? relTime(r.lastEventAt) : ''}
+                  </span>
                 </span>
               </a>
             ))}
