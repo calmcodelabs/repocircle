@@ -2,11 +2,10 @@ import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { sessionUser, signOutApp } from '../auth/session';
 import { activeDenied, activeGroup, myMembership, setActiveGroup } from '../data/activeGroup';
-import { fetchMyGroups, forgetGroup } from '../data/groups';
+import { forgetGroup } from '../data/groups';
 import { myUserDoc } from '../data/users';
 import { toast } from '../ui/Toast';
 import { Pill } from '../ui/Pill';
-import type { Group } from '../data/types';
 import { AskComposer } from './AskComposer';
 import { startPolling, stopPolling } from '../poll/engine';
 import { navigate, route } from '../router';
@@ -24,9 +23,7 @@ const NAV: Array<{ seg: string; label: string }> = [
 /** Frame for all group-scoped routes: listeners, topbar, switcher, nav, gates. */
 export function GroupShell({ gid, children }: { gid: string; children: ComponentChildren }) {
   const u = sessionUser.value;
-  const [switcherOpen, setSwitcherOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
-  const [myGroups, setMyGroups] = useState<Group[] | null>(null);
   const [askOpen, setAskOpen] = useState(false);
 
   useEffect(() => setActiveGroup(gid), [gid]);
@@ -45,17 +42,6 @@ export function GroupShell({ gid, children }: { gid: string; children: Component
       window.removeEventListener('online', on);
     };
   }, []);
-
-  useEffect(() => {
-    if (!switcherOpen) return;
-    let alive = true;
-    void fetchMyGroups(myUserDoc.value?.groupIds ?? []).then((gs) => {
-      if (alive) setMyGroups(gs);
-    });
-    return () => {
-      alive = false;
-    };
-  }, [switcherOpen]);
 
   const g = activeGroup.value;
   const r = route.value;
@@ -95,28 +81,15 @@ export function GroupShell({ gid, children }: { gid: string; children: Component
   return (
     <div class="app">
       <header class="topbar">
-        <a href="#/" aria-label="Your home" class="row">
+        <a href="#/" class="row topbar__brand" aria-label="Your circles">
           <Mark />
+          <strong>RepoCircle</strong>
         </a>
-        <button
-          class="switcher"
-          onClick={() => {
-            setSwitcherOpen(!switcherOpen);
-            setAccountOpen(false);
-          }}
-          aria-expanded={switcherOpen}
-        >
-          <strong>{g?.name ?? '…'}</strong>
-          <span class="dim switcher__chev">⌄</span>
-        </button>
         <span class="topbar__spacer" />
         {u && (
           <button
             class="row"
-            onClick={() => {
-              setAccountOpen(!accountOpen);
-              setSwitcherOpen(false);
-            }}
+            onClick={() => setAccountOpen(!accountOpen)}
             aria-expanded={accountOpen}
             aria-label="Account menu"
           >
@@ -124,33 +97,6 @@ export function GroupShell({ gid, children }: { gid: string; children: Component
           </button>
         )}
       </header>
-
-      {switcherOpen && (
-        <div class="card stack menu menu--left">
-          {myGroups === null && <span class="skeleton" />}
-          {myGroups?.map((mg) => (
-            <button
-              key={mg.id}
-              class={`menu__item ${mg.id === gid ? 'menu__item--active' : ''}`}
-              onClick={() => {
-                setSwitcherOpen(false);
-                navigate(`#/g/${mg.id}`);
-              }}
-            >
-              {mg.name}
-            </button>
-          ))}
-          <button
-            class="menu__item menu__item--dim"
-            onClick={() => {
-              setSwitcherOpen(false);
-              navigate('#/new');
-            }}
-          >
-            + New group
-          </button>
-        </div>
-      )}
 
       {accountOpen && (
         <div class="card stack menu menu--right">
@@ -184,6 +130,12 @@ export function GroupShell({ gid, children }: { gid: string; children: Component
           </a>
         ))}
       </nav>
+
+      {activeSeg !== '' && g && (
+        <a class="groupctx" href={`#/g/${gid}`}>
+          {g.name}
+        </a>
+      )}
 
       {children}
 

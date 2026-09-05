@@ -89,18 +89,28 @@
 }
 
 /* group shell */
-.switcher {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border-radius: var(--r-input);
+.topbar__brand {
+  color: var(--text);
+  gap: 10px;
 }
-.switcher:hover {
-  background: var(--bg-overlay);
+.topbar__brand:hover {
+  text-decoration: none;
+  opacity: 0.85;
 }
-.switcher__chev {
+
+/* which circle you're in, on pages that don't title themselves with it */
+.groupctx {
+  display: inline-block;
   font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: 2px;
+}
+.groupctx:hover {
+  color: var(--accent);
+  text-decoration: none;
 }
 .menu {
   position: absolute;
