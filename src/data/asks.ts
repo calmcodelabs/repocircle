@@ -18,6 +18,7 @@ import {
   type Unsubscribe,
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { log } from '../util/log';
 import { randomToken } from './ids';
 import { resilientWatch } from './resilientWatch';
 import type { Ask, AskClaim, AskKind, MyProfile } from './types';
@@ -160,6 +161,59 @@ export async function unblockedThisWeek(gid: string): Promise<number> {
     where('state', '==', 'resolved'),
     where('resolvedAt', '>=', weekAgo),
   );
-  const snap = await getCountFromServer(q);
-  return snap.data().count;
+  try {
+    const snap = await getCountFromServer(q);
+    return snap.data().count;
+  } catch (e) {
+    // A missing composite index shows up here as failed-precondition; surfacing it
+    // beats silently rendering 0 forever.
+    log('warn', `unblocked count failed: ${(e as { code?: string }).code ?? 'unknown'}`);
+    return 0;
+  }
+}
+
+export type MyAsk = Ask & { gid: string; groupName: string };
+
+/**
+ * My open asks and claims across every group (personal homepage).
+ * Open loops only — nothing aggregated, nothing scored (ADR-015).
+ */
+export async function fetchMyOpenItems(
+  groups: Array<{ id: string; name: string }>,
+  uid: string,
+): Promise<MyAsk[]> {
+  const { getDocs } = await import('firebase/firestore');
+  const results = await Promise.allSettled(
+    groups.flatMap((g) => [
+      getDocs(
+        query(
+          collection(db(), `groups/${g.id}/asks`),
+          where('authorUid', '==', uid),
+          where('state', 'in', ['open', 'claimed']),
+          limit(10),
+        ),
+      ).then((s) => s.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Ask, 'id'>), gid: g.id, groupName: g.name }))),
+      getDocs(
+        query(
+          collection(db(), `groups/${g.id}/asks`),
+          where('claimerUids', 'array-contains', uid),
+          where('state', 'in', ['open', 'claimed']),
+          limit(10),
+        ),
+      ).then((s) => s.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Ask, 'id'>), gid: g.id, groupName: g.name }))),
+    ]),
+  );
+  const seen = new Set<string>();
+  const items: MyAsk[] = [];
+  for (const r of results) {
+    if (r.status !== 'fulfilled') continue;
+    for (const a of r.value) {
+      const key = `${a.gid}:${a.id}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      items.push(a);
+    }
+  }
+  items.sort((a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0));
+  return items;
 }

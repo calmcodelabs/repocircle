@@ -189,6 +189,8 @@ async function pollRepo(gid: string, repo: Repo): Promise<string> {
     });
   }
   const newest = normalized.at(-1);
+  const knownLast = repo.lastEventAt?.toMillis() ?? 0;
+  const advances = !!newest && newest.occurredAt.getTime() > knownLast;
   batch.update(doc(db(), `groups/${gid}/repos/${repo.id}`), {
     daily,
     stats7d: {
@@ -201,7 +203,8 @@ async function pollRepo(gid: string, repo: Repo): Promise<string> {
     'poll.etag': res.etag,
     'poll.lastEventId': maxSeenId,
     'poll.failing': false,
-    ...(newest ? { lastEventAt: Timestamp.fromDate(newest.occurredAt) } : {}),
+    // Only ever move forwards — the events feed can lag behind pushed_at.
+    ...(advances && newest ? { lastEventAt: Timestamp.fromDate(newest.occurredAt) } : {}),
   });
   await batch.commit();
   return normalized.length > 0 ? `+${normalized.length} events` : 'no new events';

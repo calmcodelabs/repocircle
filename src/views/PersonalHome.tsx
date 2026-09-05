@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import { sessionUser, signOutApp } from '../auth/session';
+import { fetchMyOpenItems, type MyAsk } from '../data/asks';
 import { fetchMyGroups } from '../data/groups';
 import { fetchMyRepos, type MyRepo } from '../data/repos';
 import type { Group } from '../data/types';
@@ -22,6 +23,7 @@ export function PersonalHome() {
   const me = myUserDoc.value;
   const [groups, setGroups] = useState<Group[] | null>(null);
   const [repos, setRepos] = useState<MyRepo[] | null>(null);
+  const [openItems, setOpenItems] = useState<MyAsk[] | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
   const groupIds = me?.groupIds ?? [];
@@ -32,8 +34,11 @@ export function PersonalHome() {
       if (!alive) return;
       setGroups(gs);
       if (u) {
-        const mine = await fetchMyRepos(gs, u.uid);
-        if (alive) setRepos(mine);
+        const [mine, items] = await Promise.all([fetchMyRepos(gs, u.uid), fetchMyOpenItems(gs, u.uid)]);
+        if (alive) {
+          setRepos(mine);
+          setOpenItems(items);
+        }
       }
     });
     return () => {
@@ -113,9 +118,24 @@ export function PersonalHome() {
           )}
         </section>
 
-        <section class="card">
-          <div class="label">Your asks &amp; requests</div>
-          <EmptyState line="Asks you post, claims you make and pending collab requests gather here — lands with M5." />
+        <section class="card stack">
+          <div class="label">Your open loops</div>
+          {openItems === null && <span class="skeleton" />}
+          {openItems?.length === 0 && (
+            <EmptyState line="Nothing open — asks you post and claims you make appear here across all your circles." />
+          )}
+          {openItems?.map((a) => (
+            <a key={`${a.gid}:${a.id}`} class="row home__repo" href={`#/g/${a.gid}/ask/${a.id}`}>
+              <span class="row">
+                <span class={`dot ${a.kind === 'stuck' ? 'dot--warn' : 'dot--accent'}`} />
+                <span class="small">
+                  {a.authorUid === u?.uid ? 'you asked' : 'you claimed'}: {a.title}
+                </span>
+                <Chip>{a.groupName}</Chip>
+              </span>
+              <Chip tone={a.state === 'claimed' ? 'default' : 'warn'}>{a.state}</Chip>
+            </a>
+          ))}
         </section>
       </main>
     </div>
