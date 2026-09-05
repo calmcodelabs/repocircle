@@ -1,12 +1,52 @@
-import { arrayRemove, arrayUnion, doc, getDoc, serverTimestamp, updateDoc, writeBatch } from 'firebase/firestore';
+import {
+  arrayRemove,
+  arrayUnion,
+  doc,
+  getDoc,
+  getDocFromServer,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+  writeBatch,
+} from 'firebase/firestore';
 import { db } from '../firebase';
 import { newGroupId } from './ids';
 import type { Group, MyProfile } from './types';
+
+/**
+ * Creating a group and joining one both `update` users/{uid} inside a batch, which
+ * fails outright if that document is missing — and the local cache can happily
+ * report a profile that no longer exists on the server, so the whole write
+ * disappeared silently. Verify against the server and rebuild before writing.
+ */
+export async function ensureUserDoc(profile: MyProfile): Promise<void> {
+  const ref = doc(db(), 'users', profile.uid);
+  try {
+    const snap = await getDocFromServer(ref);
+    if (snap.exists()) return;
+  } catch {
+    // Offline or transient: let the caller's write decide the outcome.
+    return;
+  }
+  await setDoc(ref, {
+    githubId: 0,
+    login: profile.login,
+    name: profile.name,
+    avatarUrl: profile.avatarUrl,
+    scopesGranted: [],
+    groupIds: [],
+    checklist: {},
+    createdAt: serverTimestamp(),
+    lastSeenAt: serverTimestamp(),
+    v: 1,
+  });
+}
 
 export const DEFAULT_ASK_TAGS = ['frontend', 'backend', 'ML', 'docs', 'testing', 'devops', 'design'];
 
 /** Founder batch: group + admin membership + my groupIds mirror (rules-validated). */
 export async function createGroup(profile: MyProfile, name: string, description: string): Promise<string> {
+  await ensureUserDoc(profile);
   const gid = newGroupId();
   const batch = writeBatch(db());
   batch.set(doc(db(), 'groups', gid), {
@@ -34,6 +74,9 @@ export async function createGroup(profile: MyProfile, name: string, description:
   });
   batch.update(doc(db(), 'users', profile.uid), { groupIds: arrayUnion(gid) });
   await batch.commit();
+  // Confirm it reached the server: a local-only write would otherwise look like success.
+  const check = await getDocFromServer(doc(db(), 'groups', gid)).catch(() => null);
+  if (!check?.exists()) throw new Error('group-not-persisted');
   return gid;
 }
 

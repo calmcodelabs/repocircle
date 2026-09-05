@@ -32,8 +32,13 @@ export function Onboard() {
       const gid = await createGroup(profile, name.trim(), desc.trim());
       toast(`${name.trim()} created`);
       navigate(`#/g/${gid}/repos`);
-    } catch {
-      toast('Could not create the group — check #/diag.', { error: true });
+    } catch (e) {
+      toast(
+        (e as Error)?.message === 'group-not-persisted'
+          ? 'The circle didn’t save — you may be offline. Check your connection and try again.'
+          : 'Could not create the circle — check #/diag.',
+        { error: true },
+      );
     } finally {
       setBusy(false);
     }

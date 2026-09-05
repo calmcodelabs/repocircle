@@ -14,7 +14,7 @@ import {
 import { db } from '../firebase';
 import { anonymizeMyContent } from '../util/anonymize';
 import { audit } from './audit';
-import { forgetGroup } from './groups';
+import { ensureUserDoc, forgetGroup } from './groups';
 import { resilientWatch } from './resilientWatch';
 import type { Availability, Invite, Member, MyProfile, Role } from './types';
 
@@ -39,6 +39,7 @@ export function watchMembers(
 }
 
 export async function joinViaInvite(gid: string, invite: Invite, profile: MyProfile): Promise<void> {
+  await ensureUserDoc(profile);
   const batch = writeBatch(db());
   batch.set(doc(db(), `groups/${gid}/members/${profile.uid}`), {
     role: invite.role,
