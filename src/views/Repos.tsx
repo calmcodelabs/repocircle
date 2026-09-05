@@ -294,6 +294,11 @@ function RepoCard({
         <span class="topbar__spacer" />
         <Spark series={sparkSeries(repo.daily, 14)} label={`activity over the last 14 days`} />
       </div>
+      <div class="row small faint repo__social">
+        <a href={`#/g/${gid}/repo/${repo.id}`} class="repo__comments">
+          {repo.commentCount ? `${repo.commentCount} comment${repo.commentCount === 1 ? '' : 's'}` : 'Comment'}
+        </a>
+      </div>
       <InterestButton gid={gid} repo={repo} />
     </div>
   );

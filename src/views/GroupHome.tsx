@@ -13,6 +13,8 @@ import { EmptyState } from '../ui/EmptyState';
 import { Pill } from '../ui/Pill';
 import { doc as fsDoc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { watchRecentComments, type RecentComment } from '../data/comments';
+import { CommentBody } from './CommentBody';
 import { ChecklistCard } from './ChecklistCard';
 import { InviteSheet } from './InviteManager';
 import { CollabInbox } from './CollabInbox';
@@ -34,6 +36,7 @@ export function GroupHome({ gid }: { gid: string }) {
   const [unblocked, setUnblocked] = useState(0);
   const [hasDiscord, setHasDiscord] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [recent, setRecent] = useState<RecentComment[]>([]);
   const iAmAdmin = me?.role === 'admin';
   const uid = sessionUser.value?.uid;
   const canWrite = !!me && me.role !== 'guest' && me.role !== 'alumnus';
@@ -68,6 +71,11 @@ export function GroupHome({ gid }: { gid: string }) {
     }
     void unblockedThisWeek(gid).then(setUnblocked).catch(() => undefined);
   }, [gid, openCount]);
+  useEffect(
+    () =>
+      watchRecentComments(gid, setRecent, (code) => log('warn', `recent comments: ${code}`)),
+    [gid],
+  );
   useEffect(() => {
     void getDoc(fsDoc(db(), `groups/${gid}/integrations/discord`))
       .then((s) => setHasDiscord(s.exists()))
@@ -271,6 +279,32 @@ export function GroupHome({ gid }: { gid: string }) {
           </div>
         ))}
       </section>
+
+      {recent.length > 0 && (
+        <section class="card stack rise-3">
+          <div class="sectionhead">
+            <span class="sectionhead__mark" />
+            <span class="sectionhead__title">Recent discussion</span>
+            <span class="sectionhead__count">{recent.length}</span>
+          </div>
+          {recent.map((c) => (
+            <a
+              key={c.id}
+              class="recent"
+              href={c.repoId ? `#/g/${gid}/repo/${c.repoId}` : `#/g/${gid}`}
+            >
+              <span class="row small faint">
+                <Avatar login={c.authorLogin} src={c.authorAvatarUrl} />
+                <b>@{c.authorLogin}</b>
+                <span>{relTime(c.createdAt)}</span>
+              </span>
+              <span class="recent__body">
+                <CommentBody body={c.body.slice(0, 160)} />
+              </span>
+            </a>
+          ))}
+        </section>
+      )}
 
       <section class="card stack rise-3">
         <div class="sectionhead">

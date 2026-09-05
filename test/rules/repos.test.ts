@@ -156,3 +156,67 @@ describe('idea board fields and interests', () => {
     await assertSucceeds(deleteDoc(doc(db(carol), `groups/${GID}/repos/12345/interests/carol`)));
   });
 });
+
+describe('comments', () => {
+  const comment = (author: string) => ({
+    authorUid: author,
+    authorLogin: author,
+    authorAvatarUrl: '',
+    body: 'This is a good idea — have you thought about offline?',
+    parentId: null,
+    mentions: [],
+    repoRefs: [],
+    pinned: false,
+    createdAt: Timestamp.now(),
+    v: 1,
+  });
+
+  it('members comment as themselves; guests cannot; authorship cannot be forged', async () => {
+    const carol = env.authenticatedContext('carol');
+    const gia = env.authenticatedContext('gia');
+    await assertSucceeds(setDoc(doc(db(carol), `groups/${GID}/repos/12345/comments/c1`), comment('carol')));
+    await assertFails(setDoc(doc(db(carol), `groups/${GID}/repos/12345/comments/c2`), comment('bob')));
+    await assertFails(setDoc(doc(db(gia), `groups/${GID}/repos/12345/comments/c3`), comment('gia')));
+  });
+
+  it('empty and oversize bodies are rejected, and nobody can self-pin', async () => {
+    const carol = env.authenticatedContext('carol');
+    await assertFails(
+      setDoc(doc(db(carol), `groups/${GID}/repos/12345/comments/c4`), { ...comment('carol'), body: '' }),
+    );
+    await assertFails(
+      setDoc(doc(db(carol), `groups/${GID}/repos/12345/comments/c5`), { ...comment('carol'), body: 'x'.repeat(1001) }),
+    );
+    await assertFails(
+      setDoc(doc(db(carol), `groups/${GID}/repos/12345/comments/c6`), { ...comment('carol'), pinned: true }),
+    );
+  });
+
+  it('authors edit their own text; others cannot', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(db(ctx), `groups/${GID}/repos/12345/comments/c7`), comment('carol'));
+    });
+    const carol = env.authenticatedContext('carol');
+    const bob = env.authenticatedContext('bob');
+    await assertSucceeds(updateDoc(doc(db(carol), `groups/${GID}/repos/12345/comments/c7`), { body: 'edited' }));
+    await assertFails(updateDoc(doc(db(bob), `groups/${GID}/repos/12345/comments/c7`), { body: 'hijacked' }));
+  });
+
+  it('only the repo owner or an admin can pin', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(db(ctx), `groups/${GID}/repos/12345/comments/c8`), comment('carol'));
+    });
+    const carol = env.authenticatedContext('carol');
+    const bob = env.authenticatedContext('bob'); // repo owner
+    await assertFails(updateDoc(doc(db(carol), `groups/${GID}/repos/12345/comments/c8`), { pinned: true }));
+    await assertSucceeds(updateDoc(doc(db(bob), `groups/${GID}/repos/12345/comments/c8`), { pinned: true }));
+  });
+
+  it('author, repo owner and admin can delete; a bystander cannot', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(db(ctx), `groups/${GID}/repos/12345/comments/c9`), comment('carol'));
+    });
+    const alice = env.authenticatedContext('alice'); // admin
+    await assertSucceeds(deleteDoc(doc(db(alice), `groups/${GID}/repos/12345/comments/c9`)));
+  });
+});

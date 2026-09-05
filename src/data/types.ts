@@ -135,6 +135,7 @@ export type Repo = {
   /** Owner has moved on and would like someone else to take it over. */
   seekingOwner?: boolean;
   interestCount?: number;
+  commentCount?: number;
   createdAt: Timestamp | null;
   v: 1;
 };
@@ -158,6 +159,7 @@ export type Ask = {
   state: AskState;
   claimCount: number;
   claimerUids?: string[];
+  commentCount?: number;
   createdAt: Timestamp | null;
   resolvedAt?: Timestamp | null;
   v: 1;

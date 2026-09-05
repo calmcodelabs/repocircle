@@ -8,6 +8,7 @@ import type { Repo } from '../data/types';
 import { doc, onSnapshot as onDoc } from 'firebase/firestore';
 import { fetchReadme, socialPreviewUrl } from '../github/repos';
 import { readmePreview } from '../util/readme';
+import { CommentThread } from './CommentThread';
 import { InterestButton } from './InterestButton';
 import { REPO_NEEDS } from '../data/types';
 import { sparkSeries } from '../poll/engine';
@@ -148,6 +149,13 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
           )}
         </div>
       </section>
+
+      <CommentThread
+        gid={gid}
+        subject={{ kind: 'repo', id: repoId }}
+        canModerate={canManageRepo(repo, uid, iAmAdmin)}
+        title="What people think"
+      />
 
       {collabOpen && repo && <CollabSheet gid={gid} repo={repo} onClose={() => setCollabOpen(false)} />}
 

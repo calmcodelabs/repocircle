@@ -116,6 +116,22 @@ publicPages/{slug}                          # opt-in public group page mirror (G
 | source | `"poll"` | `"webhook"` reserved for Phase 3 |
 | expireAt | ts | occurredAt + 180 d → **Firestore TTL policy** deletes it (PRD §11 retention, zero code) |
 
+### `groups/{gid}/repos/{repoId}/comments/{id}` and `groups/{gid}/asks/{askId}/comments/{id}`
+| Field | Type | Notes |
+|---|---|---|
+| authorUid / authorLogin / authorAvatarUrl | | Denormalized for rendering |
+| body | string 1–1000 | Stored raw, **rendered as text nodes only** (SECURITY §6) |
+| parentId | string \| null | One level of replies; no deeper nesting by design |
+| mentions | string[] ≤ 10 | Circle logins only, resolved at write time |
+| repoRefs | string[] ≤ 10 | Repo short-names in this circle, resolved at write time |
+| pinned | bool | Repo/ask owner or admin only; created as false |
+| createdAt / editedAt | ts | |
+
+Authors edit and delete their own; the repo (or ask) owner and admins moderate.
+`commentCount` mirrors onto the parent so cards show it without a query.
+Recent discussion on Home is a `collectionGroup('comments')` query filtered to the
+group by path — single-field auto-index, no composite index needed.
+
 ### `groups/{gid}/repos/{repoId}/interests/{uid}`
 `{ login, avatarUrl, note?, createdAt }` — "I'm interested", one doc per member,
 self-write only. Deliberately lighter than a collab request (which opens a GitHub

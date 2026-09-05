@@ -136,7 +136,7 @@ service cloud.firestore {
                ['fullName', 'htmlUrl', 'description', 'language', 'topics', 'githubOwnerLogin',
                 'ownerUid', 'registeredBy', 'status', 'demoUrl', 'archived', 'lastEventAt',
                 'poll', 'stats7d', 'daily', 'pitch', 'needs', 'domainTags', 'seekingOwner',
-                'interestCount', 'createdAt', 'v'])
+                'interestCount', 'commentCount', 'createdAt', 'v'])
           && request.resource.data.registeredBy == me()
           && str(request.resource.data.fullName, 3, 140)
           && request.resource.data.status in ['idea', 'building', 'paused', 'done']
@@ -151,7 +151,7 @@ service cloud.firestore {
                ['fullName', 'htmlUrl', 'description', 'language', 'topics', 'githubOwnerLogin',
                 'ownerUid', 'registeredBy', 'status', 'demoUrl', 'archived', 'lastEventAt',
                 'poll', 'stats7d', 'daily', 'pitch', 'needs', 'domainTags', 'seekingOwner',
-                'interestCount', 'createdAt', 'v'])
+                'interestCount', 'commentCount', 'createdAt', 'v'])
           && request.resource.data.registeredBy == resource.data.registeredBy
           && request.resource.data.status in ['idea', 'building', 'paused', 'done']
           && optHttpsUrl(request.resource.data, 'demoUrl')
@@ -188,6 +188,35 @@ service cloud.firestore {
           allow delete: if isMember(gid) && canManageRepo(gid, repoId);
         }
 
+
+        // Discussion. Author owns their words; the repo owner and admins moderate.
+        match /comments/{commentId} {
+          allow read: if isMember(gid);
+          allow create: if canWrite(gid)
+            && request.resource.data.keys().hasOnly(
+                 ['authorUid', 'authorLogin', 'authorAvatarUrl', 'body', 'parentId',
+                  'mentions', 'repoRefs', 'pinned', 'createdAt', 'editedAt', 'v'])
+            && request.resource.data.authorUid == me()
+            && str(request.resource.data.body, 1, 1000)
+            && request.resource.data.pinned == false
+            && (!('mentions' in request.resource.data)
+                || (request.resource.data.mentions is list
+                    && request.resource.data.mentions.size() <= 10));
+          allow update: if isMember(gid) && (
+            // author edits their own text
+            (resource.data.authorUid == me() && canWrite(gid)
+              && request.resource.data.diff(resource.data).affectedKeys()
+                   .hasOnly(['body', 'mentions', 'repoRefs', 'editedAt'])
+              && str(request.resource.data.body, 1, 1000))
+            // owner/admin pins or unpins
+            || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pinned'])
+                && (isAdmin(gid) || canManageRepo(gid, repoId)))
+          );
+          allow delete: if resource.data.authorUid == me()
+            || isAdmin(gid)
+            || canManageRepo(gid, repoId);
+        }
+
         // "I'm interested" — one doc per member, and only ever your own.
         match /interests/{uid} {
           allow read: if isMember(gid);
@@ -222,7 +251,7 @@ service cloud.firestore {
           && request.resource.data.keys().hasOnly(
                ['kind', 'title', 'detail', 'tags', 'repoId', 'pairingUrl', 'authorUid',
                 'authorLogin', 'authorAvatarUrl', 'state', 'claimCount', 'claimerUids',
-                'createdAt', 'resolvedAt', 'v'])
+                'commentCount', 'createdAt', 'resolvedAt', 'v'])
           && request.resource.data.authorUid == me()
           && request.resource.data.state == 'open'
           && request.resource.data.kind in ['ask', 'stuck']
@@ -238,15 +267,15 @@ service cloud.firestore {
             && request.resource.data.authorUid == resource.data.authorUid
             && request.resource.data.diff(resource.data).affectedKeys()
                  .hasOnly(['title', 'detail', 'tags', 'repoId', 'pairingUrl', 'state',
-                           'resolvedAt', 'claimCount', 'claimerUids', 'authorLogin',
-                           'authorAvatarUrl'])
+                           'resolvedAt', 'claimCount', 'claimerUids', 'commentCount',
+                           'authorLogin', 'authorAvatarUrl'])
             && str(request.resource.data.title, 4, 120)
             && optStr(request.resource.data, 'detail', 500)
             && request.resource.data.state in ['open', 'claimed', 'resolved'])
           ||
           // any writer: claim / unclaim transitions only (never to resolved)
           (request.resource.data.diff(resource.data).affectedKeys()
-               .hasOnly(['state', 'claimCount', 'claimerUids'])
+               .hasOnly(['state', 'claimCount', 'claimerUids', 'commentCount'])
             && resource.data.state in ['open', 'claimed']
             && request.resource.data.state in ['open', 'claimed']
             && request.resource.data.claimCount is int
@@ -255,6 +284,27 @@ service cloud.firestore {
                 || request.resource.data.claimerUids is list))
         );
         allow delete: if resource.data.authorUid == me() || isAdmin(gid);
+
+        match /comments/{commentId} {
+          allow read: if isMember(gid);
+          allow create: if canWrite(gid)
+            && request.resource.data.keys().hasOnly(
+                 ['authorUid', 'authorLogin', 'authorAvatarUrl', 'body', 'parentId',
+                  'mentions', 'repoRefs', 'pinned', 'createdAt', 'editedAt', 'v'])
+            && request.resource.data.authorUid == me()
+            && str(request.resource.data.body, 1, 1000)
+            && request.resource.data.pinned == false;
+          allow update: if isMember(gid) && (
+            (resource.data.authorUid == me() && canWrite(gid)
+              && request.resource.data.diff(resource.data).affectedKeys()
+                   .hasOnly(['body', 'mentions', 'repoRefs', 'editedAt'])
+              && str(request.resource.data.body, 1, 1000))
+            || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pinned'])
+                && (isAdmin(gid) || get(/databases/$(database)/documents/groups/$(gid)/asks/$(askId)).data.authorUid == me()))
+          );
+          allow delete: if resource.data.authorUid == me() || isAdmin(gid)
+            || get(/databases/$(database)/documents/groups/$(gid)/asks/$(askId)).data.authorUid == me();
+        }
 
         match /claims/{uid} {
           allow read: if isMember(gid);

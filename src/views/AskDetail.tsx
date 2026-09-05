@@ -6,6 +6,7 @@ import { myProfile } from '../data/users';
 import type { Ask, AskClaim } from '../data/types';
 import { notifyDiscord } from '../notify/discord';
 import { navigate } from '../router';
+import { CommentThread } from './CommentThread';
 import { Icon } from '../ui/Icon';
 import { Avatar } from '../ui/Avatar';
 import { Chip } from '../ui/Chip';
@@ -160,6 +161,8 @@ export function AskDetail({ gid, askId }: { gid: string; askId: string }) {
           </Pill>
         )}
       </section>
+
+      <CommentThread gid={gid} subject={{ kind: 'ask', id: askId }} canModerate={isAuthor || isAdmin} />
 
       {(isAuthor || isAdmin) && (
         <section class="card stack">
