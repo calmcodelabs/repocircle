@@ -77,7 +77,9 @@ export function GroupShell({ gid, children }: { gid: string; children: Component
   return (
     <div class="app">
       <header class="topbar">
-        <Mark />
+        <a href="#/" aria-label="Your home" class="row">
+          <Mark />
+        </a>
         <button
           class="switcher"
           onClick={() => {
@@ -141,6 +143,9 @@ export function GroupShell({ gid, children }: { gid: string; children: Component
               <div class="faint">{myMembership.value ? `${myMembership.value.role} here` : ''}</div>
             </div>
           </div>
+          <button class="menu__item menu__item--dim" onClick={() => navigate('#/')}>
+            My home
+          </button>
           <button class="menu__item menu__item--dim" onClick={() => navigate('#/diag')}>
             Diagnostics
           </button>

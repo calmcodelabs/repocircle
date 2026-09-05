@@ -321,3 +321,34 @@
   background: var(--bg-overlay);
   text-decoration: none;
 }
+
+/* personal home */
+.phome__groups {
+  display: grid;
+  gap: 12px;
+}
+@media (min-width: 720px) {
+  .phome__groups {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+}
+.phome__group {
+  display: grid;
+  gap: 6px;
+  color: var(--text);
+  transition: border-color var(--t-fast) var(--ease);
+}
+.phome__group:hover {
+  border-color: var(--line-strong);
+  text-decoration: none;
+}
+.phome__group--new {
+  place-items: center;
+  border-style: dashed;
+  min-height: 74px;
+}
+.phome__desc {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

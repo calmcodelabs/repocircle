@@ -111,3 +111,32 @@ export function canManageRepo(repo: Repo, uid: string | undefined, isAdmin: bool
   return !!uid && (isAdmin || repo.ownerUid === uid || repo.registeredBy === uid);
 }
 
+
+export type MyRepo = Repo & { gid: string; groupName: string };
+
+/**
+ * Repos I own, across all my groups (personal homepage). One query per group —
+ * groupIds is small by design. Groups that deny (stale mirror) are skipped.
+ */
+export async function fetchMyRepos(
+  groups: Array<{ id: string; name: string }>,
+  uid: string,
+): Promise<MyRepo[]> {
+  const { getDocs: gd, query: q, where, collection: coll } = await import('firebase/firestore');
+  const results = await Promise.allSettled(
+    groups.map(async (g) => {
+      const snap = await gd(q(coll(db(), `groups/${g.id}/repos`), where('ownerUid', '==', uid)));
+      return snap.docs.map((d) => ({
+        id: d.id,
+        ...(d.data() as Omit<Repo, 'id'>),
+        gid: g.id,
+        groupName: g.name,
+      }));
+    }),
+  );
+  const repos = results
+    .filter((r): r is PromiseFulfilledResult<MyRepo[]> => r.status === 'fulfilled')
+    .flatMap((r) => r.value);
+  repos.sort((a, b) => (b.lastEventAt?.toMillis() ?? 0) - (a.lastEventAt?.toMillis() ?? 0));
+  return repos;
+}

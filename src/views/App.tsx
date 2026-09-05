@@ -1,8 +1,6 @@
-import { useEffect } from 'preact/hooks';
 import { sessionUser } from '../auth/session';
-import { lastGid } from '../data/activeGroup';
 import { myUserDoc } from '../data/users';
-import { navigate, route, type Route } from '../router';
+import { route, type Route } from '../router';
 import { ToastRegion } from '../ui/Toast';
 import { Diag } from './Diag';
 import { GroupHome } from './GroupHome';
@@ -12,6 +10,7 @@ import { Join } from './Join';
 import { Members } from './Members';
 import { NotFound } from './NotFound';
 import { Onboard } from './Onboard';
+import { PersonalHome } from './PersonalHome';
 import { Repos } from './Repos';
 import { SignIn } from './SignIn';
 
@@ -30,20 +29,12 @@ function Splash() {
   );
 }
 
-/** Signed-in landing: route to your group, or onboarding when you have none. */
-function RootRedirect() {
+/** Signed-in landing: personal homepage, or onboarding when you have no groups. */
+function Root() {
   const u = myUserDoc.value;
-  useEffect(() => {
-    if (!u) return;
-    if (u.groupIds.length > 0) {
-      const last = lastGid();
-      const gid = last && u.groupIds.includes(last) ? last : u.groupIds[0];
-      navigate(`#/g/${gid}`);
-    }
-  }, [u]);
   if (u === undefined) return <Splash />;
   if (u === null || u.groupIds.length === 0) return <Onboard />;
-  return <Splash />;
+  return <PersonalHome />;
 }
 
 function groupView(r: Route) {
@@ -85,7 +76,7 @@ export function App() {
   if (r.name === 'diag') view = <Diag />;
   else if (u === undefined) view = <Splash />;
   else if (u === null) view = <SignIn invited={r.name === 'join'} />;
-  else if (r.name === 'root') view = <RootRedirect />;
+  else if (r.name === 'root') view = <Root />;
   else if (r.name === 'new') view = <Onboard />;
   else if (r.name === 'join') view = <Join gid={r.gid} token={r.token} />;
   else if (r.name === 'notfound') view = <NotFound />;

@@ -91,3 +91,14 @@ travel, leave, or any stretch of unavailability without niching the app to campu
 Deliberate departure from the PRD on a product-owner call (2026-09-05). Custom status
 still lets anyone say "on exams" in their own words if they want to. Legacy `exams`
 values in existing member docs degrade to "available" (Members.tsx guard) until reset.
+
+**ADR-015 · Personal homepage at root (deliberate PRD deviation, owner decision).**
+The PRD's IA has no personal page — the group Home is "the whole product" (§5.2), and
+§2 warns that profile/showcase layers killed prior attempts. Shashwat, as product
+owner, chose a personal homepage anyway (2026-09-05): the root now shows a
+**launchpad** — your groups, repos you own across groups, and (from M5) your open
+asks/claims/requests — instead of auto-redirecting into the last group. Guardrails to
+stay out of the showcase trap: no counters, no streaks, no aggregated stats, nothing
+public — it is navigation plus your own open loops, nothing more. The logo links here;
+`lastGid` remains only as switcher state. Cost accepted: one extra tap to reach group
+content for single-group daily use.
