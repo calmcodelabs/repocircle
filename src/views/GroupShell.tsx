@@ -7,6 +7,7 @@ import { myUserDoc } from '../data/users';
 import { toast } from '../ui/Toast';
 import { Pill } from '../ui/Pill';
 import type { Group } from '../data/types';
+import { AskComposer } from './AskComposer';
 import { startPolling, stopPolling } from '../poll/engine';
 import { navigate, route } from '../router';
 import { Avatar } from '../ui/Avatar';
@@ -26,6 +27,7 @@ export function GroupShell({ gid, children }: { gid: string; children: Component
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [myGroups, setMyGroups] = useState<Group[] | null>(null);
+  const [askOpen, setAskOpen] = useState(false);
 
   useEffect(() => setActiveGroup(gid), [gid]);
   useEffect(() => {
@@ -173,6 +175,13 @@ export function GroupShell({ gid, children }: { gid: string; children: Component
       </nav>
 
       {children}
+
+      {myMembership.value && !['guest', 'alumnus'].includes(myMembership.value.role) && (
+        <button class="fab" onClick={() => setAskOpen(true)} aria-label="Post an ask">
+          + Ask
+        </button>
+      )}
+      {askOpen && <AskComposer gid={gid} onClose={() => setAskOpen(false)} />}
     </div>
   );
 }

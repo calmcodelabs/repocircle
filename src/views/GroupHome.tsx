@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'preact/hooks';
+import { sessionUser } from '../auth/session';
 import { activeGroup, activeMembers, myMembership } from '../data/activeGroup';
+import { claimAsk, unblockedThisWeek, watchMyAsks, watchMyClaims, watchNeedsHelp } from '../data/asks';
 import { watchRepos } from '../data/repos';
-import type { Repo } from '../data/types';
+import { myProfile } from '../data/users';
+import type { Ask, Repo } from '../data/types';
+import { toast } from '../ui/Toast';
+import { notifyDiscord } from '../notify/discord';
 import { Avatar } from '../ui/Avatar';
 import { Chip } from '../ui/Chip';
 import { EmptyState } from '../ui/EmptyState';
@@ -19,6 +24,37 @@ export function GroupHome({ gid }: { gid: string }) {
   const members = activeMembers.value;
   const me = myMembership.value;
   const [repos, setRepos] = useState<Repo[] | null>(null);
+  const [needsHelp, setNeedsHelp] = useState<Ask[] | null>(null);
+  const [myAsks, setMyAsks] = useState<Ask[]>([]);
+  const [myClaims, setMyClaims] = useState<Ask[]>([]);
+  const [unblocked, setUnblocked] = useState(0);
+  const uid = sessionUser.value?.uid;
+  const canWrite = !!me && me.role !== 'guest' && me.role !== 'alumnus';
+
+  useEffect(
+    () =>
+      watchNeedsHelp(gid, setNeedsHelp, (code) => {
+        log('warn', `asks watch: ${code}`);
+      }),
+    [gid],
+  );
+  useEffect(() => (uid ? watchMyAsks(gid, uid, setMyAsks) : undefined), [gid, uid]);
+  useEffect(() => (uid ? watchMyClaims(gid, uid, setMyClaims) : undefined), [gid, uid]);
+  useEffect(() => {
+    void unblockedThisWeek(gid).then(setUnblocked).catch(() => undefined);
+  }, [gid, needsHelp]);
+
+  async function quickClaim(ask: Ask) {
+    const profile = uid ? myProfile(uid) : null;
+    if (!profile) return;
+    try {
+      await claimAsk(gid, ask, profile, '');
+      toast(`Claimed — @${ask.authorLogin} will see it`);
+      notifyDiscord(gid, 'postClaims', { title: `🤝 @${profile.login} claimed: ${ask.title}`, path: `#/g/${gid}/ask/${ask.id}` });
+    } catch {
+      toast('Claiming failed.', { error: true });
+    }
+  }
 
   useEffect(
     () =>
@@ -90,16 +126,63 @@ export function GroupHome({ gid }: { gid: string }) {
 
       <CollabInbox gid={gid} />
 
-      <section class="card">
-        <div class="label">Needs help right now</div>
-        <EmptyState
-          line="Asks and stuck flags land in M5 — the core loop of RepoCircle."
-          action={
-            <Pill disabled ariaLabel="Post an ask (arrives with M5)">
-              + Ask · M5
-            </Pill>
-          }
-        />
+      <section class="card stack">
+        <div class="row">
+          <div class="label">Needs help right now</div>
+          <span class="topbar__spacer" />
+          {unblocked > 0 && <Chip tone="accent">{unblocked} unblocked this week</Chip>}
+        </div>
+        {needsHelp === null && <span class="skeleton" />}
+        {needsHelp?.length === 0 && <EmptyState line="No asks yet — post the first one with the + button." />}
+        {needsHelp?.map((a) => (
+          <div key={a.id} class={`row ask ${a.kind === 'stuck' ? 'ask--stuck' : ''}`}>
+            <a class="ask__main" href={`#/g/${gid}/ask/${a.id}`}>
+              <span class="row">
+                <span class={`dot ${a.kind === 'stuck' ? 'dot--warn' : 'dot--accent'}`} />
+                <span class="ask__title">{a.title}</span>
+              </span>
+              <span class="row small faint">
+                <Avatar login={a.authorLogin} src={a.authorAvatarUrl} />
+                <span>@{a.authorLogin}</span>
+                {a.tags.slice(0, 3).map((t) => (
+                  <Chip key={t}>{t}</Chip>
+                ))}
+                <span>{relTime(a.createdAt)}</span>
+              </span>
+            </a>
+            <span class="topbar__spacer" />
+            {a.state === 'claimed' && <Chip>{a.claimCount} on it</Chip>}
+            {canWrite && a.authorUid !== uid && !(a.claimerUids ?? []).includes(uid ?? '') && (
+              <Pill onClick={() => void quickClaim(a)} ariaLabel={`Claim: ${a.title}`}>
+                Claim
+              </Pill>
+            )}
+          </div>
+        ))}
+      </section>
+
+      <section class="card stack">
+        <div class="label">Your activity</div>
+        {myAsks.length === 0 && myClaims.length === 0 && (
+          <EmptyState line="Asks you post and claims you make show up here." />
+        )}
+        {myAsks.slice(0, 5).map((a) => (
+          <a key={a.id} class="row home__repo" href={`#/g/${gid}/ask/${a.id}`}>
+            <span class="small">you asked: {a.title}</span>
+            <span class="topbar__spacer" />
+            <Chip tone={a.state === 'resolved' ? 'accent' : a.state === 'claimed' ? 'default' : 'warn'}>{a.state}</Chip>
+          </a>
+        ))}
+        {myClaims
+          .filter((a) => a.authorUid !== uid)
+          .slice(0, 5)
+          .map((a) => (
+            <a key={a.id} class="row home__repo" href={`#/g/${gid}/ask/${a.id}`}>
+              <span class="small">you claimed: {a.title}</span>
+              <span class="topbar__spacer" />
+              <Chip tone={a.state === 'resolved' ? 'accent' : 'default'}>{a.state}</Chip>
+            </a>
+          ))}
       </section>
 
       <section class="card stack">

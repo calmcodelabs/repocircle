@@ -392,3 +392,53 @@
 .collab__note {
   padding-left: 38px;
 }
+
+/* asks */
+.ask {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+  align-items: flex-start;
+}
+.ask--stuck {
+  border-left: 2px solid var(--warn);
+  padding-left: 10px;
+  margin-left: -12px;
+}
+.ask__main {
+  display: grid;
+  gap: 4px;
+  color: var(--text);
+  min-width: 0;
+}
+.ask__main:hover {
+  text-decoration: none;
+}
+.ask__main:hover .ask__title {
+  color: var(--accent);
+}
+.ask__title {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+/* floating ask button */
+.fab {
+  position: fixed;
+  right: calc(16px + env(safe-area-inset-right));
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  z-index: 30;
+  background: var(--accent);
+  color: #08120d;
+  font-weight: 600;
+  font-size: 15px;
+  padding: 14px 22px;
+  border-radius: var(--r-pill);
+  box-shadow: 0 8px 24px rgba(62, 207, 142, 0.25);
+  transition: transform var(--t-fast) var(--ease);
+}
+.fab:hover {
+  transform: translateY(-1px);
+}
+.fab:active {
+  transform: scale(0.97);
+}

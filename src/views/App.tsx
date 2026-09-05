@@ -10,6 +10,7 @@ import { Join } from './Join';
 import { Members } from './Members';
 import { NotFound } from './NotFound';
 import { Onboard } from './Onboard';
+import { AskDetail } from './AskDetail';
 import { PersonalHome } from './PersonalHome';
 import { RepoDetail } from './RepoDetail';
 import { Repos } from './Repos';
@@ -58,6 +59,12 @@ function groupView(r: Route) {
           <RepoDetail gid={r.gid} repoId={r.repoId} />
         </GroupShell>
       );
+    case 'ask':
+      return (
+        <GroupShell gid={r.gid}>
+          <AskDetail gid={r.gid} askId={r.askId} />
+        </GroupShell>
+      );
     case 'members':
       return (
         <GroupShell gid={r.gid}>
@@ -87,7 +94,6 @@ export function App() {
   else if (r.name === 'new') view = <Onboard />;
   else if (r.name === 'join') view = <Join gid={r.gid} token={r.token} />;
   else if (r.name === 'notfound') view = <NotFound />;
-  else if (r.name === 'ask') view = <NotFound />; // M5
   else view = groupView(r);
 
   return (

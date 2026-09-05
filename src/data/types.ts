@@ -96,3 +96,33 @@ export type Repo = {
 };
 
 export const REPO_STATUSES: RepoStatus[] = ['idea', 'building', 'paused', 'done'];
+
+export type AskKind = 'ask' | 'stuck';
+export type AskState = 'open' | 'claimed' | 'resolved';
+
+export type Ask = {
+  id: string;
+  kind: AskKind;
+  title: string;
+  detail?: string;
+  tags: string[];
+  repoId?: string | null;
+  pairingUrl?: string | null;
+  authorUid: string;
+  authorLogin: string;
+  authorAvatarUrl?: string;
+  state: AskState;
+  claimCount: number;
+  claimerUids?: string[];
+  createdAt: Timestamp | null;
+  resolvedAt?: Timestamp | null;
+  v: 1;
+};
+
+export type AskClaim = {
+  uid: string;
+  login: string;
+  avatarUrl: string;
+  note?: string;
+  claimedAt: Timestamp | null;
+};
