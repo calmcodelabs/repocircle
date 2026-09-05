@@ -98,10 +98,14 @@ export async function ensureGitHubToken(): Promise<string | null> {
     const cred = GithubAuthProvider.credentialFromResult(res);
     if (cred?.accessToken) {
       setToken(cred.accessToken);
+      authError.value = null;
       return cred.accessToken;
     }
     return null;
   } catch (e) {
+    // Keep the specific reason (popup blocked, cancelled, unauthorized domain…)
+    // so callers can show it instead of a generic "reconnect" line.
+    authError.value = friendlyAuthError(e);
     log('warn', `token refresh failed: ${codeOf(e) ?? 'unknown'}`);
     return null;
   }

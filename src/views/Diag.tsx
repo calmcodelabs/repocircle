@@ -2,6 +2,7 @@ import { isConfigured } from '../firebase';
 import { sessionUser } from '../auth/session';
 import { hasToken } from '../auth/vault';
 import { logBuffer } from '../util/log';
+import { rateRemaining } from '../github/client';
 import { route } from '../router';
 
 /** Hidden diagnostics — ARCHITECTURE §8. Never renders secret material. */
@@ -16,6 +17,7 @@ export function Diag() {
           `configured ${isConfigured}`,
           `auth       ${u === undefined ? 'resolving' : u === null ? 'signed-out' : u.uid}`,
           `gh-token   ${hasToken() ? 'present (this tab)' : 'absent'}`,
+          `gh-rate    ${rateRemaining.value === null ? 'no calls yet' : `${rateRemaining.value} left this hour`}`,
           `route      ${route.value.name}`,
           `ua         ${navigator.userAgent}`,
         ].join('\n')}

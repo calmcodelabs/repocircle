@@ -303,3 +303,21 @@
   height: 16px;
   flex: none;
 }
+
+.home__repos {
+  display: grid;
+  gap: 2px;
+}
+.home__repo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 9px 10px;
+  border-radius: 10px;
+  color: var(--text);
+}
+.home__repo:hover {
+  background: var(--bg-overlay);
+  text-decoration: none;
+}

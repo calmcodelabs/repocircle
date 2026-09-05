@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { sessionUser, ensureGitHubToken } from '../auth/session';
+import { authError, ensureGitHubToken, sessionUser } from '../auth/session';
 import { hasToken } from '../auth/vault';
 import { myMembership } from '../data/activeGroup';
 import { canManageRepo, registerRepos, removeRepo, setRepoStatus, watchRepos } from '../data/repos';
@@ -150,7 +150,13 @@ function RepoCard({ repo, canManage, onManage }: { repo: Repo; canManage: boolea
 }
 
 function ghErrorLine(e: unknown): string {
-  return e instanceof GhError ? e.message : 'Something went wrong talking to GitHub.';
+  if (e instanceof GhError) {
+    // An auth failure usually has a more specific cause recorded by the auth layer
+    // (popup blocked, cancelled, domain not authorized) — prefer it.
+    if (e.kind === 'auth' && authError.value) return authError.value;
+    return e.message;
+  }
+  return 'Something went wrong talking to GitHub.';
 }
 
 function ImportSheet({ gid, onClose }: { gid: string; onClose: () => void }) {
@@ -253,7 +259,9 @@ function ImportSheet({ gid, onClose }: { gid: string; onClose: () => void }) {
               })}
             </div>
             <Pill variant="primary" busy={busy} disabled={selected.size === 0} onClick={() => void onAdd()}>
-              Add {selected.size} repo{selected.size === 1 ? '' : 's'}
+              {selected.size === 0
+                ? 'Everything here is already added'
+                : `Add ${selected.size} repo${selected.size === 1 ? '' : 's'}`}
             </Pill>
           </>
         )}
