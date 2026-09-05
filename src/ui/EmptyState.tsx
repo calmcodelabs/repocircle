@@ -1,4 +1,5 @@
 import type { ComponentChildren } from 'preact';
+import { Icon, type IconName } from './Icon';
 
 /**
  * Every empty list gets one instructional line and, where possible, an action
@@ -11,13 +12,13 @@ export function EmptyState({
 }: {
   line: string;
   action?: ComponentChildren;
-  icon?: string;
+  icon?: IconName;
 }) {
   return (
     <div class="empty">
       {icon && (
         <span class="tile tile--lg empty__tile" aria-hidden="true">
-          {icon}
+          <Icon name={icon} size={22} />
         </span>
       )}
       <span>{line}</span>

@@ -47,11 +47,11 @@ export function CollabInbox({ gid }: { gid: string }) {
             await closeIssueWithComment(
               req.repoFullName,
               req.githubIssueNumber,
-              `@${req.requesterLogin} invited as a collaborator — check your GitHub notifications. 🤝 _(via RepoCircle)_`,
+              `@${req.requesterLogin} invited as a collaborator — check your GitHub notifications. _(via RepoCircle)_`,
             );
           toast(`Invitation sent to @${req.requesterLogin}`);
           notifyDiscord(gid, 'postCollabs', {
-            title: `✅ @${req.requesterLogin} is now a collaborator on ${req.repoFullName.split('/')[1]}`,
+            title: `@${req.requesterLogin} is now a collaborator on ${req.repoFullName.split('/')[1]}`,
           });
         } else {
           if (req.githubIssueNumber)

@@ -59,7 +59,7 @@ export function GroupHome({ gid }: { gid: string }) {
     try {
       await claimAsk(gid, ask, profile, '');
       toast(`Claimed — @${ask.authorLogin} will see it`);
-      notifyDiscord(gid, 'postClaims', { title: `🤝 @${profile.login} claimed: ${ask.title}`, path: `#/g/${gid}/ask/${ask.id}` });
+      notifyDiscord(gid, 'postClaims', { title: `@${profile.login} claimed: ${ask.title}`, path: `#/g/${gid}/ask/${ask.id}` });
     } catch {
       toast('Claiming failed.', { error: true });
     }
@@ -164,7 +164,7 @@ export function GroupHome({ gid }: { gid: string }) {
         </div>
         {needsHelp === null && <span class="skeleton" />}
         {needsHelp?.length === 0 && (
-          <EmptyState icon="🙋" line="No asks yet — post the first one with the + button." />
+          <EmptyState icon="ask" line="No asks yet — post the first one with the + button." />
         )}
         {needsHelp?.map((a) => (
           <div key={a.id} class={`row ask ${a.kind === 'stuck' ? 'ask--stuck' : ''}`}>

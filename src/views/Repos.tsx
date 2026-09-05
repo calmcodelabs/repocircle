@@ -10,6 +10,7 @@ import { pollState, refreshNow, sparkSeries } from '../poll/engine';
 import { Spark } from '../ui/Spark';
 import { getRepoByFullName, listMyPublicRepos } from '../github/repos';
 import type { GhRepo } from '../github/types';
+import { Icon } from '../ui/Icon';
 import { Avatar } from '../ui/Avatar';
 import { Chip } from '../ui/Chip';
 import { EmptyState } from '../ui/EmptyState';
@@ -152,7 +153,7 @@ function RepoCard({
         ) : (
           canCollab && (
             <button class="repo__more" onClick={onCollab} aria-label={`Request to collaborate on ${shortName}`}>
-              🤝
+              <Icon name="handshake" size={16} />
             </button>
           )
         )}

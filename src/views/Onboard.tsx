@@ -1,5 +1,6 @@
 import { useState } from 'preact/hooks';
 import { sessionUser, signOutApp } from '../auth/session';
+import { Icon } from '../ui/Icon';
 import { Avatar } from '../ui/Avatar';
 import { createGroup } from '../data/groups';
 import { myProfile, myUserDoc } from '../data/users';
@@ -77,7 +78,9 @@ export function Onboard() {
 
         <section class="card stack rise-2">
           <div class="row">
-            <span class="tile tile--accent">＋</span>
+            <span class="tile tile--accent">
+              <Icon name="plus" />
+            </span>
             <h3>Create a group</h3>
           </div>
           <Field
@@ -102,7 +105,9 @@ export function Onboard() {
 
         <section class="card stack rise-3">
           <div class="row">
-            <span class="tile">⇢</span>
+            <span class="tile">
+              <Icon name="arrow-right" />
+            </span>
             <h3>Have an invite link?</h3>
           </div>
           <Field

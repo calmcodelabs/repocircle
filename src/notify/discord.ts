@@ -74,7 +74,13 @@ export async function testDiscord(webhookUrl: string): Promise<boolean> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        embeds: [{ title: '👋 RepoCircle connected', description: 'Asks, claims and collab requests will appear here.', color: 0x3ecf8e }],
+        embeds: [
+          {
+            title: 'RepoCircle connected',
+            description: 'Asks, claims and collab requests will appear here.',
+            color: 0x3ecf8e,
+          },
+        ],
         allowed_mentions: { parse: [] },
       }),
     });

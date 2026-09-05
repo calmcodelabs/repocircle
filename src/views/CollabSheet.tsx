@@ -44,7 +44,7 @@ export function CollabSheet({ gid, repo, onClose }: { gid: string; repo: Repo; o
       await attachIssueNumber(gid, reqId, issue.number);
       toast(`Request sent — issue #${issue.number} opened on ${repo.fullName}`);
       notifyDiscord(gid, 'postCollabs', {
-        title: `🔑 @${profile.login} asked to collaborate on ${repo.fullName.split('/')[1]}`,
+        title: `@${profile.login} asked to collaborate on ${repo.fullName.split('/')[1]}`,
         path: `#/g/${gid}/repo/${repo.id}`,
       });
       onClose();

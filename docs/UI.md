@@ -28,6 +28,11 @@ Minimalistic, clean, beautiful — and it happens to align perfectly with the PR
 Rejected from refs: photography/3D centerpieces, cinematic backdrops, star ratings
 (anti-principle), light-first.
 
+**No emoji, anywhere** (owner rule, 2026-09-25): not in UI, empty states, toasts, or
+outbound Discord/chat messages. Pictographs read as informal and render differently on
+every platform, which breaks a considered dark UI. Use `src/ui/Icon.tsx` — 24×24
+line icons, `currentColor`, 1.75 stroke — and plain sentences in messages.
+
 ## 1. Foundations
 
 ### Color tokens (dark is the default and primary theme)

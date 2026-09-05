@@ -553,3 +553,12 @@ a.card:hover,
 .checkbar__fill--3 { width: 60%; }
 .checkbar__fill--4 { width: 80%; }
 .checkbar__fill--5 { width: 100%; }
+
+/* line icons */
+.icon {
+  flex: none;
+  display: block;
+}
+.tile .icon {
+  opacity: 0.95;
+}

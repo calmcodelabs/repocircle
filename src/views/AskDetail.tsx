@@ -6,6 +6,7 @@ import { myProfile } from '../data/users';
 import type { Ask, AskClaim } from '../data/types';
 import { notifyDiscord } from '../notify/discord';
 import { navigate } from '../router';
+import { Icon } from '../ui/Icon';
 import { Avatar } from '../ui/Avatar';
 import { Chip } from '../ui/Chip';
 import { EmptyState } from '../ui/EmptyState';
@@ -46,7 +47,7 @@ export function AskDetail({ gid, askId }: { gid: string; askId: string }) {
       await claimAsk(gid, ask, profile, claimNote);
       toast(`You’re on it — @${ask.authorLogin} will see your claim`);
       notifyDiscord(gid, 'postClaims', {
-        title: `🤝 @${profile.login} claimed: ${ask.title}`,
+        title: `@${profile.login} claimed: ${ask.title}`,
         path: `#/g/${gid}/ask/${ask.id}`,
       });
       setClaiming(false);
@@ -63,8 +64,8 @@ export function AskDetail({ gid, askId }: { gid: string; askId: string }) {
     setBusy(true);
     try {
       await resolveAsk(gid, ask.id);
-      toast('Resolved — one more unblocked 🎉');
-      notifyDiscord(gid, 'postClaims', { title: `✅ Resolved: ${ask.title}`, path: `#/g/${gid}/ask/${ask.id}` });
+      toast('Resolved — one more unblocked');
+      notifyDiscord(gid, 'postClaims', { title: `Resolved: ${ask.title}`, path: `#/g/${gid}/ask/${ask.id}` });
     } catch {
       toast('Resolving failed.', { error: true });
     } finally {
@@ -77,7 +78,7 @@ export function AskDetail({ gid, askId }: { gid: string; askId: string }) {
       <section class="card stack rise">
         <div class="row">
           <span class={ask.kind === 'stuck' ? 'tile tile--warn' : 'tile tile--accent'} aria-hidden="true">
-            {ask.kind === 'stuck' ? '⚑' : '🙋'}
+            <Icon name={ask.kind === 'stuck' ? 'flag' : 'ask'} size={19} />
           </span>
           <Chip tone={ask.kind === 'stuck' ? 'warn' : 'default'}>{ask.kind}</Chip>
           <Chip tone={ask.state === 'resolved' ? 'accent' : ask.state === 'claimed' ? 'default' : 'warn'}>

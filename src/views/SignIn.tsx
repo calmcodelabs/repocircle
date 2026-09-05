@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks';
 import { isConfigured } from '../firebase';
 import { authBusy, authError, signInWithGitHub } from '../auth/session';
+import { Icon } from '../ui/Icon';
 import { Mark } from '../ui/Mark';
 import { Pill } from '../ui/Pill';
 import { Sheet } from '../ui/Sheet';
@@ -46,7 +47,8 @@ export function SignIn({ invited = false }: { invited?: boolean }) {
           </div>
           <div class="viz__card viz__card--done">
             <span class="dot dot--accent" />
-            <span class="viz__title">Rahul joined — building together ✓</span>
+            <Icon name="check" size={15} />
+            <span class="viz__title">Rahul joined — building together</span>
           </div>
         </div>
 

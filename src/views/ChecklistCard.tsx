@@ -2,6 +2,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { sessionUser } from '../auth/session';
 import { myMembership } from '../data/activeGroup';
+import { Icon } from '../ui/Icon';
 import { Pill } from '../ui/Pill';
 
 // F-12 onboarding checklist — a guide, not a gate (soft version of the PRD's
@@ -54,7 +55,7 @@ export function ChecklistCard({ gid, hasDiscord }: { gid: string; hasDiscord: bo
         const inner = (
           <>
             <span class={`check ${isDone ? 'check--done' : ''}`} aria-hidden="true">
-              {isDone ? '✓' : ''}
+              {isDone && <Icon name="check" size={12} />}
             </span>
             <span class={isDone ? 'small faint checklist__done' : 'small'}>{item.label}</span>
           </>

@@ -60,7 +60,10 @@ export function AskComposer({ gid, onClose }: { gid: string; onClose: () => void
       });
       toast(kind === 'stuck' ? 'Stuck flag is up — hang in there' : 'Ask posted');
       notifyDiscord(gid, 'postAsks', {
-        title: kind === 'stuck' ? `🔶 @${profile.login} is stuck: ${title.trim()}` : `🙋 Ask from @${profile.login}: ${title.trim()}`,
+        title:
+          kind === 'stuck'
+            ? `@${profile.login} is stuck: ${title.trim()}`
+            : `Ask from @${profile.login}: ${title.trim()}`,
         description: kind === 'ask' && detail.trim() ? detail.trim().slice(0, 180) : undefined,
         path: `#/g/${gid}/ask/${id}`,
       });

@@ -9,6 +9,7 @@ import { doc, onSnapshot as onDoc } from 'firebase/firestore';
 import { sparkSeries } from '../poll/engine';
 import { CollabSheet } from './CollabSheet';
 import { Pill } from '../ui/Pill';
+import { Icon, type IconName } from '../ui/Icon';
 import { Avatar } from '../ui/Avatar';
 import { Chip } from '../ui/Chip';
 import { EmptyState } from '../ui/EmptyState';
@@ -27,16 +28,16 @@ type FeedEvent = {
   occurredAt: Timestamp;
 };
 
-const TYPE_ICON: Record<string, string> = {
-  push: '⇡',
-  pr_opened: '⎇',
-  pr_merged: '⎇',
-  pr_closed: '⎇',
-  issue_opened: '◎',
-  issue_closed: '◎',
-  release: '⏏',
-  branch_created: '⌥',
-  fork: '⑂',
+const TYPE_ICON: Record<string, IconName> = {
+  push: 'commit',
+  pr_opened: 'pull-request',
+  pr_merged: 'pull-request',
+  pr_closed: 'pull-request',
+  issue_opened: 'issue',
+  issue_closed: 'issue',
+  release: 'release',
+  branch_created: 'branch',
+  fork: 'fork',
 };
 
 /** S7 detail — repo header + the last 30 normalized events. */
@@ -134,7 +135,7 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
         {events?.map((ev) => (
           <a key={ev.id} class="row event" href={ev.url} target="_blank" rel="noopener noreferrer nofollow">
             <span class="tile tile--sm" aria-hidden="true">
-              {TYPE_ICON[ev.type] ?? '·'}
+              <Icon name={TYPE_ICON[ev.type] ?? 'commit'} size={14} />
             </span>
             <Avatar login={ev.actorLogin} src={ev.actorAvatarUrl} />
             <span class="event__summary">{ev.summary}</span>

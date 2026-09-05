@@ -114,7 +114,7 @@ export function PersonalHome() {
           </div>
           {repos === null && <span class="skeleton" />}
           {repos?.length === 0 && (
-            <EmptyState icon="◎" line="Repos you own show up here once they’re registered in a group." />
+            <EmptyState icon="repo" line="Repos you own show up here once they’re registered in a group." />
           )}
           {repos && repos.length > 0 && (
             <div class="home__repos">
@@ -141,7 +141,7 @@ export function PersonalHome() {
           {openItems === null && <span class="skeleton" />}
           {openItems?.length === 0 && (
             <EmptyState
-              icon="✓"
+              icon="check"
               line="Nothing open — asks you post and claims you make appear here across all your circles."
             />
           )}
