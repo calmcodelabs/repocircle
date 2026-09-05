@@ -1,7 +1,8 @@
 import { useState } from 'preact/hooks';
-import { sessionUser } from '../auth/session';
+import { sessionUser, signOutApp } from '../auth/session';
+import { Avatar } from '../ui/Avatar';
 import { createGroup } from '../data/groups';
-import { myProfile } from '../data/users';
+import { myProfile, myUserDoc } from '../data/users';
 import { navigate } from '../router';
 import { Field } from '../ui/Field';
 import { Mark } from '../ui/Mark';
@@ -46,12 +47,28 @@ export function Onboard() {
     navigate(`#/join/${m[1]}/${m[2]}`);
   }
 
+  const u = sessionUser.value;
+  const login = myUserDoc.value?.login ?? u?.displayName ?? 'you';
+
   return (
     <div class="app onboard">
       <div class="halo" />
+      <header class="topbar">
+        <Mark />
+        <strong>RepoCircle</strong>
+        <span class="topbar__spacer" />
+        {u && (
+          <div class="row small dim">
+            <Avatar src={u.photoURL ?? undefined} login={login} />
+            <span class="onboard__who">{login}</span>
+            <button class="signin__link" onClick={() => void signOutApp()}>
+              Sign out
+            </button>
+          </div>
+        )}
+      </header>
       <main class="stack onboard__panel">
         <div class="onboard__head">
-          <Mark size={44} />
           <h1>Start your circle</h1>
           <p class="dim small">A group is the private space your circle shares.</p>
         </div>
