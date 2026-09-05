@@ -378,12 +378,18 @@ a.card:hover,
   font-size: 14px;
   opacity: 0.72;
 }
-/* dim variant: tinted glass instead of full gradient */
+/* dim variant: tinted glass instead of full gradient — dark surface, so text
+   must go back to the light palette (the .hero rules above assume the bright
+   gradient and would render headings near-invisible here). */
 .hero--dim {
   background: var(--bg-raised) var(--grad-accent-dim);
   border: 1px solid var(--accent-line);
   color: var(--text);
   box-shadow: var(--shadow-card);
+}
+.hero--dim h2,
+.hero--dim h3 {
+  color: var(--text);
 }
 .hero--dim .hero__label {
   color: var(--accent);
