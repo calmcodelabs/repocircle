@@ -67,7 +67,7 @@ publicPages/{slug}                          # opt-in public group page mirror (G
 |---|---|---|
 | role | `admin` \| `member` \| `guest` \| `mentor` \| `alumnus` | A-01. `guest`/`alumnus` are read-only roles (rules-enforced) |
 | login, name, avatarUrl | string | Denormalized for the member list |
-| availability | map | `{ status: "free"\|"heads_down"\|"exams"\|"custom", note?: ≤60, until?: ts }` (M-03 ships early — it's cheap and humane) |
+| availability | map | `{ status: "free"\|"heads_down"\|"away"\|"custom", note?: ≤60, until?: ts }` (M-03 ships early — it's cheap and humane) |
 | helpWith, learning | string[] ≤ 10 × ≤ 24 chars | M-02, Phase 2 UI but schema now |
 | checklist | map<string,bool> | F-12: addedRepo, followedMember, postedOrAnswered, connectedChat, setAvailability |
 | joinedAt | ts | |

@@ -134,7 +134,7 @@ token missing scope — reconnect?").
 
 ### S9 · Members (minimal in Phase 1)
 Rows: avatar, name, login mono dim, role Chip (admin only shown), availability
-StatusDot + text ("on exams until Jun 3" — M-03 early). Admin: overflow menu → change
+StatusDot + text ("away until Jun 3" — M-03 early, neutral not student-specific). Admin: overflow menu → change
 role / remove (confirm sheet, audit-logged).
 
 ### S10 · Group settings (Layer 3)

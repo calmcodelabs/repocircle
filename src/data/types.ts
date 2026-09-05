@@ -2,7 +2,7 @@ import type { Timestamp } from 'firebase/firestore';
 
 export type Role = 'admin' | 'member' | 'guest' | 'mentor' | 'alumnus';
 
-export type AvailabilityStatus = 'free' | 'heads_down' | 'exams' | 'custom';
+export type AvailabilityStatus = 'free' | 'heads_down' | 'away' | 'custom';
 
 export type Availability = {
   status: AvailabilityStatus;
@@ -68,6 +68,6 @@ export const ROLE_LABEL: Record<Role, string> = {
 export const AVAILABILITY_LABEL: Record<AvailabilityStatus, string> = {
   free: 'free to help',
   heads_down: 'heads down',
-  exams: 'on exams',
+  away: 'away',
   custom: 'custom',
 };

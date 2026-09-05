@@ -64,7 +64,7 @@ describe('groups/{gid}', () => {
     const bob = env.authenticatedContext('bob');
     await assertSucceeds(
       updateDoc(doc(db(bob), `groups/${GID}/members/bob`), {
-        availability: { status: 'exams', note: 'finals week' },
+        availability: { status: 'away', note: 'travelling' },
       }),
     );
     await assertFails(updateDoc(doc(db(bob), `groups/${GID}/members/bob`), { role: 'admin' }));

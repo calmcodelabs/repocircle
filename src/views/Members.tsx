@@ -14,12 +14,12 @@ import { Sheet } from '../ui/Sheet';
 import { StatusDot } from '../ui/StatusDot';
 import { toast } from '../ui/Toast';
 
-const STATUSES: AvailabilityStatus[] = ['free', 'heads_down', 'exams', 'custom'];
+const STATUSES: AvailabilityStatus[] = ['free', 'heads_down', 'away', 'custom'];
 const ROLES: Role[] = ['admin', 'mentor', 'member', 'guest', 'alumnus'];
 
 function availabilityText(m: Member): string {
   const a = m.availability;
-  const base = a.status === 'custom' ? a.note || 'custom' : AVAILABILITY_LABEL[a.status];
+  const base = a.status === 'custom' ? a.note || 'custom' : (AVAILABILITY_LABEL[a.status] ?? 'available');
   return a.until ? `${base} until ${a.until.toDate().toLocaleDateString()}` : base;
 }
 
@@ -50,7 +50,7 @@ export function Members({ gid }: { gid: string }) {
               </div>
               <div class="row small dim">
                 <span class="mono">@{m.login}</span>
-                <StatusDot tone={m.availability.status === 'free' ? 'accent' : m.availability.status === 'exams' ? 'warn' : 'idle'} />
+                <StatusDot tone={m.availability.status === 'free' ? 'accent' : m.availability.status === 'away' ? 'warn' : 'idle'} />
                 <span>{availabilityText(m)}</span>
               </div>
             </div>

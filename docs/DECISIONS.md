@@ -81,3 +81,13 @@ SETUP).
 **ADR-013 · License: undecided on purpose.** Public repo currently "all rights
 reserved." Owner to choose (MIT would match Score Keeper's spirit) before inviting
 outside contributors.
+
+**ADR-014 · Availability statuses are audience-neutral: "on exams" → "away".**
+The PRD (§3, M-03) makes "on exams" a first-class availability status. In practice
+that bakes a student assumption into the most-seen chip in the product, while
+RepoCircle also serves friend circles and working-dev groups (the PRD's own personas).
+Statuses are now **free to help / heads down / away / custom** — "away" covers exams,
+travel, leave, or any stretch of unavailability without niching the app to campuses.
+Deliberate departure from the PRD on a product-owner call (2026-09-05). Custom status
+still lets anyone say "on exams" in their own words if they want to. Legacy `exams`
+values in existing member docs degrade to "available" (Members.tsx guard) until reset.
