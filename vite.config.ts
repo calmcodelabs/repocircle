@@ -7,10 +7,12 @@ const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 
 };
 
 // Content-Security-Policy, injected at build time only (dev needs Vite's HMR client).
-// Keep in sync with docs/SECURITY.md §6. frame-src: Firebase Auth popup handshake.
+// Keep in sync with docs/SECURITY.md §6. frame-src + apis.google.com script:
+// Firebase Auth's popup flow injects gapi (apis.google.com/js/api.js) into the
+// opener page as the popup→app result relay — blocking it = auth/internal-error.
 const CSP = [
   "default-src 'none'",
-  "script-src 'self'",
+  "script-src 'self' https://apis.google.com",
   "style-src 'self'",
   "font-src 'self'",
   "img-src 'self' https://avatars.githubusercontent.com data:",

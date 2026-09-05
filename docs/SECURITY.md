@@ -240,7 +240,7 @@ Known refinements queued for M8 hardening (tracked in PLAN): per-field validatio
   tight allowlist (no images-by-URL in v1, no raw HTML passthrough) + CSP as backstop.
 - **CSP** served via `<meta http-equiv="Content-Security-Policy">` (Pages can't set
   headers):
-  `default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self';
+  `default-src 'none'; script-src 'self' https://apis.google.com (Firebase Auth popup relay); style-src 'self'; font-src 'self';
   img-src 'self' https://avatars.githubusercontent.com data:;
   connect-src 'self' https://api.github.com https://*.googleapis.com
   https://securetoken.googleapis.com https://identitytoolkit.googleapis.com
