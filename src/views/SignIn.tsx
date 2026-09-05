@@ -28,8 +28,8 @@ export function SignIn({ invited = false }: { invited?: boolean }) {
               See what your circle is <span class="tint">building</span>.
             </h1>
             <p class="lead signin__tag">
-              A private space for your dev circle — share your repos, see who’s stuck, and help
-              each other ship.
+              A private space for your dev circle — share what you’re building, and jump in on
+              each other’s projects.
             </p>
           </>
         )}
@@ -37,16 +37,16 @@ export function SignIn({ invited = false }: { invited?: boolean }) {
         <div class="hero signin__viz rise-2" aria-hidden="true">
           <div class="hero__label">Your circle, live</div>
           <div class="viz__card viz__card--flag">
-            <span class="dot dot--warn" />
+            <span class="dot dot--accent" />
             <span class="viz__body">
-              <span class="viz__title">Mahesh is stuck: Docker networking</span>
-              <span class="viz__meta">devops · 2m ago</span>
+              <span class="viz__title">mahesh/pocket-journal — 3 commits today</span>
+              <span class="viz__meta">TypeScript · building</span>
             </span>
-            <span class="viz__claim">Claim</span>
+            <span class="viz__claim">Join in</span>
           </div>
           <div class="viz__card viz__card--done">
             <span class="dot dot--accent" />
-            <span class="viz__title">Rahul claimed it — unblocked ✓</span>
+            <span class="viz__title">Rahul joined — building together ✓</span>
           </div>
         </div>
 
