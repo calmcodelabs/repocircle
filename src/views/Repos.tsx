@@ -3,6 +3,7 @@ import { authError, ensureGitHubToken, sessionUser } from '../auth/session';
 import { hasToken } from '../auth/vault';
 import { activeMembers, myMembership } from '../data/activeGroup';
 import { canManageRepo, registerRepos, removeRepo, setRepoStatus, watchRepos } from '../data/repos';
+import { excludeFromSync, hasDecidedSharing, setRepoSyncMode, syncMyRepos } from '../data/repoSync';
 import { myProfile } from '../data/users';
 import { REPO_STATUSES, type Repo, type RepoStatus } from '../data/types';
 import { GhError } from '../github/client';
@@ -53,18 +54,28 @@ export function Repos({ gid }: { gid: string }) {
     [gid],
   );
 
-  // First-run nudge (S3): a fresh group with zero repos opens the import picker once.
+  // Every member gets asked to share once — the founder AND everyone invited after
+  // them (PRD F-04). Keyed on "have I shared anything here", not "is the circle
+  // empty", which is what previously skipped invited members entirely.
   useEffect(() => {
-    if (repos?.length === 0 && canAdd && !autoOpened.current && !sessionStorage.getItem(`rc.importSeen.${gid}`)) {
-      autoOpened.current = true;
-      try {
-        sessionStorage.setItem(`rc.importSeen.${gid}`, '1');
-      } catch {
-        /* best-effort */
-      }
-      void openImport();
+    if (!repos || !canAdd || autoOpened.current) return;
+    if (hasDecidedSharing(me) || repos.some((r) => r.registeredBy === uid)) return;
+    if (sessionStorage.getItem(`rc.importSeen.${gid}`)) return;
+    autoOpened.current = true;
+    try {
+      sessionStorage.setItem(`rc.importSeen.${gid}`, '1');
+    } catch {
+      /* best-effort */
     }
-  }, [repos, canAdd]);
+    void openImport();
+  }, [repos, canAdd, me, uid]);
+
+  // Keep an opted-in member's repos flowing in, including ones created later.
+  useEffect(() => {
+    const profile = uid ? myProfile(uid) : null;
+    if (!profile || !me) return;
+    void syncMyRepos(gid, profile, me);
+  }, [gid, uid, me]);
 
   async function openImport() {
     if (!hasToken()) await ensureGitHubToken(); // popup inside the user gesture
@@ -234,6 +245,7 @@ function ghErrorLine(e: unknown): string {
 }
 
 function ImportSheet({ gid, onClose }: { gid: string; onClose: () => void }) {
+  const [autoShare, setAutoShare] = useState(true);
   const [list, setList] = useState<GhRepo[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [authProblem, setAuthProblem] = useState(false);
@@ -277,7 +289,14 @@ function ImportSheet({ gid, onClose }: { gid: string; onClose: () => void }) {
     setBusy(true);
     try {
       const added = await registerRepos(gid, profile, list.filter((r) => selected.has(r.id)));
-      toast(added > 0 ? `Added ${added} repo${added === 1 ? '' : 's'}` : 'Nothing new to add');
+      await setRepoSyncMode(gid, profile.uid, autoShare ? 'auto' : 'manual').catch(() => undefined);
+      toast(
+        autoShare
+          ? `Sharing ${added} repo${added === 1 ? '' : 's'} — new ones will appear automatically`
+          : added > 0
+            ? `Added ${added} repo${added === 1 ? '' : 's'}`
+            : 'Nothing new to add',
+      );
       onClose();
     } catch {
       toast('Adding repos failed — check #/diag.', { error: true });
@@ -332,6 +351,17 @@ function ImportSheet({ gid, onClose }: { gid: string; onClose: () => void }) {
                 );
               })}
             </div>
+            <label class="row autoshare">
+              <input
+                type="checkbox"
+                checked={autoShare}
+                onChange={(e) => setAutoShare((e.currentTarget as HTMLInputElement).checked)}
+              />
+              <span class="small">
+                Keep sharing automatically
+                <span class="faint"> — public repos you create later show up here too. Private repos are never touched.</span>
+              </span>
+            </label>
             <Pill variant="primary" busy={busy} disabled={selected.size === 0} onClick={() => void onAdd()}>
               {selected.size === 0
                 ? 'Everything here is already added'
@@ -443,7 +473,10 @@ function ManageRepoSheet({ gid, repo, onClose }: { gid: string; repo: Repo; onCl
     setBusy(true);
     try {
       await removeRepo(gid, profile, repo);
-      toast(`${repo.fullName} removed from the group`);
+      if (repo.registeredBy === profile.uid || repo.ownerUid === profile.uid) {
+        await excludeFromSync(gid, profile.uid, repo.id);
+      }
+      toast(`${repo.fullName} removed from the circle`);
       onClose();
     } catch {
       toast('Removing failed — check #/diag.', { error: true });

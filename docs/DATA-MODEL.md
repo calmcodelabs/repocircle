@@ -69,7 +69,8 @@ publicPages/{slug}                          # opt-in public group page mirror (G
 | login, name, avatarUrl | string | Denormalized for the member list |
 | availability | map | `{ status: "free"\|"heads_down"\|"away"\|"custom", note?: ≤60, until?: ts }` (M-03 ships early — it's cheap and humane) |
 | helpWith, learning | string[] ≤ 10 × ≤ 24 chars | M-02, Phase 2 UI but schema now |
-| checklist | map<string,bool> | F-12: addedRepo, followedMember, postedOrAnswered, connectedChat, setAvailability |
+| checklist | map<string,bool> | F-12: addedRepo, invitedSomeone, visitedMembers, postedOrAnswered, connectedChat, setAvailability |
+| repoSync | map | `{ mode: "auto"\|"manual", excluded?: string[], decidedAt?: ts }` — F-04 auto-import; `auto` keeps registering newly-created public repos, `excluded` remembers hand-removals so sync never resurrects them |
 | joinedAt | ts | |
 | joinedVia | string | invite token ref or `"founder"` — audit trail |
 

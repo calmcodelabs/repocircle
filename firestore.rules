@@ -82,7 +82,7 @@ service cloud.firestore {
         allow create: if signedIn() && me() == uid
           && request.resource.data.keys().hasOnly(
                ['role', 'login', 'name', 'avatarUrl', 'availability', 'helpWith', 'learning',
-                'checklist', 'joinedAt', 'joinedVia', 'v'])
+                'checklist', 'repoSync', 'joinedAt', 'joinedVia', 'v'])
           && str(request.resource.data.login, 1, 60)
           && (
             (request.resource.data.joinedVia == 'founder'
@@ -97,7 +97,7 @@ service cloud.firestore {
         allow update: if
           (me() == uid && isMember(gid)
             && request.resource.data.diff(resource.data).affectedKeys()
-                 .hasOnly(['availability', 'helpWith', 'learning', 'checklist',
+                 .hasOnly(['availability', 'helpWith', 'learning', 'checklist', 'repoSync',
                            'login', 'name', 'avatarUrl']))
           ||
           (isAdmin(gid) && me() != uid

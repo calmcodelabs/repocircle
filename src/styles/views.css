@@ -633,3 +633,20 @@
 .deletecard {
   border-color: color-mix(in srgb, var(--danger) 35%, transparent);
 }
+
+
+.autoshare {
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+}
+.autoshare input[type='checkbox'] {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  flex: none;
+}

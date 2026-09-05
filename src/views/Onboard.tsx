@@ -16,6 +16,7 @@ export function Onboard() {
   const [name, setName] = useState('');
   const [desc, setDesc] = useState('');
   const [link, setLink] = useState('');
+  const [autoShare, setAutoShare] = useState(true);
   const [busy, setBusy] = useState(false);
 
   const nameOk = name.trim().length >= LIMITS.GROUP_NAME_MIN && name.trim().length <= LIMITS.GROUP_NAME_MAX;
@@ -30,6 +31,10 @@ export function Onboard() {
     setBusy(true);
     try {
       const gid = await createGroup(profile, name.trim(), desc.trim());
+      if (autoShare) {
+        const { setRepoSyncMode } = await import('../data/repoSync');
+        await setRepoSyncMode(gid, profile.uid, 'auto').catch(() => undefined);
+      }
       toast(`${name.trim()} created`);
       navigate(`#/g/${gid}/repos`);
     } catch (e) {
@@ -103,8 +108,19 @@ export function Onboard() {
             placeholder="What this circle is about"
             maxLength={LIMITS.GROUP_DESC_MAX}
           />
+          <label class="row autoshare">
+            <input
+              type="checkbox"
+              checked={autoShare}
+              onChange={(e) => setAutoShare((e.currentTarget as HTMLInputElement).checked)}
+            />
+            <span class="small">
+              Share my public repos with this circle
+              <span class="faint"> — including ones I create later. Private repos are never touched.</span>
+            </span>
+          </label>
           <Pill variant="primary" disabled={!nameOk} busy={busy} onClick={() => void onCreate()}>
-            Create group
+            Create circle
           </Pill>
         </section>
 

@@ -8,6 +8,7 @@ import { removeMember, setAvailability, setRole } from '../data/members';
 import { myProfile } from '../data/users';
 import { AVAILABILITY_LABEL, ROLE_LABEL, type Availability, type AvailabilityStatus, type Member, type Role } from '../data/types';
 import { InviteSheet } from './InviteManager';
+import { setRepoSyncMode } from '../data/repoSync';
 import { Avatar } from '../ui/Avatar';
 import { Chip } from '../ui/Chip';
 import { EmptyState } from '../ui/EmptyState';
@@ -55,6 +56,50 @@ export function Members({ gid }: { gid: string }) {
           </Pill>
         )}
       </div>
+
+      {me && (
+        <section class="card stack">
+          <div class="sectionhead">
+            <span class="sectionhead__mark" />
+            <span class="sectionhead__title">Your repos in this circle</span>
+          </div>
+          <div class="row wrap">
+            <div class="segmented" role="group" aria-label="Repo sharing">
+              <button
+                class="segmented__btn"
+                aria-pressed={me.repoSync?.mode === 'auto'}
+                onClick={() =>
+                  void setRepoSyncMode(gid, me.uid, 'auto').then(() =>
+                    toast('Sharing automatically — new public repos will appear here'),
+                  )
+                }
+              >
+                Share automatically
+              </button>
+              <button
+                class="segmented__btn"
+                aria-pressed={me.repoSync?.mode !== 'auto'}
+                onClick={() =>
+                  void setRepoSyncMode(gid, me.uid, 'manual').then(() =>
+                    toast('You’ll add repos yourself'),
+                  )
+                }
+              >
+                Choose manually
+              </button>
+            </div>
+            <span class="topbar__spacer" />
+            <a class="small" href={`#/g/${gid}/repos`}>
+              Manage repos →
+            </a>
+          </div>
+          <p class="small faint">
+            {me.repoSync?.mode === 'auto'
+              ? 'Your public repos are shared with this circle, including ones you create later. Remove any and it stays removed. Private repos are never accessed.'
+              : 'You pick which repos this circle sees. Nothing is shared until you add it.'}
+          </p>
+        </section>
+      )}
 
       {iAmAdmin && members?.length === 1 && (
         <section class="hero hero--dim stack rise">

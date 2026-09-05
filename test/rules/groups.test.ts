@@ -70,6 +70,26 @@ describe('groups/{gid}', () => {
     await assertFails(updateDoc(doc(db(bob), `groups/${GID}/members/bob`), { role: 'admin' }));
   });
 
+  it('members may set their own repo-sharing preference, not other people’s', async () => {
+    await seedGroup(env);
+    const bob = env.authenticatedContext('bob');
+    await assertSucceeds(
+      updateDoc(doc(db(bob), `groups/${GID}/members/bob`), {
+        repoSync: { mode: 'auto', excluded: ['123'] },
+      }),
+    );
+    await assertFails(
+      updateDoc(doc(db(bob), `groups/${GID}/members/gia`), { repoSync: { mode: 'manual' } }),
+    );
+    // and it still cannot smuggle a role change alongside
+    await assertFails(
+      updateDoc(doc(db(bob), `groups/${GID}/members/bob`), {
+        repoSync: { mode: 'auto' },
+        role: 'admin',
+      }),
+    );
+  });
+
   it('admin can change another member role; member cannot', async () => {
     await seedGroup(env);
     const alice = env.authenticatedContext('alice');

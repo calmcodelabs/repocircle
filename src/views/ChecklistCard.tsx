@@ -11,7 +11,7 @@ type Item = { key: string; label: string; href?: string; done: (c: Record<string
 type Extras = { hasDiscord: boolean; hasCompany: boolean };
 
 const ITEMS: Item[] = [
-  { key: 'addedRepo', label: 'Add or import a repo', href: 'repos', done: (c) => !!c.addedRepo },
+  { key: 'addedRepo', label: 'Share your repos', href: 'repos', done: (c) => !!c.addedRepo },
   {
     key: 'invitedSomeone',
     label: 'Invite your circle',

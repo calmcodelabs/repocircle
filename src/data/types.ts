@@ -22,6 +22,17 @@ export type Group = {
   v: 1;
 };
 
+/**
+ * How a member shares their own repos with a circle. 'auto' keeps registering
+ * newly-created public repos; `excluded` remembers what they removed by hand so
+ * the sync never resurrects it.
+ */
+export type RepoSync = {
+  mode: 'auto' | 'manual';
+  excluded?: string[];
+  decidedAt?: Timestamp | null;
+};
+
 export type Member = {
   uid: string;
   role: Role;
@@ -32,6 +43,7 @@ export type Member = {
   helpWith: string[];
   learning: string[];
   checklist: Record<string, boolean>;
+  repoSync?: RepoSync;
   joinedAt: Timestamp | null;
   joinedVia: string;
   v: 1;
