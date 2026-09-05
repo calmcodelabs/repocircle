@@ -24,7 +24,7 @@ export function Onboard() {
     const uid = sessionUser.value?.uid;
     const profile = uid ? myProfile(uid) : null;
     if (!profile) {
-      toast('Still loading your profile — try again in a second.', { error: true });
+      toast('Your profile is still loading — give it a second, then try again.', { error: true });
       return;
     }
     setBusy(true);

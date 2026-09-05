@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'preact/hooks';
 import { sessionUser } from '../auth/session';
 import { myUserDoc } from '../data/users';
 import { route, type Route } from '../router';
+import { ProfileRecovery } from './ProfileRecovery';
 import { ToastRegion } from '../ui/Toast';
 import { Diag } from './Diag';
 import { GroupHome } from './GroupHome';
@@ -29,6 +31,25 @@ function Splash() {
       </div>
     </div>
   );
+}
+
+/**
+ * True once `users/{me}` has been *confirmed* absent — not merely unread. The delay
+ * keeps a fresh sign-in (whose profile write is still in flight) from flashing the
+ * recovery screen.
+ */
+function useConfirmedMissingProfile(): boolean {
+  const missing = sessionUser.value !== null && myUserDoc.value === null;
+  const [confirmed, setConfirmed] = useState(false);
+  useEffect(() => {
+    if (!missing) {
+      setConfirmed(false);
+      return;
+    }
+    const t = setTimeout(() => setConfirmed(true), 2500);
+    return () => clearTimeout(t);
+  }, [missing]);
+  return confirmed;
 }
 
 /** Signed-in landing: personal homepage, or onboarding when you have no groups. */
@@ -85,11 +106,13 @@ function groupView(r: Route) {
 export function App() {
   const r = route.value;
   const u = sessionUser.value;
+  const profileMissing = useConfirmedMissingProfile();
 
   let view;
   if (r.name === 'diag') view = <Diag />;
   else if (u === undefined) view = <Splash />;
   else if (u === null) view = <SignIn invited={r.name === 'join'} />;
+  else if (profileMissing) view = <ProfileRecovery />;
   else if (r.name === 'root') view = <Root />;
   else if (r.name === 'new') view = <Onboard />;
   else if (r.name === 'join') view = <Join gid={r.gid} token={r.token} />;

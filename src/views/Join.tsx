@@ -43,7 +43,11 @@ export function Join({ gid, token }: { gid: string; token: string }) {
   async function onJoin() {
     const uid = sessionUser.value?.uid;
     const profile = uid ? myProfile(uid) : null;
-    if (!profile || !invite) return;
+    if (!invite) return;
+    if (!profile) {
+      toast('Your profile is still loading — give it a second, then try again.', { error: true });
+      return;
+    }
     setBusy(true);
     try {
       await joinViaInvite(gid, invite, profile);
