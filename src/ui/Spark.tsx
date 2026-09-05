@@ -14,7 +14,10 @@ export function Spark({
   const step = width / Math.max(series.length - 1, 1);
   const pad = 2;
   const points = series
-    .map((v, i) => `${(i * step).toFixed(1)},${(height - pad - (v / max) * (height - pad * 2)).toFixed(1)}`)
+    .map(
+      (v, i) =>
+        `${(i * step).toFixed(1)},${(height - pad - (v / max) * (height - pad * 2)).toFixed(1)}`,
+    )
     .join(' ');
   const flat = series.every((v) => v === 0);
   const total = series.reduce((a, b) => a + b, 0);

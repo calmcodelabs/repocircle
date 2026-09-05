@@ -1,10 +1,18 @@
 import { useEffect, useState } from 'preact/hooks';
 import { sessionUser } from '../auth/session';
 import { activeGroup, activeMembers, myMembership } from '../data/activeGroup';
-import { claimAsk, unblockedThisWeek, watchMyAsks, watchMyClaims, watchNeedsHelp } from '../data/asks';
+import {
+  claimAsk,
+  unblockedThisWeek,
+  watchMyAsks,
+  watchMyClaims,
+  watchNeedsHelp,
+} from '../data/asks';
 import { watchRepos } from '../data/repos';
 import { myProfile } from '../data/users';
 import { REPO_NEEDS, type Ask, type Repo } from '../data/types';
+import { ownsRepo } from '../util/skills';
+import { SkillsSheet } from './Profile';
 import { toast } from '../ui/Toast';
 import { notifyDiscord } from '../notify/discord';
 import { Avatar } from '../ui/Avatar';
@@ -36,6 +44,7 @@ export function GroupHome({ gid }: { gid: string }) {
   const [unblocked, setUnblocked] = useState(0);
   const [hasDiscord, setHasDiscord] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [skillsOpen, setSkillsOpen] = useState(false);
   const [recent, setRecent] = useState<RecentComment[]>([]);
   const iAmAdmin = me?.role === 'admin';
   const uid = sessionUser.value?.uid;
@@ -69,11 +78,12 @@ export function GroupHome({ gid }: { gid: string }) {
     } catch {
       /* storage unavailable */
     }
-    void unblockedThisWeek(gid).then(setUnblocked).catch(() => undefined);
+    void unblockedThisWeek(gid)
+      .then(setUnblocked)
+      .catch(() => undefined);
   }, [gid, openCount]);
   useEffect(
-    () =>
-      watchRecentComments(gid, setRecent, (code) => log('warn', `recent comments: ${code}`)),
+    () => watchRecentComments(gid, setRecent, (code) => log('warn', `recent comments: ${code}`)),
     [gid],
   );
   useEffect(() => {
@@ -88,7 +98,10 @@ export function GroupHome({ gid }: { gid: string }) {
     try {
       await claimAsk(gid, ask, profile, '');
       toast(`Claimed — @${ask.authorLogin} will see it`);
-      notifyDiscord(gid, 'postClaims', { title: `@${profile.login} claimed: ${ask.title}`, path: `#/g/${gid}/ask/${ask.id}` });
+      notifyDiscord(gid, 'postClaims', {
+        title: `@${profile.login} claimed: ${ask.title}`,
+        path: `#/g/${gid}/ask/${ask.id}`,
+      });
     } catch {
       toast('Claiming failed.', { error: true });
     }
@@ -102,7 +115,8 @@ export function GroupHome({ gid }: { gid: string }) {
     [gid],
   );
 
-  const live = repos?.filter((r) => !r.archived && r.status !== 'paused' && r.status !== 'done') ?? [];
+  const live =
+    repos?.filter((r) => !r.archived && r.status !== 'paused' && r.status !== 'done') ?? [];
   const weekMs = Date.now() - 7 * 86_400_000;
   const active = live.filter((r) => (r.lastEventAt?.toMillis() ?? 0) >= weekMs);
   // Fresh ideas are the news in a circle that creates constantly — a two-day-old
@@ -111,7 +125,34 @@ export function GroupHome({ gid }: { gid: string }) {
   const fresh = (repos ?? [])
     .filter((r) => !r.archived && (r.createdAt?.toMillis() ?? 0) >= weekMs)
     .slice(0, 6);
-  const needing = (repos ?? []).filter((r) => !r.archived && (r.needs || r.seekingOwner)).slice(0, 5);
+  // The matcher (M11): repos whose declared need is something I said I can do.
+  // 'anything' means "co-builder wanted" and matches whoever offered anything at
+  // all. At 20 members this is a nicety; at 200 it's the reason to open the app.
+  const mySkills = me?.helpWith ?? [];
+  const forYou =
+    mySkills.length === 0
+      ? []
+      : (repos ?? [])
+          .filter(
+            (r) =>
+              !r.archived &&
+              r.needs &&
+              !(me && ownsRepo(r, me)) &&
+              (mySkills.includes(r.needs as (typeof mySkills)[number]) || r.needs === 'anything'),
+          )
+          .sort(
+            (a, b) =>
+              Math.max(b.lastEventAt?.toMillis() ?? 0, b.createdAt?.toMillis() ?? 0) -
+              Math.max(a.lastEventAt?.toMillis() ?? 0, a.createdAt?.toMillis() ?? 0),
+          )
+          .slice(0, 5);
+  const forYouIds = new Set(forYou.map((r) => r.id));
+  const needing = (repos ?? [])
+    .filter((r) => !r.archived && (r.needs || r.seekingOwner) && !forYouIds.has(r.id))
+    .slice(0, 5);
+  // Ask once, quietly, and only when there's something to match against.
+  const skillsPrompt =
+    canWrite && mySkills.length === 0 && (repos ?? []).some((r) => r.needs && !r.archived);
 
   return (
     <main class="stack">
@@ -137,11 +178,59 @@ export function GroupHome({ gid }: { gid: string }) {
             <span class="stat__label">active this week</span>
           </div>
           <div class="stat">
-            <span class={unblocked > 0 ? 'stat__value stat__value--accent' : 'stat__value'}>{unblocked}</span>
+            <span class={unblocked > 0 ? 'stat__value stat__value--accent' : 'stat__value'}>
+              {unblocked}
+            </span>
             <span class="stat__label">unblocked · 7d</span>
           </div>
         </div>
       </section>
+
+      {forYou.length > 0 && (
+        <section class="card stack rise-2">
+          <div class="sectionhead">
+            <span class="sectionhead__mark" />
+            <span class="sectionhead__title">Wants what you’re good at</span>
+            <span class="sectionhead__count">{forYou.length}</span>
+            <span class="topbar__spacer" />
+            {uid && (
+              <a class="small" href={`#/g/${gid}/m/${uid}`}>
+                your skills →
+              </a>
+            )}
+          </div>
+          {forYou.map((r) => (
+            <a key={r.id} class="idea" href={`#/g/${gid}/repo/${r.id}`}>
+              <span class="row">
+                <span class={`langdot ${langClass(r.language)}`} />
+                <span class="mono idea__name">{r.fullName.split('/')[1] ?? r.fullName}</span>
+                <Chip tone="accent">{REPO_NEEDS.find((n) => n.key === r.needs)?.label}</Chip>
+                <span class="topbar__spacer" />
+                <span class="small faint">@{r.githubOwnerLogin}</span>
+              </span>
+              {(r.pitch || r.description) && (
+                <span class="idea__pitch">{r.pitch || r.description}</span>
+              )}
+            </a>
+          ))}
+        </section>
+      )}
+
+      {skillsPrompt && (
+        <section class="hero hero--dim stack rise-2">
+          <span class="hero__label">For you</span>
+          <h3>Say what you’re good at</h3>
+          <p class="small dim">
+            Repos here declare the help they want. Tell the circle what you can do and the matches
+            land right on this page.
+          </p>
+          <div>
+            <Pill variant="primary" onClick={() => setSkillsOpen(true)}>
+              Pick what you can help with
+            </Pill>
+          </div>
+        </section>
+      )}
 
       {fresh.length > 0 && (
         <section class="card stack rise-2">
@@ -184,7 +273,9 @@ export function GroupHome({ gid }: { gid: string }) {
               </span>
               <span class="row">
                 {r.seekingOwner && <Chip tone="warn">needs an owner</Chip>}
-                {r.needs && <Chip tone="accent">{REPO_NEEDS.find((n) => n.key === r.needs)?.label}</Chip>}
+                {r.needs && (
+                  <Chip tone="accent">{REPO_NEEDS.find((n) => n.key === r.needs)?.label}</Chip>
+                )}
               </span>
             </a>
           ))}
@@ -245,9 +336,17 @@ export function GroupHome({ gid }: { gid: string }) {
 
       <section class="card stack rise-3">
         <div class="sectionhead">
-          <span class={needsHelp?.some((a) => a.kind === 'stuck') ? 'sectionhead__mark sectionhead__mark--warn' : 'sectionhead__mark'} />
+          <span
+            class={
+              needsHelp?.some((a) => a.kind === 'stuck')
+                ? 'sectionhead__mark sectionhead__mark--warn'
+                : 'sectionhead__mark'
+            }
+          />
           <span class="sectionhead__title">Needs help right now</span>
-          {needsHelp && needsHelp.length > 0 && <span class="sectionhead__count">{needsHelp.length}</span>}
+          {needsHelp && needsHelp.length > 0 && (
+            <span class="sectionhead__count">{needsHelp.length}</span>
+          )}
         </div>
         {needsHelp === null && <span class="skeleton" />}
         {needsHelp?.length === 0 && (
@@ -318,7 +417,11 @@ export function GroupHome({ gid }: { gid: string }) {
           <a key={a.id} class="row home__repo" href={`#/g/${gid}/ask/${a.id}`}>
             <span class="small">you asked: {a.title}</span>
             <span class="topbar__spacer" />
-            <Chip tone={a.state === 'resolved' ? 'accent' : a.state === 'claimed' ? 'default' : 'warn'}>{a.state}</Chip>
+            <Chip
+              tone={a.state === 'resolved' ? 'accent' : a.state === 'claimed' ? 'default' : 'warn'}
+            >
+              {a.state}
+            </Chip>
           </a>
         ))}
         {myClaims
@@ -339,9 +442,7 @@ export function GroupHome({ gid }: { gid: string }) {
           <span class="sectionhead__title">Members</span>
           {members && <span class="sectionhead__count">{members.length}</span>}
           <span class="topbar__spacer" />
-          {iAmAdmin && (
-            <Pill onClick={() => setInviteOpen(true)}>Invite people</Pill>
-          )}
+          {iAmAdmin && <Pill onClick={() => setInviteOpen(true)}>Invite people</Pill>}
           {me && <Chip tone={me.role === 'admin' ? 'accent' : 'default'}>you: {me.role}</Chip>}
         </div>
         {members === null ? (
@@ -359,7 +460,9 @@ export function GroupHome({ gid }: { gid: string }) {
         ) : (
           <div class="row home__avatars">
             {members.slice(0, 8).map((m) => (
-              <Avatar key={m.uid} src={m.avatarUrl} login={m.login} />
+              <a key={m.uid} href={`#/g/${gid}/m/${m.uid}`} aria-label={`@${m.login}`}>
+                <Avatar src={m.avatarUrl} login={m.login} />
+              </a>
             ))}
             <a class="small" href={`#/g/${gid}/members`}>
               {members.length} member{members.length === 1 ? '' : 's'} →
@@ -369,6 +472,14 @@ export function GroupHome({ gid }: { gid: string }) {
       </section>
 
       {inviteOpen && <InviteSheet gid={gid} onClose={() => setInviteOpen(false)} />}
+      {skillsOpen && me && (
+        <SkillsSheet
+          gid={gid}
+          me={me}
+          myRepos={(repos ?? []).filter((r) => ownsRepo(r, me))}
+          onClose={() => setSkillsOpen(false)}
+        />
+      )}
     </main>
   );
 }

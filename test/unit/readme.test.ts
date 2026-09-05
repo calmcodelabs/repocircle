@@ -3,7 +3,9 @@ import { readmePreview } from '../../src/util/readme';
 
 describe('readmePreview', () => {
   it('strips markdown syntax but keeps the meaning', () => {
-    const out = readmePreview('# Pocket Journal\n\nSave things **from your phone** via `Telegram`.');
+    const out = readmePreview(
+      '# Pocket Journal\n\nSave things **from your phone** via `Telegram`.',
+    );
     expect(out).toContain('Pocket Journal');
     expect(out).toContain('Save things from your phone via Telegram.');
     expect(out).not.toContain('#');
@@ -13,7 +15,16 @@ describe('readmePreview', () => {
 
   it('drops badges, code fences, comments and rules', () => {
     const out = readmePreview(
-      ['[![build](https://img.shields.io/x)](https://ci)', '<!-- hidden -->', '---', '# Real title', '```js', 'const secret = 1;', '```', 'After the fence.'].join('\n'),
+      [
+        '[![build](https://img.shields.io/x)](https://ci)',
+        '<!-- hidden -->',
+        '---',
+        '# Real title',
+        '```js',
+        'const secret = 1;',
+        '```',
+        'After the fence.',
+      ].join('\n'),
     );
     expect(out).toContain('Real title');
     expect(out).toContain('After the fence.');

@@ -3,14 +3,20 @@ import { parseRepoRef } from '../../src/util/repoRef';
 
 describe('parseRepoRef', () => {
   it('parses bare owner/name', () => {
-    expect(parseRepoRef('calmcodelabs/score-keeper')).toEqual({ owner: 'calmcodelabs', name: 'score-keeper' });
+    expect(parseRepoRef('calmcodelabs/score-keeper')).toEqual({
+      owner: 'calmcodelabs',
+      name: 'score-keeper',
+    });
   });
   it('parses github URLs in common shapes', () => {
     expect(parseRepoRef('https://github.com/a/b')).toEqual({ owner: 'a', name: 'b' });
     expect(parseRepoRef('http://www.github.com/a/b/')).toEqual({ owner: 'a', name: 'b' });
     expect(parseRepoRef('github.com/a/b.git')).toEqual({ owner: 'a', name: 'b' });
     expect(parseRepoRef('https://github.com/a/b/tree/main/src')).toEqual({ owner: 'a', name: 'b' });
-    expect(parseRepoRef('  https://github.com/a/b?tab=readme  ')).toEqual({ owner: 'a', name: 'b' });
+    expect(parseRepoRef('  https://github.com/a/b?tab=readme  ')).toEqual({
+      owner: 'a',
+      name: 'b',
+    });
   });
   it('rejects junk', () => {
     expect(parseRepoRef('')).toBeNull();

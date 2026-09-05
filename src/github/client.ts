@@ -66,7 +66,8 @@ function friendly(kind: GhErrorKind, status?: number): string {
 }
 
 async function rawFetch(path: string, token: string | null, useEtag: boolean): Promise<Response> {
-  if (!path.startsWith('/')) throw new GhError('invalid', 'Client bug: relative GitHub path required.');
+  if (!path.startsWith('/'))
+    throw new GhError('invalid', 'Client bug: relative GitHub path required.');
   const headers: Record<string, string> = {
     Accept: 'application/vnd.github+json',
     'X-GitHub-Api-Version': '2022-11-28',
@@ -90,8 +91,7 @@ function isRateLimited(res: Response): boolean {
   return (
     res.status === 429 ||
     (res.status === 403 &&
-      (res.headers.get('X-RateLimit-Remaining') === '0' ||
-        res.headers.get('Retry-After') !== null))
+      (res.headers.get('X-RateLimit-Remaining') === '0' || res.headers.get('Retry-After') !== null))
   );
 }
 
@@ -137,10 +137,14 @@ export async function ghGet<T>(path: string, opts: { etag?: boolean } = {}): Pro
 /** Conditional GET against a caller-stored ETag (polling engine). */
 export type CondResult<T> = { status: 200; body: T; etag: string | null } | { status: 304 };
 
-export async function ghGetConditional<T>(path: string, etag: string | null): Promise<CondResult<T>> {
+export async function ghGetConditional<T>(
+  path: string,
+  etag: string | null,
+): Promise<CondResult<T>> {
   let token = tokens.get();
   const withEtag = async (tok: string | null): Promise<Response> => {
-    if (!path.startsWith('/')) throw new GhError('invalid', 'Client bug: relative GitHub path required.');
+    if (!path.startsWith('/'))
+      throw new GhError('invalid', 'Client bug: relative GitHub path required.');
     const headers: Record<string, string> = {
       Accept: 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2022-11-28',
@@ -192,7 +196,8 @@ export function ghSend<T>(
 
     let token = tokens.get();
     const doSend = async (tok: string | null): Promise<Response> => {
-      if (!path.startsWith('/')) throw new GhError('invalid', 'Client bug: relative GitHub path required.');
+      if (!path.startsWith('/'))
+        throw new GhError('invalid', 'Client bug: relative GitHub path required.');
       const headers: Record<string, string> = {
         Accept: 'application/vnd.github+json',
         'X-GitHub-Api-Version': '2022-11-28',
@@ -200,7 +205,11 @@ export function ghSend<T>(
       };
       if (tok) headers.Authorization = `Bearer ${tok}`;
       try {
-        return await fetch(API + path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+        return await fetch(API + path, {
+          method,
+          headers,
+          body: body === undefined ? undefined : JSON.stringify(body),
+        });
       } catch {
         throw new GhError('network', friendly('network'));
       }

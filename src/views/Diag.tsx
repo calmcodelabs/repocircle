@@ -13,7 +13,9 @@ import { Pill } from '../ui/Pill';
  */
 async function clearLocalCache(): Promise<void> {
   const dbs = (await indexedDB.databases?.()) ?? [];
-  const targets = dbs.map((d) => d.name).filter((n): n is string => !!n && /firestore|firebase/i.test(n));
+  const targets = dbs
+    .map((d) => d.name)
+    .filter((n): n is string => !!n && /firestore|firebase/i.test(n));
   await Promise.all(
     targets.map(
       (name) =>
@@ -48,7 +50,9 @@ export function Diag() {
         {[
           `last cycle ${pollState.value.lastCycleAt ? new Date(pollState.value.lastCycleAt).toISOString().slice(11, 19) : 'never'}`,
           `running    ${pollState.value.running}`,
-          ...pollState.value.results.slice(-10).map((r) => `${new Date(r.at).toISOString().slice(11, 19)} ${r.repo} → ${r.outcome}`),
+          ...pollState.value.results
+            .slice(-10)
+            .map((r) => `${new Date(r.at).toISOString().slice(11, 19)} ${r.repo} → ${r.outcome}`),
         ].join('\n')}
       </pre>
       <h3>log</h3>
@@ -62,8 +66,8 @@ export function Diag() {
       </div>
       <h3>maintenance</h3>
       <p class="small dim">
-        Firestore keeps an offline copy in this browser. If the app shows data that no longer
-        exists on the server, clear that copy and reload — nothing on the server is touched.
+        Firestore keeps an offline copy in this browser. If the app shows data that no longer exists
+        on the server, clear that copy and reload — nothing on the server is touched.
       </p>
       <Pill onClick={() => void clearLocalCache()}>Clear local cache &amp; reload</Pill>
 

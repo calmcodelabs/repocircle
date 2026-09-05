@@ -315,7 +315,12 @@ a.card:hover,
 .skeleton {
   display: block;
   border-radius: 8px;
-  background: linear-gradient(100deg, var(--bg-raised) 40%, var(--bg-overlay) 50%, var(--bg-raised) 60%);
+  background: linear-gradient(
+    100deg,
+    var(--bg-raised) 40%,
+    var(--bg-overlay) 50%,
+    var(--bg-raised) 60%
+  );
   background-size: 200% 100%;
   animation: shimmer 1.4s linear infinite;
   min-height: 14px;
@@ -369,7 +374,6 @@ a.card:hover,
   color: var(--text);
   border: 1px solid var(--line-strong);
 }
-
 
 /* ---------- hero surface: the one gradient flourish ---------- */
 .hero {
@@ -548,7 +552,6 @@ a.card:hover,
   animation: rise 260ms var(--ease) 120ms both;
 }
 
-
 /* two-tone numerals: value bright, unit dim (Traffic Management) */
 .stat__unit {
   color: var(--text-faint);
@@ -572,11 +575,24 @@ a.card:hover,
   transition: width 300ms var(--ease);
   width: 0;
 }
-.checkbar__fill--1 { width: 20%; }
-.checkbar__fill--2 { width: 40%; }
-.checkbar__fill--3 { width: 60%; }
-.checkbar__fill--4 { width: 80%; }
-.checkbar__fill--5 { width: 100%; }
+.checkbar__fill--1 {
+  width: 17%;
+}
+.checkbar__fill--2 {
+  width: 33%;
+}
+.checkbar__fill--3 {
+  width: 50%;
+}
+.checkbar__fill--4 {
+  width: 67%;
+}
+.checkbar__fill--5 {
+  width: 83%;
+}
+.checkbar__fill--6 {
+  width: 100%;
+}
 
 /* line icons */
 .icon {

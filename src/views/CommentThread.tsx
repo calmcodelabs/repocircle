@@ -50,13 +50,18 @@ export function CommentThread({
   useEffect(() => watchComments(gid, subject, setComments), [gid, subject.kind, subject.id]);
   useEffect(() => watchRepos(gid, setRepos, () => undefined), [gid]);
 
-  const memberLogins = useMemo(() => (activeMembers.value ?? []).map((m) => m.login), [activeMembers.value]);
+  const memberLogins = useMemo(
+    () => (activeMembers.value ?? []).map((m) => m.login),
+    [activeMembers.value],
+  );
   const repoNames = useMemo(
     () => repos.map((r) => r.fullName.split('/')[1] ?? r.fullName),
     [repos],
   );
   const repoHref = (name: string) => {
-    const hit = repos.find((r) => (r.fullName.split('/')[1] ?? r.fullName).toLowerCase() === name.toLowerCase());
+    const hit = repos.find(
+      (r) => (r.fullName.split('/')[1] ?? r.fullName).toLowerCase() === name.toLowerCase(),
+    );
     return hit ? `#/g/${gid}/repo/${hit.id}` : undefined;
   };
 
@@ -100,7 +105,10 @@ export function CommentThread({
         notifyDiscord(gid, 'postClaims', {
           title: `@${profile.login} commented on a ${subject.kind === 'repo' ? 'repo' : 'ask'}`,
           description: body.slice(0, 160),
-          path: subject.kind === 'repo' ? `#/g/${gid}/repo/${subject.id}` : `#/g/${gid}/ask/${subject.id}`,
+          path:
+            subject.kind === 'repo'
+              ? `#/g/${gid}/repo/${subject.id}`
+              : `#/g/${gid}/ask/${subject.id}`,
         });
       }
       setDraft('');
@@ -119,11 +127,16 @@ export function CommentThread({
   function renderOne(c: Comment, isReply = false) {
     const isAuthor = c.authorUid === uid;
     return (
-      <div key={c.id} class={`comment ${isReply ? 'comment--reply' : ''} ${c.pinned ? 'comment--pinned' : ''}`}>
+      <div
+        key={c.id}
+        class={`comment ${isReply ? 'comment--reply' : ''} ${c.pinned ? 'comment--pinned' : ''}`}
+      >
         <Avatar login={c.authorLogin} src={c.authorAvatarUrl} />
         <div class="comment__main">
           <div class="row small faint comment__meta">
-            <b class="comment__author">@{c.authorLogin}</b>
+            <a class="comment__author" href={`#/g/${gid}/m/${c.authorUid}`}>
+              @{c.authorLogin}
+            </a>
             <span>{relTime(c.createdAt)}</span>
             {c.editedAt && <span>· edited</span>}
             {c.pinned && <span class="chip chip--accent">pinned</span>}
@@ -131,24 +144,46 @@ export function CommentThread({
           <CommentBody body={c.body} onRepo={repoHref} />
           <div class="row small comment__actions">
             {canWrite && !isReply && (
-              <button class="comment__act" onClick={() => { setReplyTo(c); setEditing(null); boxRef.current?.focus(); }}>
+              <button
+                class="comment__act"
+                onClick={() => {
+                  setReplyTo(c);
+                  setEditing(null);
+                  boxRef.current?.focus();
+                }}
+              >
                 Reply
               </button>
             )}
             {isAuthor && canWrite && (
-              <button class="comment__act" onClick={() => { setEditing(c); setDraft(c.body); setReplyTo(null); boxRef.current?.focus(); }}>
+              <button
+                class="comment__act"
+                onClick={() => {
+                  setEditing(c);
+                  setDraft(c.body);
+                  setReplyTo(null);
+                  boxRef.current?.focus();
+                }}
+              >
                 Edit
               </button>
             )}
             {canModerate && !isReply && (
-              <button class="comment__act" onClick={() => void setPinned(gid, subject, c.id, !c.pinned)}>
+              <button
+                class="comment__act"
+                onClick={() => void setPinned(gid, subject, c.id, !c.pinned)}
+              >
                 {c.pinned ? 'Unpin' : 'Pin'}
               </button>
             )}
             {(isAuthor || canModerate) && (
               <button
                 class="comment__act comment__act--danger"
-                onClick={() => void deleteComment(gid, subject, c.id).catch(() => toast('Could not delete.', { error: true }))}
+                onClick={() =>
+                  void deleteComment(gid, subject, c.id).catch(() =>
+                    toast('Could not delete.', { error: true }),
+                  )
+                }
               >
                 Delete
               </button>
@@ -164,7 +199,9 @@ export function CommentThread({
       <div class="sectionhead">
         <span class="sectionhead__mark" />
         <span class="sectionhead__title">{title}</span>
-        {comments && comments.length > 0 && <span class="sectionhead__count">{comments.length}</span>}
+        {comments && comments.length > 0 && (
+          <span class="sectionhead__count">{comments.length}</span>
+        )}
       </div>
 
       {comments === null && <span class="skeleton" />}
@@ -192,7 +229,13 @@ export function CommentThread({
           {editing && (
             <div class="row small dim">
               <span>Editing your comment</span>
-              <button class="comment__act" onClick={() => { setEditing(null); setDraft(''); }}>
+              <button
+                class="comment__act"
+                onClick={() => {
+                  setEditing(null);
+                  setDraft('');
+                }}
+              >
                 cancel
               </button>
             </div>
@@ -217,9 +260,16 @@ export function CommentThread({
             </div>
           )}
           <div class="row">
-            <span class="small faint">{draft.length > MAX * 0.8 ? `${draft.length}/${MAX}` : ''}</span>
+            <span class="small faint">
+              {draft.length > MAX * 0.8 ? `${draft.length}/${MAX}` : ''}
+            </span>
             <span class="topbar__spacer" />
-            <Pill variant="primary" busy={busy} disabled={!draft.trim()} onClick={() => void submit()}>
+            <Pill
+              variant="primary"
+              busy={busy}
+              disabled={!draft.trim()}
+              onClick={() => void submit()}
+            >
               {editing ? 'Save' : replyTo ? 'Reply' : 'Comment'}
             </Pill>
           </div>

@@ -34,7 +34,10 @@ export function PersonalHome() {
       if (!alive) return;
       setGroups(gs);
       if (u) {
-        const [mine, items] = await Promise.all([fetchMyRepos(gs, u.uid), fetchMyOpenItems(gs, u.uid)]);
+        const [mine, items] = await Promise.all([
+          fetchMyRepos(gs, u.uid),
+          fetchMyOpenItems(gs, u.uid),
+        ]);
         if (alive) {
           setRepos(mine);
           setOpenItems(items);
@@ -54,7 +57,12 @@ export function PersonalHome() {
         <strong>RepoCircle</strong>
         <span class="topbar__spacer" />
         {u && (
-          <button class="row" onClick={() => setMenuOpen(!menuOpen)} aria-expanded={menuOpen} aria-label="Account menu">
+          <button
+            class="row"
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-expanded={menuOpen}
+            aria-label="Account menu"
+          >
             <Avatar src={u.photoURL ?? undefined} login={me?.login ?? 'me'} />
           </button>
         )}
@@ -114,7 +122,10 @@ export function PersonalHome() {
           </div>
           {repos === null && <span class="skeleton" />}
           {repos?.length === 0 && (
-            <EmptyState icon="repo" line="Repos you own show up here once they’re registered in a group." />
+            <EmptyState
+              icon="repo"
+              line="Repos you own show up here once they’re registered in a group."
+            />
           )}
           {repos && repos.length > 0 && (
             <div class="home__repos">
@@ -126,8 +137,8 @@ export function PersonalHome() {
                     <Chip>{r.groupName}</Chip>
                   </span>
                   <span class="small faint home__time home__time--wide">
-                {r.lastEventAt ? `pushed ${relTime(r.lastEventAt)}` : ''}
-              </span>
+                    {r.lastEventAt ? `pushed ${relTime(r.lastEventAt)}` : ''}
+                  </span>
                 </a>
               ))}
             </div>
@@ -138,7 +149,9 @@ export function PersonalHome() {
           <div class="sectionhead">
             <span class="sectionhead__mark" />
             <span class="sectionhead__title">Your open loops</span>
-            {openItems && openItems.length > 0 && <span class="sectionhead__count">{openItems.length}</span>}
+            {openItems && openItems.length > 0 && (
+              <span class="sectionhead__count">{openItems.length}</span>
+            )}
           </div>
           {openItems === null && <span class="skeleton" />}
           {openItems?.length === 0 && (

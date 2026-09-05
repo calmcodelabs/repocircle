@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'preact/hooks';
 import { escalateToPublicRepo, sessionUser } from '../auth/session';
-import { decideCollabRequest, watchMyRequests, watchOwnerInbox, type CollabRequest } from '../data/collabs';
+import {
+  decideCollabRequest,
+  watchMyRequests,
+  watchOwnerInbox,
+  type CollabRequest,
+} from '../data/collabs';
 import { myProfile } from '../data/users';
 import { GhError } from '../github/client';
 import { closeIssueWithComment, inviteCollaborator } from '../github/repos';
@@ -12,7 +17,12 @@ import { Pill } from '../ui/Pill';
 import { toast } from '../ui/Toast';
 import { log } from '../util/log';
 
-const STATE_TONE = { pending: 'warn', accepted: 'accent', declined: 'default', cancelled: 'default' } as const;
+const STATE_TONE = {
+  pending: 'warn',
+  accepted: 'accent',
+  declined: 'default',
+  cancelled: 'default',
+} as const;
 
 /** GroupHome card: requests awaiting my decision + my own recent requests. */
 export function CollabInbox({ gid }: { gid: string }) {
@@ -84,9 +94,13 @@ export function CollabInbox({ gid }: { gid: string }) {
       {inbox.map((req) => (
         <div key={req.id} class="stack collab">
           <div class="row">
-            <Avatar login={req.requesterLogin} src={`https://avatars.githubusercontent.com/${req.requesterLogin}`} />
+            <Avatar
+              login={req.requesterLogin}
+              src={`https://avatars.githubusercontent.com/${req.requesterLogin}`}
+            />
             <span class="small">
-              <b>@{req.requesterLogin}</b> → <span class="mono">{req.repoFullName.split('/')[1]}</span>
+              <b>@{req.requesterLogin}</b> →{' '}
+              <span class="mono">{req.repoFullName.split('/')[1]}</span>
             </span>
             <span class="topbar__spacer" />
             {req.githubIssueNumber && (
@@ -102,10 +116,18 @@ export function CollabInbox({ gid }: { gid: string }) {
           </div>
           <p class="small dim collab__note">{req.note}</p>
           <div class="row">
-            <Pill variant="primary" busy={busyId === req.id} onClick={() => void decide(req, 'accepted')}>
+            <Pill
+              variant="primary"
+              busy={busyId === req.id}
+              onClick={() => void decide(req, 'accepted')}
+            >
               Accept
             </Pill>
-            <Pill variant="ghost" busy={busyId === req.id} onClick={() => void decide(req, 'declined')}>
+            <Pill
+              variant="ghost"
+              busy={busyId === req.id}
+              onClick={() => void decide(req, 'declined')}
+            >
               Decline
             </Pill>
           </div>

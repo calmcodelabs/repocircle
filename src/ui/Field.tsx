@@ -8,10 +8,30 @@ type Props = {
   error?: string;
   hint?: string;
   autofocus?: boolean;
+  /** Single-line only: called on Enter (the event is consumed). */
+  onEnter?: () => void;
 };
 
-export function Field({ label, value, onInput, placeholder, maxLength, multiline, error, hint, autofocus }: Props) {
+export function Field({
+  label,
+  value,
+  onInput,
+  placeholder,
+  maxLength,
+  multiline,
+  error,
+  hint,
+  autofocus,
+  onEnter,
+}: Props) {
   const handler = (e: Event) => onInput((e.currentTarget as HTMLInputElement).value);
+  const keyHandler =
+    onEnter &&
+    ((e: KeyboardEvent) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      onEnter();
+    });
   const near = maxLength !== undefined && value.length > maxLength * 0.8;
   return (
     <label class="field">
@@ -31,6 +51,7 @@ export function Field({ label, value, onInput, placeholder, maxLength, multiline
           class="field__input"
           value={value}
           onInput={handler}
+          onKeyDown={keyHandler}
           placeholder={placeholder}
           maxLength={maxLength}
           autofocus={autofocus}

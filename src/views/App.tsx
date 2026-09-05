@@ -13,6 +13,7 @@ import { NotFound } from './NotFound';
 import { Onboard } from './Onboard';
 import { AskDetail } from './AskDetail';
 import { PersonalHome } from './PersonalHome';
+import { Profile } from './Profile';
 import { RepoDetail } from './RepoDetail';
 import { Repos } from './Repos';
 import { SignIn } from './SignIn';
@@ -92,6 +93,12 @@ function groupView(r: Route) {
       return (
         <GroupShell gid={r.gid}>
           <Members gid={r.gid} />
+        </GroupShell>
+      );
+    case 'profile':
+      return (
+        <GroupShell gid={r.gid}>
+          <Profile gid={r.gid} uid={r.uid} />
         </GroupShell>
       );
     case 'settings':

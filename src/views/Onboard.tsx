@@ -19,7 +19,8 @@ export function Onboard() {
   const [autoShare, setAutoShare] = useState(true);
   const [busy, setBusy] = useState(false);
 
-  const nameOk = name.trim().length >= LIMITS.GROUP_NAME_MIN && name.trim().length <= LIMITS.GROUP_NAME_MAX;
+  const nameOk =
+    name.trim().length >= LIMITS.GROUP_NAME_MIN && name.trim().length <= LIMITS.GROUP_NAME_MAX;
 
   async function onCreate() {
     const uid = sessionUser.value?.uid;
@@ -116,7 +117,10 @@ export function Onboard() {
             />
             <span class="small">
               Share my public repos with this circle
-              <span class="faint"> — including ones I create later. Private repos are never touched.</span>
+              <span class="faint">
+                {' '}
+                — including ones I create later. Private repos are never touched.
+              </span>
             </span>
           </label>
           <Pill variant="primary" disabled={!nameOk} busy={busy} onClick={() => void onCreate()}>

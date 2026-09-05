@@ -10,7 +10,8 @@ export type Token =
   | { kind: 'repo'; value: string }
   | { kind: 'link'; value: string };
 
-const PATTERN = /(@[A-Za-z0-9][A-Za-z0-9-]{0,38})|(#[A-Za-z0-9._-]{1,100})|(https?:\/\/[^\s<>"']+)/g;
+const PATTERN =
+  /(@[A-Za-z0-9][A-Za-z0-9-]{0,38})|(#[A-Za-z0-9._-]{1,100})|(https?:\/\/[^\s<>"']+)/g;
 
 export function tokenizeComment(body: string): Token[] {
   const out: Token[] = [];

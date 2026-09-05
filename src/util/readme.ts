@@ -40,6 +40,9 @@ export function readmePreview(markdown: string, maxChars = 420): string {
     if (out.join(' ').length > maxChars) break;
   }
 
-  const joined = out.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  const joined = out
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
   return joined.length > maxChars ? `${joined.slice(0, maxChars).trimEnd()}…` : joined;
 }

@@ -1,7 +1,15 @@
 import { useEffect, useState } from 'preact/hooks';
 import { sessionUser } from '../auth/session';
 import { myMembership } from '../data/activeGroup';
-import { claimAsk, deleteAsk, reopenAsk, resolveAsk, unclaimAsk, watchAsk, watchClaims } from '../data/asks';
+import {
+  claimAsk,
+  deleteAsk,
+  reopenAsk,
+  resolveAsk,
+  unclaimAsk,
+  watchAsk,
+  watchClaims,
+} from '../data/asks';
 import { myProfile } from '../data/users';
 import type { Ask, AskClaim } from '../data/types';
 import { notifyDiscord } from '../notify/discord';
@@ -38,7 +46,12 @@ export function AskDetail({ gid, askId }: { gid: string; askId: string }) {
 
   if (ask === undefined) return <span class="skeleton" />;
   if (ask === null)
-    return <EmptyState line="This ask is gone — resolved and tidied, or deleted." action={<a href={`#/g/${gid}`}>Home</a>} />;
+    return (
+      <EmptyState
+        line="This ask is gone — resolved and tidied, or deleted."
+        action={<a href={`#/g/${gid}`}>Home</a>}
+      />
+    );
 
   async function doClaim() {
     const profile = uid ? myProfile(uid) : null;
@@ -66,7 +79,10 @@ export function AskDetail({ gid, askId }: { gid: string; askId: string }) {
     try {
       await resolveAsk(gid, ask.id);
       toast('Resolved — one more unblocked');
-      notifyDiscord(gid, 'postClaims', { title: `Resolved: ${ask.title}`, path: `#/g/${gid}/ask/${ask.id}` });
+      notifyDiscord(gid, 'postClaims', {
+        title: `Resolved: ${ask.title}`,
+        path: `#/g/${gid}/ask/${ask.id}`,
+      });
     } catch {
       toast('Resolving failed.', { error: true });
     } finally {
@@ -78,11 +94,18 @@ export function AskDetail({ gid, askId }: { gid: string; askId: string }) {
     <main class="stack">
       <section class="card stack rise">
         <div class="row">
-          <span class={ask.kind === 'stuck' ? 'tile tile--warn' : 'tile tile--accent'} aria-hidden="true">
+          <span
+            class={ask.kind === 'stuck' ? 'tile tile--warn' : 'tile tile--accent'}
+            aria-hidden="true"
+          >
             <Icon name={ask.kind === 'stuck' ? 'flag' : 'ask'} size={19} />
           </span>
           <Chip tone={ask.kind === 'stuck' ? 'warn' : 'default'}>{ask.kind}</Chip>
-          <Chip tone={ask.state === 'resolved' ? 'accent' : ask.state === 'claimed' ? 'default' : 'warn'}>
+          <Chip
+            tone={
+              ask.state === 'resolved' ? 'accent' : ask.state === 'claimed' ? 'default' : 'warn'
+            }
+          >
             {ask.state}
           </Chip>
           <span class="topbar__spacer" />
@@ -100,7 +123,12 @@ export function AskDetail({ gid, askId }: { gid: string; askId: string }) {
             </a>
           )}
           {ask.pairingUrl && (
-            <a class="small" href={ask.pairingUrl} target="_blank" rel="noopener noreferrer nofollow">
+            <a
+              class="small"
+              href={ask.pairingUrl}
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+            >
               pair here ↗
             </a>
           )}
@@ -117,7 +145,13 @@ export function AskDetail({ gid, askId }: { gid: string; askId: string }) {
           <span class="sectionhead__title">Claims</span>
           {claims.length > 0 && <span class="sectionhead__count">{claims.length}</span>}
         </div>
-        {claims.length === 0 && <EmptyState line={ask.state === 'resolved' ? 'Resolved without a claim.' : 'Nobody yet — be the one.'} />}
+        {claims.length === 0 && (
+          <EmptyState
+            line={
+              ask.state === 'resolved' ? 'Resolved without a claim.' : 'Nobody yet — be the one.'
+            }
+          />
+        )}
         {claims.map((c) => (
           <div key={c.uid} class="row">
             <Avatar login={c.login} src={c.avatarUrl} />
@@ -156,13 +190,21 @@ export function AskDetail({ gid, askId }: { gid: string; askId: string }) {
           </div>
         )}
         {iClaimed && ask.state !== 'resolved' && (
-          <Pill variant="ghost" busy={busy} onClick={() => void unclaimAsk(gid, ask, uid!).then(() => toast('Unclaimed'))}>
+          <Pill
+            variant="ghost"
+            busy={busy}
+            onClick={() => void unclaimAsk(gid, ask, uid!).then(() => toast('Unclaimed'))}
+          >
             Unclaim
           </Pill>
         )}
       </section>
 
-      <CommentThread gid={gid} subject={{ kind: 'ask', id: askId }} canModerate={isAuthor || isAdmin} />
+      <CommentThread
+        gid={gid}
+        subject={{ kind: 'ask', id: askId }}
+        canModerate={isAuthor || isAdmin}
+      />
 
       {(isAuthor || isAdmin) && (
         <section class="card stack">
@@ -177,13 +219,20 @@ export function AskDetail({ gid, askId }: { gid: string; askId: string }) {
               </Pill>
             ) : (
               isAuthor && (
-                <Pill busy={busy} onClick={() => void reopenAsk(gid, ask.id).then(() => toast('Reopened'))}>
+                <Pill
+                  busy={busy}
+                  onClick={() => void reopenAsk(gid, ask.id).then(() => toast('Reopened'))}
+                >
                   Reopen
                 </Pill>
               )
             )}
             {confirmDelete ? (
-              <Pill variant="danger" busy={busy} onClick={() => void deleteAsk(gid, ask.id).then(() => navigate(`#/g/${gid}`))}>
+              <Pill
+                variant="danger"
+                busy={busy}
+                onClick={() => void deleteAsk(gid, ask.id).then(() => navigate(`#/g/${gid}`))}
+              >
                 Really delete
               </Pill>
             ) : (

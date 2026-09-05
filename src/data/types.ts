@@ -40,7 +40,7 @@ export type Member = {
   name: string;
   avatarUrl: string;
   availability: Availability;
-  helpWith: string[];
+  helpWith: HelpArea[];
   learning: string[];
   checklist: Record<string, boolean>;
   repoSync?: RepoSync;
@@ -103,6 +103,21 @@ export const REPO_NEEDS: Array<{ key: RepoNeed; label: string }> = [
 
 export const DOMAIN_TAGS = ['web', 'mobile', 'ML', 'tooling', 'game', 'hardware', 'data', 'other'];
 
+/**
+ * What a member can offer — the join key against Repo.needs. Same vocabulary
+ * minus 'anything' ("need a co-builder" is a repo's ask, not a person's skill;
+ * a repo needing 'anything' matches every member who has said something).
+ */
+export type HelpArea = Exclude<RepoNeed, 'anything'>;
+
+export const HELP_AREAS: Array<{ key: HelpArea; label: string }> = [
+  { key: 'feedback', label: 'feedback & review' },
+  { key: 'frontend', label: 'frontend' },
+  { key: 'backend', label: 'backend' },
+  { key: 'ml', label: 'ML' },
+  { key: 'design', label: 'design' },
+];
+
 export type RepoInterest = {
   uid: string;
   login: string;
@@ -125,9 +140,29 @@ export type Repo = {
   demoUrl: string | null;
   archived: boolean;
   lastEventAt: Timestamp | null;
-  poll: { lastPolledAt: Timestamp | null; etag: string | null; failing: boolean; lastEventId?: string | null };
-  stats7d: { commits: number; prsOpened: number; prsMerged: number; issues: number; releases: number };
-  daily?: Record<string, { commits: number; prsOpened: number; prsMerged: number; issuesOpened: number; releases: number }>;
+  poll: {
+    lastPolledAt: Timestamp | null;
+    etag: string | null;
+    failing: boolean;
+    lastEventId?: string | null;
+  };
+  stats7d: {
+    commits: number;
+    prsOpened: number;
+    prsMerged: number;
+    issues: number;
+    releases: number;
+  };
+  daily?: Record<
+    string,
+    {
+      commits: number;
+      prsOpened: number;
+      prsMerged: number;
+      issuesOpened: number;
+      releases: number;
+    }
+  >;
   /** The human sentence: what is this idea, in the owner's words. */
   pitch?: string;
   needs?: RepoNeed | null;

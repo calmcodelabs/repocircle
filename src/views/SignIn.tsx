@@ -21,7 +21,9 @@ export function SignIn({ invited = false }: { invited?: boolean }) {
             <h1>
               You’re invited to a <span class="tint">circle</span>.
             </h1>
-            <p class="lead signin__tag">Sign in with GitHub to see who, and what they’re building.</p>
+            <p class="lead signin__tag">
+              Sign in with GitHub to see who, and what they’re building.
+            </p>
           </>
         ) : (
           <>
@@ -29,8 +31,8 @@ export function SignIn({ invited = false }: { invited?: boolean }) {
               See what your circle is <span class="tint">building</span>.
             </h1>
             <p class="lead signin__tag">
-              A private space for your dev circle — share what you’re building, and jump in on
-              each other’s projects.
+              A private space for your dev circle — share what you’re building, and jump in on each
+              other’s projects.
             </p>
           </>
         )}
@@ -54,7 +56,12 @@ export function SignIn({ invited = false }: { invited?: boolean }) {
 
         {isConfigured ? (
           <div class="stack signin__cta rise-3">
-            <Pill variant="primary" big busy={authBusy.value} onClick={() => void signInWithGitHub()}>
+            <Pill
+              variant="primary"
+              big
+              busy={authBusy.value}
+              onClick={() => void signInWithGitHub()}
+            >
               Continue with GitHub
             </Pill>
             {authError.value && <p class="small signin__error">{authError.value}</p>}
@@ -70,7 +77,11 @@ export function SignIn({ invited = false }: { invited?: boolean }) {
             <h3>One-time setup pending</h3>
             <p class="small dim">
               The backend (Firebase) isn’t connected yet. Run the runbook in{' '}
-              <a href={`${REPO_URL}/blob/main/docs/SETUP.md`} rel="noopener noreferrer" target="_blank">
+              <a
+                href={`${REPO_URL}/blob/main/docs/SETUP.md`}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
                 docs/SETUP.md
               </a>{' '}
               and paste the config into <span class="mono">src/firebase-config.ts</span>.

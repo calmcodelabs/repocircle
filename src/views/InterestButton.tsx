@@ -45,7 +45,9 @@ export function InterestButton({ gid, repo }: { gid: string; repo: Repo }) {
       {interests.length > 0 && (
         <span class="row interest__faces">
           {interests.slice(0, 5).map((i) => (
-            <Avatar key={i.uid} login={i.login} src={i.avatarUrl} />
+            <a key={i.uid} href={`#/g/${gid}/m/${i.uid}`} aria-label={`@${i.login}`}>
+              <Avatar login={i.login} src={i.avatarUrl} />
+            </a>
           ))}
           <span class="small faint">
             {interests.length} interested

@@ -37,7 +37,9 @@ describe('toRepoDoc', () => {
   });
   it('matches ownerUid case-insensitively against my login', () => {
     expect(toRepoDoc(gh(), me).ownerUid).toBe('u1');
-    expect(toRepoDoc(gh({ owner: { login: 'someone-else', avatar_url: '' } }), me).ownerUid).toBeNull();
+    expect(
+      toRepoDoc(gh({ owner: { login: 'someone-else', avatar_url: '' } }), me).ownerUid,
+    ).toBeNull();
   });
   it('seeds lastEventAt from pushed_at, null-safe', () => {
     expect(toRepoDoc(gh(), me).lastEventAt).not.toBeNull();

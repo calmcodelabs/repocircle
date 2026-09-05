@@ -1,5 +1,9 @@
 import { describe, it, beforeAll, beforeEach, afterAll } from 'vitest';
-import { assertFails, assertSucceeds, type RulesTestEnvironment } from '@firebase/rules-unit-testing';
+import {
+  assertFails,
+  assertSucceeds,
+  type RulesTestEnvironment,
+} from '@firebase/rules-unit-testing';
 import { doc, getDoc, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { createEnv, db, GID, groupDoc, memberDoc, seedGroup } from './helpers';
 
@@ -42,7 +46,10 @@ describe('groups/{gid}', () => {
     await seedGroup(env);
     const mallory = env.authenticatedContext('mallory');
     await assertFails(
-      setDoc(doc(db(mallory), `groups/${GID}/members/mallory`), memberDoc('mallory', 'admin', 'founder')),
+      setDoc(
+        doc(db(mallory), `groups/${GID}/members/mallory`),
+        memberDoc('mallory', 'admin', 'founder'),
+      ),
     );
   });
 
@@ -94,7 +101,9 @@ describe('groups/{gid}', () => {
     await seedGroup(env);
     const alice = env.authenticatedContext('alice');
     const bob = env.authenticatedContext('bob');
-    await assertSucceeds(updateDoc(doc(db(alice), `groups/${GID}/members/bob`), { role: 'mentor' }));
+    await assertSucceeds(
+      updateDoc(doc(db(alice), `groups/${GID}/members/bob`), { role: 'mentor' }),
+    );
     await assertFails(updateDoc(doc(db(bob), `groups/${GID}/members/gia`), { role: 'member' }));
   });
 

@@ -1,5 +1,9 @@
 import { describe, it, beforeAll, beforeEach, afterAll } from 'vitest';
-import { assertFails, assertSucceeds, type RulesTestEnvironment } from '@firebase/rules-unit-testing';
+import {
+  assertFails,
+  assertSucceeds,
+  type RulesTestEnvironment,
+} from '@firebase/rules-unit-testing';
 import { doc, getDocs, collection, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { createEnv, db, GID, askDoc, seedGroup } from './helpers';
 import { LIMITS } from '../../src/util/limits';

@@ -1,5 +1,9 @@
 import { describe, it, beforeAll, beforeEach, afterAll } from 'vitest';
-import { assertFails, assertSucceeds, type RulesTestEnvironment } from '@firebase/rules-unit-testing';
+import {
+  assertFails,
+  assertSucceeds,
+  type RulesTestEnvironment,
+} from '@firebase/rules-unit-testing';
 import { Timestamp, deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { createEnv, db, GID, seedGroup } from './helpers';
 
@@ -13,12 +17,25 @@ beforeEach(async () => {
   await env.withSecurityRulesDisabled(async (ctx) => {
     const d = db(ctx);
     await setDoc(doc(d, `groups/${GID}/collabRequests/cr1`), {
-      repoId: '1', repoFullName: 'x/y', requesterUid: 'bob', requesterLogin: 'bob',
-      note: 'hi', repoOwnerUid: 'bob', state: 'pending', createdAt: Timestamp.now(), v: 1,
+      repoId: '1',
+      repoFullName: 'x/y',
+      requesterUid: 'bob',
+      requesterLogin: 'bob',
+      note: 'hi',
+      repoOwnerUid: 'bob',
+      state: 'pending',
+      createdAt: Timestamp.now(),
+      v: 1,
     });
     await setDoc(doc(d, `groups/${GID}/auditLog/a1`), {
-      actorUid: 'alice', actorLogin: 'alice', action: 'x', subjectType: 'y', subjectId: 'z',
-      detail: '', createdAt: Timestamp.now(), v: 1,
+      actorUid: 'alice',
+      actorLogin: 'alice',
+      action: 'x',
+      subjectType: 'y',
+      subjectId: 'z',
+      detail: '',
+      createdAt: Timestamp.now(),
+      v: 1,
     });
   });
 });

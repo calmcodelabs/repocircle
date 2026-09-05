@@ -43,7 +43,8 @@ export function InviteManager({ gid, intro }: { gid: string; intro?: string }) {
     try {
       let repoCount = 0;
       try {
-        repoCount = (await getCountFromServer(collection(db(), `groups/${gid}/repos`))).data().count;
+        repoCount = (await getCountFromServer(collection(db(), `groups/${gid}/repos`))).data()
+          .count;
       } catch {
         // preview count is nice-to-have; never block the invite on it
       }
@@ -80,20 +81,36 @@ export function InviteManager({ gid, intro }: { gid: string; intro?: string }) {
       <div class="row wrap">
         <div class="segmented" role="group" aria-label="Invite role">
           {(['member', 'guest'] as const).map((r) => (
-            <button key={r} class="segmented__btn" aria-pressed={role === r} onClick={() => setRole(r)}>
+            <button
+              key={r}
+              class="segmented__btn"
+              aria-pressed={role === r}
+              onClick={() => setRole(r)}
+            >
               {r}
             </button>
           ))}
         </div>
         <div class="segmented" role="group" aria-label="Expires">
           {([1, 7, 30] as const).map((d) => (
-            <button key={d} class="segmented__btn" aria-pressed={days === d} onClick={() => setDays(d)}>
+            <button
+              key={d}
+              class="segmented__btn"
+              aria-pressed={days === d}
+              onClick={() => setDays(d)}
+            >
               {d === 1 ? '24h' : `${d}d`}
             </button>
           ))}
         </div>
       </div>
-      <Field label="Label (just for you)" value={label} onInput={setLabel} maxLength={LIMITS.INVITE_LABEL_MAX} placeholder="posted in club Discord" />
+      <Field
+        label="Label (just for you)"
+        value={label}
+        onInput={setLabel}
+        maxLength={LIMITS.INVITE_LABEL_MAX}
+        placeholder="posted in club Discord"
+      />
       <Pill variant="primary" busy={busy} onClick={() => void onCreate()}>
         Create invite link
       </Pill>
@@ -111,7 +128,9 @@ export function InviteManager({ gid, intro }: { gid: string; intro?: string }) {
                 {st !== 'valid' && <Chip tone="danger">{st}</Chip>}
               </div>
               <span class="small faint">
-                {st === 'valid' ? `expires ${relTime(inv.expiresAt)}` : `created by @${inv.createdByLogin ?? '?'}`}
+                {st === 'valid'
+                  ? `expires ${relTime(inv.expiresAt)}`
+                  : `created by @${inv.createdByLogin ?? '?'}`}
               </span>
             </div>
             <span class="topbar__spacer" />
@@ -123,7 +142,10 @@ export function InviteManager({ gid, intro }: { gid: string; intro?: string }) {
                   onClick={() => {
                     const uid = sessionUser.value?.uid;
                     const profile = uid ? myProfile(uid) : null;
-                    if (profile) void revokeInvite(gid, profile, inv.token).then(() => toast('Invite revoked'));
+                    if (profile)
+                      void revokeInvite(gid, profile, inv.token).then(() =>
+                        toast('Invite revoked'),
+                      );
                   }}
                 >
                   Revoke
@@ -137,7 +159,9 @@ export function InviteManager({ gid, intro }: { gid: string; intro?: string }) {
       {fresh && (
         <Sheet title="Invite link ready" onClose={() => setFresh(null)}>
           <div class="stack">
-            <p class="small dim">Anyone with this link can join until it expires — share it in your group’s chat.</p>
+            <p class="small dim">
+              Anyone with this link can join until it expires — share it in your group’s chat.
+            </p>
             <p class="mono small invite__url">{fresh}</p>
             <Pill variant="primary" onClick={() => void copyText(fresh)}>
               Copy link

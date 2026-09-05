@@ -42,10 +42,22 @@ export async function ensureUserDoc(profile: MyProfile): Promise<void> {
   });
 }
 
-export const DEFAULT_ASK_TAGS = ['frontend', 'backend', 'ML', 'docs', 'testing', 'devops', 'design'];
+export const DEFAULT_ASK_TAGS = [
+  'frontend',
+  'backend',
+  'ML',
+  'docs',
+  'testing',
+  'devops',
+  'design',
+];
 
 /** Founder batch: group + admin membership + my groupIds mirror (rules-validated). */
-export async function createGroup(profile: MyProfile, name: string, description: string): Promise<string> {
+export async function createGroup(
+  profile: MyProfile,
+  name: string,
+  description: string,
+): Promise<string> {
   await ensureUserDoc(profile);
   const gid = newGroupId();
   const batch = writeBatch(db());
@@ -93,7 +105,11 @@ export async function fetchMyGroups(groupIds: string[]): Promise<Group[]> {
     .map((r) => r.value);
 }
 
-export async function updateGroupProfile(gid: string, name: string, description: string): Promise<void> {
+export async function updateGroupProfile(
+  gid: string,
+  name: string,
+  description: string,
+): Promise<void> {
   await updateDoc(doc(db(), 'groups', gid), { name, description });
 }
 

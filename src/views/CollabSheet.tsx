@@ -18,7 +18,15 @@ export function hasPublicRepoScope(): boolean {
 }
 
 /** S8 — request to collaborate: escalate scope if needed → GitHub issue → doc. */
-export function CollabSheet({ gid, repo, onClose }: { gid: string; repo: Repo; onClose: () => void }) {
+export function CollabSheet({
+  gid,
+  repo,
+  onClose,
+}: {
+  gid: string;
+  repo: Repo;
+  onClose: () => void;
+}) {
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [needsScope, setNeedsScope] = useState(!hasPublicRepoScope());
@@ -52,7 +60,10 @@ export function CollabSheet({ gid, repo, onClose }: { gid: string; repo: Repo; o
       log('warn', `collab request failed: ${e instanceof GhError ? e.kind : 'firestore'}`);
       if (reqId) {
         // Doc exists but the GitHub issue didn't happen — honest partial state.
-        toast('Request saved, but opening the GitHub issue failed. The owner will still see it here.', { error: true });
+        toast(
+          'Request saved, but opening the GitHub issue failed. The owner will still see it here.',
+          { error: true },
+        );
         onClose();
       } else {
         toast(e instanceof GhError ? e.message : 'Could not send the request.', { error: true });
@@ -90,7 +101,12 @@ export function CollabSheet({ gid, repo, onClose }: { gid: string; repo: Repo; o
               Opens a public issue on the repo and pings the owner here. They accept or decline;
               accepting sends you a real GitHub collaborator invitation.
             </p>
-            <Pill variant="primary" busy={busy} disabled={note.trim().length === 0} onClick={() => void submit()}>
+            <Pill
+              variant="primary"
+              busy={busy}
+              disabled={note.trim().length === 0}
+              onClick={() => void submit()}
+            >
               Send request
             </Pill>
           </>

@@ -30,7 +30,14 @@ export function Sheet({
   return (
     <>
       <div class="sheet-backdrop" onClick={onClose} />
-      <div class="sheet" role="dialog" aria-modal="true" aria-label={title} ref={panel} tabindex={-1}>
+      <div
+        class="sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        ref={panel}
+        tabindex={-1}
+      >
         <h2 class="sheet__title">{title}</h2>
         {children}
       </div>

@@ -7,7 +7,15 @@ import { Sheet } from '../ui/Sheet';
 import { toast } from '../ui/Toast';
 
 /** Owner-only: the human framing of an idea, plus what help it wants. */
-export function IdeaSheet({ gid, repo, onClose }: { gid: string; repo: Repo; onClose: () => void }) {
+export function IdeaSheet({
+  gid,
+  repo,
+  onClose,
+}: {
+  gid: string;
+  repo: Repo;
+  onClose: () => void;
+}) {
   const [pitch, setPitch] = useState(repo.pitch ?? '');
   const [needs, setNeeds] = useState<RepoNeed | null>(repo.needs ?? null);
   const [tags, setTags] = useState<Set<string>>(new Set(repo.domainTags ?? []));
@@ -93,7 +101,10 @@ export function IdeaSheet({ gid, repo, onClose }: { gid: string; repo: Repo; onC
           />
           <span class="small">
             Looking for a new owner
-            <span class="faint"> — you’ve moved on and someone else is welcome to take it over.</span>
+            <span class="faint">
+              {' '}
+              — you’ve moved on and someone else is welcome to take it over.
+            </span>
           </span>
         </label>
 

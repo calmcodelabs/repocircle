@@ -118,9 +118,7 @@ export function Repos({ gid }: { gid: string }) {
         <h2>Repos</h2>
         {repos && repos.length > 0 && <span class="dim small">{repos.length}</span>}
         <span class="topbar__spacer" />
-        {iAmAdmin && (
-          <Pill onClick={() => setInviteOpen(true)}>Invite people</Pill>
-        )}
+        {iAmAdmin && <Pill onClick={() => setInviteOpen(true)}>Invite people</Pill>}
         {canAdd && (
           <>
             <Pill
@@ -158,7 +156,9 @@ export function Repos({ gid }: { gid: string }) {
       {repos?.length === 0 && (
         <EmptyState
           line="No repos yet — import your public repos, and this becomes the group’s shared window."
-          action={canAdd ? <Pill onClick={() => void openImport()}>Import my repos</Pill> : undefined}
+          action={
+            canAdd ? <Pill onClick={() => void openImport()}>Import my repos</Pill> : undefined
+          }
         />
       )}
       {visible.length === 0 && repos && repos.length > 0 && (
@@ -241,7 +241,11 @@ function RepoCard({
         <Chip tone={STATUS_TONE[repo.status]}>{repo.status}</Chip>
         <span class="topbar__spacer" />
         {canManage && (
-          <button class="repo__more" onClick={onEditIdea} aria-label={`Edit the idea behind ${shortName}`}>
+          <button
+            class="repo__more"
+            onClick={onEditIdea}
+            aria-label={`Edit the idea behind ${shortName}`}
+          >
             <Icon name="ask" size={15} />
           </button>
         )}
@@ -251,7 +255,11 @@ function RepoCard({
           </button>
         ) : (
           canCollab && (
-            <button class="repo__more" onClick={onCollab} aria-label={`Request to collaborate on ${shortName}`}>
+            <button
+              class="repo__more"
+              onClick={onCollab}
+              aria-label={`Request to collaborate on ${shortName}`}
+            >
               <Icon name="handshake" size={16} />
             </button>
           )
@@ -283,20 +291,30 @@ function RepoCard({
         {repo.lastEventAt && <span class="chip">{relTime(repo.lastEventAt)}</span>}
         <span class="topbar__spacer" />
         {repo.demoUrl && (
-          <a href={repo.demoUrl} target="_blank" rel="noopener noreferrer nofollow" aria-label="Open demo">
+          <a
+            href={repo.demoUrl}
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            aria-label="Open demo"
+          >
             demo ↗
           </a>
         )}
       </div>
       <div class="row small faint">
-        <Avatar login={repo.githubOwnerLogin} src={`https://avatars.githubusercontent.com/${repo.githubOwnerLogin}`} />
+        <Avatar
+          login={repo.githubOwnerLogin}
+          src={`https://avatars.githubusercontent.com/${repo.githubOwnerLogin}`}
+        />
         <span class="mono">@{repo.githubOwnerLogin}</span>
         <span class="topbar__spacer" />
         <Spark series={sparkSeries(repo.daily, 14)} label={`activity over the last 14 days`} />
       </div>
       <div class="row small faint repo__social">
         <a href={`#/g/${gid}/repo/${repo.id}`} class="repo__comments">
-          {repo.commentCount ? `${repo.commentCount} comment${repo.commentCount === 1 ? '' : 's'}` : 'Comment'}
+          {repo.commentCount
+            ? `${repo.commentCount} comment${repo.commentCount === 1 ? '' : 's'}`
+            : 'Comment'}
         </a>
       </div>
       <InterestButton gid={gid} repo={repo} />
@@ -358,7 +376,11 @@ function ImportSheet({ gid, onClose }: { gid: string; onClose: () => void }) {
     if (!profile || !list) return;
     setBusy(true);
     try {
-      const added = await registerRepos(gid, profile, list.filter((r) => selected.has(r.id)));
+      const added = await registerRepos(
+        gid,
+        profile,
+        list.filter((r) => selected.has(r.id)),
+      );
       await setRepoSyncMode(gid, profile.uid, autoShare ? 'auto' : 'manual').catch(() => undefined);
       toast(
         autoShare
@@ -409,13 +431,17 @@ function ImportSheet({ gid, onClose }: { gid: string; onClose: () => void }) {
                     />
                     <span class="import__meta">
                       <span class="mono small">{r.name}</span>
-                      {r.description && <span class="small faint import__desc">{r.description}</span>}
+                      {r.description && (
+                        <span class="small faint import__desc">{r.description}</span>
+                      )}
                     </span>
                     <span class="topbar__spacer" />
                     {already ? (
                       <Chip>added</Chip>
                     ) : (
-                      r.pushed_at && <span class="small faint">{relMs(Date.parse(r.pushed_at))}</span>
+                      r.pushed_at && (
+                        <span class="small faint">{relMs(Date.parse(r.pushed_at))}</span>
+                      )
                     )}
                   </label>
                 );
@@ -429,10 +455,18 @@ function ImportSheet({ gid, onClose }: { gid: string; onClose: () => void }) {
               />
               <span class="small">
                 Keep sharing automatically
-                <span class="faint"> — public repos you create later show up here too. Private repos are never touched.</span>
+                <span class="faint">
+                  {' '}
+                  — public repos you create later show up here too. Private repos are never touched.
+                </span>
               </span>
             </label>
-            <Pill variant="primary" busy={busy} disabled={selected.size === 0} onClick={() => void onAdd()}>
+            <Pill
+              variant="primary"
+              busy={busy}
+              disabled={selected.size === 0}
+              onClick={() => void onAdd()}
+            >
               {selected.size === 0
                 ? 'Everything here is already added'
                 : `Add ${selected.size} repo${selected.size === 1 ? '' : 's'}`}
@@ -510,7 +544,12 @@ function AddRepoSheet({ gid, onClose }: { gid: string; onClose: () => void }) {
             </Pill>
           </div>
         ) : (
-          <Pill variant="primary" busy={busy} disabled={!input.trim()} onClick={() => void lookup()}>
+          <Pill
+            variant="primary"
+            busy={busy}
+            disabled={!input.trim()}
+            onClick={() => void lookup()}
+          >
             Look up
           </Pill>
         )}
@@ -561,14 +600,24 @@ function ManageRepoSheet({ gid, repo, onClose }: { gid: string; repo: Repo; onCl
           <span class="field__label">Status</span>
           <div class="segmented" role="group" aria-label="Project status">
             {REPO_STATUSES.map((s) => (
-              <button key={s} class="segmented__btn" aria-pressed={status === s} onClick={() => setStatus(s)}>
+              <button
+                key={s}
+                class="segmented__btn"
+                aria-pressed={status === s}
+                onClick={() => setStatus(s)}
+              >
                 {s}
               </button>
             ))}
           </div>
           <span class="field__hint">paused and done drop out of “Active this week”</span>
         </div>
-        <Pill variant="primary" busy={busy} disabled={status === repo.status} onClick={() => void saveStatus()}>
+        <Pill
+          variant="primary"
+          busy={busy}
+          disabled={status === repo.status}
+          onClick={() => void saveStatus()}
+        >
           Save status
         </Pill>
         <hr class="rule" />

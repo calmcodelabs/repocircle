@@ -11,12 +11,17 @@ type Props = {
   ariaLabel?: string;
 };
 
-export function Pill({ children, onClick, variant = 'default', big, disabled, busy, type = 'button', ariaLabel }: Props) {
-  const cls = [
-    'pill',
-    variant !== 'default' && `pill--${variant}`,
-    big && 'pill--big',
-  ]
+export function Pill({
+  children,
+  onClick,
+  variant = 'default',
+  big,
+  disabled,
+  busy,
+  type = 'button',
+  ariaLabel,
+}: Props) {
+  const cls = ['pill', variant !== 'default' && `pill--${variant}`, big && 'pill--big']
     .filter(Boolean)
     .join(' ');
   return (

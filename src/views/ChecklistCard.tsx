@@ -7,7 +7,12 @@ import { Pill } from '../ui/Pill';
 
 // F-12 onboarding checklist — a guide, not a gate (soft version of the PRD's
 // module unlocks; every tab stays reachable, the card celebrates progress).
-type Item = { key: string; label: string; href?: string; done: (c: Record<string, boolean>, extras: Extras) => boolean };
+type Item = {
+  key: string;
+  label: string;
+  href?: string;
+  done: (c: Record<string, boolean>, extras: Extras) => boolean;
+};
 type Extras = { hasDiscord: boolean; hasCompany: boolean };
 
 const ITEMS: Item[] = [
@@ -18,9 +23,29 @@ const ITEMS: Item[] = [
     href: 'members',
     done: (c, x) => !!c.invitedSomeone || x.hasCompany,
   },
-  { key: 'postedOrAnswered', label: 'Post an ask — or claim one', done: (c) => !!c.postedOrAnswered },
-  { key: 'setAvailability', label: 'Set your availability', href: 'members', done: (c) => !!c.setAvailability },
-  { key: 'connectedChat', label: 'Connect Discord (any admin)', href: 'settings', done: (c, x) => !!c.connectedChat || x.hasDiscord },
+  {
+    key: 'postedOrAnswered',
+    label: 'Post an ask — or claim one',
+    done: (c) => !!c.postedOrAnswered,
+  },
+  {
+    key: 'setAvailability',
+    label: 'Set your availability',
+    href: 'members',
+    done: (c) => !!c.setAvailability,
+  },
+  {
+    key: 'saidHelpWith',
+    label: 'Say what you can help with',
+    href: 'me',
+    done: (c) => !!c.saidHelpWith,
+  },
+  {
+    key: 'connectedChat',
+    label: 'Connect Discord (any admin)',
+    href: 'settings',
+    done: (c, x) => !!c.connectedChat || x.hasDiscord,
+  },
 ];
 
 export function ChecklistCard({
@@ -52,9 +77,9 @@ export function ChecklistCard({
           ariaLabel="Dismiss checklist"
           onClick={() =>
             uid &&
-            void updateDoc(doc(db(), `groups/${gid}/members/${uid}`), { 'checklist.dismissed': true }).catch(
-              () => undefined,
-            )
+            void updateDoc(doc(db(), `groups/${gid}/members/${uid}`), {
+              'checklist.dismissed': true,
+            }).catch(() => undefined)
           }
         >
           ×
@@ -73,8 +98,9 @@ export function ChecklistCard({
             <span class={isDone ? 'small faint checklist__done' : 'small'}>{item.label}</span>
           </>
         );
-        return item.href && !isDone ? (
-          <a key={item.key} class="row checklist__row" href={`#/g/${gid}/${item.href}`}>
+        const href = item.href === 'me' ? (uid ? `m/${uid}` : undefined) : item.href;
+        return href && !isDone ? (
+          <a key={item.key} class="row checklist__row" href={`#/g/${gid}/${href}`}>
             {inner}
           </a>
         ) : (

@@ -12,8 +12,7 @@ html {
 body {
   background:
     radial-gradient(900px 600px at -10% -10%, rgba(62, 207, 142, 0.05), transparent 60%),
-    radial-gradient(800px 600px at 110% 110%, rgba(110, 155, 245, 0.04), transparent 60%),
-    var(--bg);
+    radial-gradient(800px 600px at 110% 110%, rgba(110, 155, 245, 0.04), transparent 60%), var(--bg);
   background-attachment: fixed;
   color: var(--text);
   font-family: var(--font-ui);

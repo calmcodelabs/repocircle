@@ -27,6 +27,18 @@ service cloud.firestore {
     function optHttpsUrl(d, k) {
       return !(k in d) || d[k] == null || (d[k] is string && d[k].matches('^https://.{1,300}$'));
     }
+    // helpWith joins against repo.needs, so its vocabulary is closed; learning is
+    // free text but bounded. Rules can't loop, so with size capped at 6 the item
+    // checks are spelled out per index (an index past the end passes vacuously).
+    function learningItem(l, i) { return l.size() <= i || (l[i] is string && l[i].size() <= 24); }
+    function validSkills(d) {
+      return d.helpWith is list && d.helpWith.size() <= 5
+        && d.helpWith.hasOnly(['feedback', 'frontend', 'backend', 'ml', 'design'])
+        && d.learning is list && d.learning.size() <= 6
+        && learningItem(d.learning, 0) && learningItem(d.learning, 1)
+        && learningItem(d.learning, 2) && learningItem(d.learning, 3)
+        && learningItem(d.learning, 4) && learningItem(d.learning, 5);
+    }
     function inviteValid(gid, token) {
       let inv = get(/databases/$(database)/documents/groups/$(gid)/invites/$(token)).data;
       return inv.revoked == false && inv.expiresAt > request.time;
@@ -84,6 +96,7 @@ service cloud.firestore {
                ['role', 'login', 'name', 'avatarUrl', 'availability', 'helpWith', 'learning',
                 'checklist', 'repoSync', 'joinedAt', 'joinedVia', 'v'])
           && str(request.resource.data.login, 1, 60)
+          && validSkills(request.resource.data)
           && (
             (request.resource.data.joinedVia == 'founder'
               && getAfter(/databases/$(database)/documents/groups/$(gid)).data.createdBy == me()
@@ -98,7 +111,8 @@ service cloud.firestore {
           (me() == uid && isMember(gid)
             && request.resource.data.diff(resource.data).affectedKeys()
                  .hasOnly(['availability', 'helpWith', 'learning', 'checklist', 'repoSync',
-                           'login', 'name', 'avatarUrl']))
+                           'login', 'name', 'avatarUrl'])
+            && validSkills(request.resource.data))
           ||
           (isAdmin(gid) && me() != uid
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role'])

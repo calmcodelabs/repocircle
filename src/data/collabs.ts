@@ -52,8 +52,14 @@ export async function createCollabRequest(
   return id;
 }
 
-export async function attachIssueNumber(gid: string, reqId: string, issueNumber: number): Promise<void> {
-  await updateDoc(doc(db(), `groups/${gid}/collabRequests/${reqId}`), { githubIssueNumber: issueNumber });
+export async function attachIssueNumber(
+  gid: string,
+  reqId: string,
+  issueNumber: number,
+): Promise<void> {
+  await updateDoc(doc(db(), `groups/${gid}/collabRequests/${reqId}`), {
+    githubIssueNumber: issueNumber,
+  });
 }
 
 export async function decideCollabRequest(
@@ -75,22 +81,34 @@ export async function cancelCollabRequest(gid: string, reqId: string): Promise<v
 }
 
 /** Requests awaiting MY decision (repos I own in this group). */
-export function watchOwnerInbox(gid: string, uid: string, cb: (reqs: CollabRequest[]) => void): Unsubscribe {
+export function watchOwnerInbox(
+  gid: string,
+  uid: string,
+  cb: (reqs: CollabRequest[]) => void,
+): Unsubscribe {
   const q = query(
     collection(db(), `groups/${gid}/collabRequests`),
     where('repoOwnerUid', '==', uid),
     where('state', '==', 'pending'),
     orderBy('createdAt', 'desc'),
   );
-  return onSnapshot(q, (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<CollabRequest, 'id'>) }))));
+  return onSnapshot(q, (snap) =>
+    cb(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<CollabRequest, 'id'>) }))),
+  );
 }
 
 /** My outgoing requests (any state), newest first. */
-export function watchMyRequests(gid: string, uid: string, cb: (reqs: CollabRequest[]) => void): Unsubscribe {
+export function watchMyRequests(
+  gid: string,
+  uid: string,
+  cb: (reqs: CollabRequest[]) => void,
+): Unsubscribe {
   const q = query(
     collection(db(), `groups/${gid}/collabRequests`),
     where('requesterUid', '==', uid),
     orderBy('createdAt', 'desc'),
   );
-  return onSnapshot(q, (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<CollabRequest, 'id'>) }))));
+  return onSnapshot(q, (snap) =>
+    cb(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<CollabRequest, 'id'>) }))),
+  );
 }

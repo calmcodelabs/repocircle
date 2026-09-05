@@ -16,8 +16,8 @@ export function ProfileRecovery() {
         <Mark size={48} />
         <h2>Let’s reconnect your account</h2>
         <p class="lead signin__tag">
-          You’re signed in, but your RepoCircle profile isn’t loading. Signing in again rebuilds
-          it — nothing you’ve created is lost.
+          You’re signed in, but your RepoCircle profile isn’t loading. Signing in again rebuilds it
+          — nothing you’ve created is lost.
         </p>
         <Pill variant="primary" big onClick={() => void signOutApp()}>
           Sign in again

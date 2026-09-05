@@ -78,6 +78,9 @@ still costs you something with people you will keep running into.
 The primitives do not change — same repos, pitches, needs, comments, collaborator
 flow. Who is in the room changes, and that has consequences:
 
+> First bets shipped as M11 (see PLAN §5b, ADR-018): member profiles (item 2) and
+> the helpWith→needs matcher (the personalised half of item 1). 3–6 remain open.
+
 1. **Discovery inside the circle becomes the main surface.** At twenty members you can
    read everything; at two hundred you cannot. The M9 filters (needs, domain tags,
    new-this-week) graduate from decoration to primary navigation.

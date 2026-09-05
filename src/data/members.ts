@@ -17,7 +17,7 @@ import { anonymizeMyContent } from '../util/anonymize';
 import { audit } from './audit';
 import { ensureUserDoc, forgetGroup } from './groups';
 import { resilientWatch } from './resilientWatch';
-import type { Availability, Invite, Member, MyProfile, Role } from './types';
+import type { Availability, HelpArea, Invite, Member, MyProfile, Role } from './types';
 
 export function watchMembers(
   gid: string,
@@ -39,7 +39,11 @@ export function watchMembers(
   );
 }
 
-export async function joinViaInvite(gid: string, invite: Invite, profile: MyProfile): Promise<void> {
+export async function joinViaInvite(
+  gid: string,
+  invite: Invite,
+  profile: MyProfile,
+): Promise<void> {
   await ensureUserDoc(profile);
   const batch = writeBatch(db());
   batch.set(doc(db(), `groups/${gid}/members/${profile.uid}`), {
@@ -65,11 +69,33 @@ export async function joinViaInvite(gid: string, invite: Invite, profile: MyProf
   if (!check?.exists()) throw new Error('join-not-persisted');
 }
 
-export async function setAvailability(gid: string, uid: string, availability: Availability): Promise<void> {
+/** Self-only (rules-enforced): what I can help with + what I'm learning. */
+export async function setSkills(
+  gid: string,
+  uid: string,
+  skills: { helpWith: HelpArea[]; learning: string[] },
+): Promise<void> {
+  await updateDoc(doc(db(), `groups/${gid}/members/${uid}`), {
+    helpWith: skills.helpWith,
+    learning: skills.learning,
+    'checklist.saidHelpWith': true,
+  });
+}
+
+export async function setAvailability(
+  gid: string,
+  uid: string,
+  availability: Availability,
+): Promise<void> {
   await updateDoc(doc(db(), `groups/${gid}/members/${uid}`), { availability });
 }
 
-export async function setRole(gid: string, actor: MyProfile, target: Member, role: Role): Promise<void> {
+export async function setRole(
+  gid: string,
+  actor: MyProfile,
+  target: Member,
+  role: Role,
+): Promise<void> {
   await updateDoc(doc(db(), `groups/${gid}/members/${target.uid}`), { role });
   audit(gid, actor, 'role_changed', 'member', target.login, `→ ${role}`);
 }

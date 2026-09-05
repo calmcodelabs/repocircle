@@ -56,7 +56,14 @@ export function notifyDiscord(
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          embeds: [{ title: msg.title.slice(0, 240), description: msg.description?.slice(0, 500), url, color: 0x3ecf8e }],
+          embeds: [
+            {
+              title: msg.title.slice(0, 240),
+              description: msg.description?.slice(0, 500),
+              url,
+              color: 0x3ecf8e,
+            },
+          ],
           allowed_mentions: { parse: [] },
         }),
       });

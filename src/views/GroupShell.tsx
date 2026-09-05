@@ -34,7 +34,8 @@ export function GroupShell({ gid, children }: { gid: string; children: Component
   }, [gid]);
 
   useEffect(() => {
-    const off = () => toast('You’re offline — reads come from cache, writes sync later.', { error: true });
+    const off = () =>
+      toast('You’re offline — reads come from cache, writes sync later.', { error: true });
     const on = () => toast('Back online');
     window.addEventListener('offline', off);
     window.addEventListener('online', on);
@@ -47,7 +48,13 @@ export function GroupShell({ gid, children }: { gid: string; children: Component
   const g = activeGroup.value;
   const r = route.value;
   const activeSeg =
-    r.name === 'repos' ? 'repos' : r.name === 'members' ? 'members' : r.name === 'settings' ? 'settings' : '';
+    r.name === 'repos'
+      ? 'repos'
+      : r.name === 'members'
+        ? 'members'
+        : r.name === 'settings'
+          ? 'settings'
+          : '';
 
   if (activeDenied.value) {
     const inMyList = myUserDoc.value?.groupIds.includes(gid) ?? false;

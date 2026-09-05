@@ -176,6 +176,28 @@
 .member {
   gap: 12px;
 }
+.member__link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  color: inherit;
+}
+.member__link:hover {
+  text-decoration: none;
+}
+.member__link:hover .member__id > .row:first-child span:first-child {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.member__skills {
+  gap: 4px;
+  margin-top: 2px;
+}
+.member__skills .chip {
+  padding: 1px 8px;
+  font-size: 11.5px;
+}
 .member__id {
   display: grid;
   gap: 2px;
@@ -257,27 +279,69 @@
   border-radius: 99px;
   background: var(--text-faint);
 }
-.lang--typescript { background: #3178c6; }
-.lang--javascript { background: #f1e05a; }
-.lang--python { background: #3572a5; }
-.lang--go { background: #00add8; }
-.lang--rust { background: #dea584; }
-.lang--java { background: #b07219; }
-.lang--kotlin { background: #a97bff; }
-.lang--swift { background: #f05138; }
-.lang--c { background: #555555; }
-.lang--cpp { background: #f34b7d; }
-.lang--csharp { background: #178600; }
-.lang--ruby { background: #701516; }
-.lang--php { background: #4f5d95; }
-.lang--html { background: #e34c26; }
-.lang--css { background: #663399; }
-.lang--shell { background: #89e051; }
-.lang--dart { background: #00b4ab; }
-.lang--vue { background: #41b883; }
-.lang--svelte { background: #ff3e00; }
-.lang--other { background: var(--info); }
-.lang--none { background: var(--text-faint); }
+.lang--typescript {
+  background: #3178c6;
+}
+.lang--javascript {
+  background: #f1e05a;
+}
+.lang--python {
+  background: #3572a5;
+}
+.lang--go {
+  background: #00add8;
+}
+.lang--rust {
+  background: #dea584;
+}
+.lang--java {
+  background: #b07219;
+}
+.lang--kotlin {
+  background: #a97bff;
+}
+.lang--swift {
+  background: #f05138;
+}
+.lang--c {
+  background: #555555;
+}
+.lang--cpp {
+  background: #f34b7d;
+}
+.lang--csharp {
+  background: #178600;
+}
+.lang--ruby {
+  background: #701516;
+}
+.lang--php {
+  background: #4f5d95;
+}
+.lang--html {
+  background: #e34c26;
+}
+.lang--css {
+  background: #663399;
+}
+.lang--shell {
+  background: #89e051;
+}
+.lang--dart {
+  background: #00b4ab;
+}
+.lang--vue {
+  background: #41b883;
+}
+.lang--svelte {
+  background: #ff3e00;
+}
+.lang--other {
+  background: var(--info);
+}
+.lang--none {
+  background: var(--text-faint);
+}
 
 /* import sheet */
 .import__list {
@@ -488,7 +552,6 @@
   white-space: nowrap;
 }
 
-
 /* sign-in vignette (Haven: gradient panel + white spotlight row) */
 .halo--signin {
   background: radial-gradient(720px 480px at 50% 24%, rgba(62, 207, 142, 0.12), transparent 70%);
@@ -571,7 +634,6 @@
   font-size: 13px;
 }
 
-
 /* join: welcome for a first-time visitor arriving by invite */
 .join__panel {
   width: min(480px, 100%);
@@ -605,7 +667,6 @@
   gap: 12px;
 }
 
-
 /* activity rows: fixed-width time column so sparklines line up down the page */
 .home__repo-meta {
   gap: 12px;
@@ -628,12 +689,10 @@
   gap: 10px;
 }
 
-
 /* delete circle: unmistakably the dangerous card */
 .deletecard {
   border-color: color-mix(in srgb, var(--danger) 35%, transparent);
 }
-
 
 .autoshare {
   align-items: flex-start;
@@ -650,7 +709,6 @@
   margin-top: 2px;
   flex: none;
 }
-
 
 .staleboard {
   border: 1px solid var(--warn);
@@ -770,6 +828,11 @@
 }
 .comment__author {
   color: var(--text);
+  font-weight: 600;
+}
+.comment__author:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .comment__body {
   font-size: 14.5px;
@@ -835,4 +898,34 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* profile (M11) */
+.profile__head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 4px;
+}
+.profile__head .avatar--lg {
+  width: 64px;
+  height: 64px;
+  font-size: 24px;
+}
+.profile__id {
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+.profile__id h2 {
+  margin: 0;
+}
+.profile__actions {
+  align-self: flex-start;
+}
+.profile__langs {
+  gap: 10px;
+}
+.profile__lang {
+  gap: 5px;
 }

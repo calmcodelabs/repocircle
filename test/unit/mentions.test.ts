@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { extractMentions, extractRepoRefs, isSafeUrl, tokenizeComment } from '../../src/util/mentions';
+import {
+  extractMentions,
+  extractRepoRefs,
+  isSafeUrl,
+  tokenizeComment,
+} from '../../src/util/mentions';
 
 describe('tokenizeComment', () => {
   it('splits mentions, repo refs and links out of plain text', () => {
@@ -13,7 +18,9 @@ describe('tokenizeComment', () => {
   it('never loses or invents characters', () => {
     const body = 'a @b #c https://d.e f';
     const rebuilt = tokenizeComment(body)
-      .map((t) => (t.kind === 'mention' ? `@${t.value}` : t.kind === 'repo' ? `#${t.value}` : t.value))
+      .map((t) =>
+        t.kind === 'mention' ? `@${t.value}` : t.kind === 'repo' ? `#${t.value}` : t.value,
+      )
       .join('');
     expect(rebuilt).toBe(body);
   });

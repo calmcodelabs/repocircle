@@ -242,6 +242,33 @@ the serverless redesign; ingestion complexity moved client-side rather than remo
 
 ---
 
+## §5b · Post-plan milestones (shipped after M8, driven by product findings)
+
+- **M9 · Idea board (2026-09-06).** Pitch line, needs chip, domain tags + filters,
+  README plain-text preview, social image, "I'm interested" one-tap, adoption flag.
+- **M10 · Comments (2026-09-06).** One primitive on repos and asks; replies, edit/
+  delete, pin, @mentions + #repo-refs as chips; text-node rendering only.
+- **M11 · Profiles & matching (2026-09-06, first ADR-017 milestone).** The two
+  bets picked from POSITIONING §5: member profiles and helpWith→needs matching.
+  - Rules: `validSkills()` — helpWith from the closed needs vocabulary (≤5),
+    learning ≤6 items ≤24 chars each, per-index checks (rules can't loop).
+  - `src/util/skills.ts`: `ownsRepo`, `languageEvidence` (derived "works in"
+    facts from circle repos), `suggestHelpWith` (language→area seed for the edit
+    sheet — coverage beats composition; nothing suggests design/feedback).
+  - Profile at `#/g/:gid/m/:uid`: identity, availability, helpWith/learning
+    chips, derived languages, their circle repos. Self-edit via SkillsSheet
+    (pre-filled from own repos when helpWith is empty) + AvailabilitySheet.
+  - Home: "Wants what you're good at" block (repo.needs ∈ my helpWith;
+    'anything' matches any non-empty offer; own repos excluded; freshest first;
+    deduped out of "Wants a hand"), plus a one-time prompt card when helpWith is
+    empty and matchable repos exist. Checklist item 6 "Say what you can help with".
+  - Profile links wherever a person appears: member rows, comment authors,
+    interest faces, repo owner, home avatar strip.
+  - 84 rules + 50 unit tests. Guardrails per ADR-018: group-scoped, no counters,
+    no comparison — identity, not showcase.
+
+---
+
 ## §6 · Phase 2 outline (after retention signal, PRD §13)
 
 Clusters, in likely order — each gets its own mini-plan when scheduled:

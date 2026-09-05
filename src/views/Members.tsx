@@ -6,7 +6,16 @@ import { sessionUser } from '../auth/session';
 import { activeMembers, myMembership } from '../data/activeGroup';
 import { removeMember, setAvailability, setRole } from '../data/members';
 import { myProfile } from '../data/users';
-import { AVAILABILITY_LABEL, ROLE_LABEL, type Availability, type AvailabilityStatus, type Member, type Role } from '../data/types';
+import {
+  AVAILABILITY_LABEL,
+  HELP_AREAS,
+  ROLE_LABEL,
+  type Availability,
+  type AvailabilityStatus,
+  type Member,
+  type Role,
+} from '../data/types';
+import { availabilityText } from '../util/availability';
 import { InviteSheet } from './InviteManager';
 import { setRepoSyncMode } from '../data/repoSync';
 import { Avatar } from '../ui/Avatar';
@@ -21,12 +30,6 @@ import { toast } from '../ui/Toast';
 const STATUSES: AvailabilityStatus[] = ['free', 'heads_down', 'away', 'custom'];
 const ROLES: Role[] = ['admin', 'mentor', 'member', 'guest', 'alumnus'];
 
-function availabilityText(m: Member): string {
-  const a = m.availability;
-  const base = a.status === 'custom' ? a.note || 'custom' : (AVAILABILITY_LABEL[a.status] ?? 'available');
-  return a.until ? `${base} until ${a.until.toDate().toLocaleDateString()}` : base;
-}
-
 /** S9 — member list with self availability + admin role/remove controls. */
 export function Members({ gid }: { gid: string }) {
   const members = activeMembers.value;
@@ -39,9 +42,9 @@ export function Members({ gid }: { gid: string }) {
   useEffect(() => {
     const uid = sessionUser.value?.uid;
     if (uid)
-      void updateDoc(doc(db(), `groups/${gid}/members/${uid}`), { 'checklist.visitedMembers': true }).catch(
-        () => undefined,
-      );
+      void updateDoc(doc(db(), `groups/${gid}/members/${uid}`), {
+        'checklist.visitedMembers': true,
+      }).catch(() => undefined);
   }, [gid]);
 
   return (
@@ -117,25 +120,46 @@ export function Members({ gid }: { gid: string }) {
         </section>
       )}
       {members === null && <span class="skeleton" />}
-      {members?.length === 0 && <EmptyState line="Nobody here yet — share an invite link from Settings." />}
+      {members?.length === 0 && (
+        <EmptyState line="Nobody here yet — share an invite link from Settings." />
+      )}
       {members?.map((m) => {
         const isMe = m.uid === sessionUser.value?.uid;
         return (
           <div key={m.uid} class="card row member">
-            <Avatar src={m.avatarUrl} login={m.login} large />
-            <div class="member__id">
-              <div class="row">
-                <span>{m.name || m.login}</span>
-                {m.role !== 'member' && (
-                  <Chip tone={m.role === 'admin' ? 'accent' : 'default'}>{ROLE_LABEL[m.role]}</Chip>
+            <a class="row member__link" href={`#/g/${gid}/m/${m.uid}`}>
+              <Avatar src={m.avatarUrl} login={m.login} large />
+              <div class="member__id">
+                <div class="row">
+                  <span>{m.name || m.login}</span>
+                  {m.role !== 'member' && (
+                    <Chip tone={m.role === 'admin' ? 'accent' : 'default'}>
+                      {ROLE_LABEL[m.role]}
+                    </Chip>
+                  )}
+                </div>
+                <div class="row small dim">
+                  <span class="mono">@{m.login}</span>
+                  <StatusDot
+                    tone={
+                      m.availability.status === 'free'
+                        ? 'accent'
+                        : m.availability.status === 'away'
+                          ? 'warn'
+                          : 'idle'
+                    }
+                  />
+                  <span>{availabilityText(m)}</span>
+                </div>
+                {m.helpWith.length > 0 && (
+                  <div class="row wrap member__skills">
+                    {m.helpWith.map((h) => (
+                      <Chip key={h}>{HELP_AREAS.find((a) => a.key === h)?.label ?? h}</Chip>
+                    ))}
+                  </div>
                 )}
               </div>
-              <div class="row small dim">
-                <span class="mono">@{m.login}</span>
-                <StatusDot tone={m.availability.status === 'free' ? 'accent' : m.availability.status === 'away' ? 'warn' : 'idle'} />
-                <span>{availabilityText(m)}</span>
-              </div>
-            </div>
+            </a>
             <span class="topbar__spacer" />
             {isMe ? (
               <Pill onClick={() => setEditAvail(true)}>Availability</Pill>
@@ -161,10 +185,20 @@ export function Members({ gid }: { gid: string }) {
   );
 }
 
-function AvailabilitySheet({ gid, current, onClose }: { gid: string; current: Availability; onClose: () => void }) {
+export function AvailabilitySheet({
+  gid,
+  current,
+  onClose,
+}: {
+  gid: string;
+  current: Availability;
+  onClose: () => void;
+}) {
   const [status, setStatus] = useState<AvailabilityStatus>(current.status);
   const [note, setNote] = useState(current.note ?? '');
-  const [until, setUntil] = useState(current.until ? current.until.toDate().toISOString().slice(0, 10) : '');
+  const [until, setUntil] = useState(
+    current.until ? current.until.toDate().toISOString().slice(0, 10) : '',
+  );
   const [busy, setBusy] = useState(false);
 
   async function save() {
@@ -178,9 +212,9 @@ function AvailabilitySheet({ gid, current, onClose }: { gid: string; current: Av
     };
     try {
       await setAvailability(gid, uid, availability);
-      void updateDoc(doc(db(), `groups/${gid}/members/${uid}`), { 'checklist.setAvailability': true }).catch(
-        () => undefined,
-      );
+      void updateDoc(doc(db(), `groups/${gid}/members/${uid}`), {
+        'checklist.setAvailability': true,
+      }).catch(() => undefined);
       toast('Availability updated');
       onClose();
     } catch {
@@ -194,17 +228,33 @@ function AvailabilitySheet({ gid, current, onClose }: { gid: string; current: Av
       <div class="stack">
         <div class="segmented" role="group" aria-label="Status">
           {STATUSES.map((s) => (
-            <button key={s} class="segmented__btn" aria-pressed={status === s} onClick={() => setStatus(s)}>
+            <button
+              key={s}
+              class="segmented__btn"
+              aria-pressed={status === s}
+              onClick={() => setStatus(s)}
+            >
               {AVAILABILITY_LABEL[s]}
             </button>
           ))}
         </div>
         {status === 'custom' && (
-          <Field label="Say it your way" value={note} onInput={setNote} maxLength={60} placeholder="pairing Fridays only" />
+          <Field
+            label="Say it your way"
+            value={note}
+            onInput={setNote}
+            maxLength={60}
+            placeholder="pairing Fridays only"
+          />
         )}
         <label class="field">
           <span class="field__label">Until (optional)</span>
-          <input class="field__input" type="date" value={until} onInput={(e) => setUntil((e.currentTarget as HTMLInputElement).value)} />
+          <input
+            class="field__input"
+            type="date"
+            value={until}
+            onInput={(e) => setUntil((e.currentTarget as HTMLInputElement).value)}
+          />
         </label>
         <Pill variant="primary" busy={busy} onClick={() => void save()}>
           Save
@@ -214,7 +264,15 @@ function AvailabilitySheet({ gid, current, onClose }: { gid: string; current: Av
   );
 }
 
-function ManageSheet({ gid, target, onClose }: { gid: string; target: Member; onClose: () => void }) {
+function ManageSheet({
+  gid,
+  target,
+  onClose,
+}: {
+  gid: string;
+  target: Member;
+  onClose: () => void;
+}) {
   const [role, setRoleSel] = useState<Role>(target.role);
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -256,14 +314,24 @@ function ManageSheet({ gid, target, onClose }: { gid: string; target: Member; on
           <span class="field__label">Role</span>
           <div class="segmented" role="group" aria-label="Role">
             {ROLES.map((r) => (
-              <button key={r} class="segmented__btn" aria-pressed={role === r} onClick={() => setRoleSel(r)}>
+              <button
+                key={r}
+                class="segmented__btn"
+                aria-pressed={role === r}
+                onClick={() => setRoleSel(r)}
+              >
                 {ROLE_LABEL[r]}
               </button>
             ))}
           </div>
           <span class="field__hint">guest and alumnus are read-only roles</span>
         </div>
-        <Pill variant="primary" busy={busy} disabled={role === target.role} onClick={() => void applyRole()}>
+        <Pill
+          variant="primary"
+          busy={busy}
+          disabled={role === target.role}
+          onClick={() => void applyRole()}
+        >
           Change role
         </Pill>
         <hr class="rule" />

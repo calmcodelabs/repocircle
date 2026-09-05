@@ -67,11 +67,29 @@ export function normalizeEvent(e: GhFeedEvent, repoFullName: string): Normalized
       const title = String(pr?.title ?? '').slice(0, 120);
       const url = String(pr?.html_url ?? repoUrl);
       if (p.action === 'opened')
-        return { ...base, type: 'pr_opened', summary: `PR #${num} opened: ${title}`, url, counters: { prsOpened: 1 } };
+        return {
+          ...base,
+          type: 'pr_opened',
+          summary: `PR #${num} opened: ${title}`,
+          url,
+          counters: { prsOpened: 1 },
+        };
       if (p.action === 'closed' && pr?.merged)
-        return { ...base, type: 'pr_merged', summary: `PR #${num} merged: ${title}`, url, counters: { prsMerged: 1 } };
+        return {
+          ...base,
+          type: 'pr_merged',
+          summary: `PR #${num} merged: ${title}`,
+          url,
+          counters: { prsMerged: 1 },
+        };
       if (p.action === 'closed')
-        return { ...base, type: 'pr_closed', summary: `PR #${num} closed: ${title}`, url, counters: {} };
+        return {
+          ...base,
+          type: 'pr_closed',
+          summary: `PR #${num} closed: ${title}`,
+          url,
+          counters: {},
+        };
       return null;
     }
     case 'IssuesEvent': {
@@ -80,9 +98,21 @@ export function normalizeEvent(e: GhFeedEvent, repoFullName: string): Normalized
       const title = String(issue?.title ?? '').slice(0, 120);
       const url = String(issue?.html_url ?? repoUrl);
       if (p.action === 'opened')
-        return { ...base, type: 'issue_opened', summary: `Issue #${num} opened: ${title}`, url, counters: { issuesOpened: 1 } };
+        return {
+          ...base,
+          type: 'issue_opened',
+          summary: `Issue #${num} opened: ${title}`,
+          url,
+          counters: { issuesOpened: 1 },
+        };
       if (p.action === 'closed')
-        return { ...base, type: 'issue_closed', summary: `Issue #${num} closed: ${title}`, url, counters: {} };
+        return {
+          ...base,
+          type: 'issue_closed',
+          summary: `Issue #${num} closed: ${title}`,
+          url,
+          counters: {},
+        };
       return null;
     }
     case 'ReleaseEvent': {

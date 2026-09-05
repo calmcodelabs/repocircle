@@ -13,7 +13,9 @@ export async function anonymizeMyContent(gid: string, uid: string): Promise<numb
   );
   if (snap.empty) return 0;
   const batch = writeBatch(db());
-  snap.forEach((d) => batch.update(d.ref, { authorLogin: '(left the group)', authorAvatarUrl: '' }));
+  snap.forEach((d) =>
+    batch.update(d.ref, { authorLogin: '(left the group)', authorAvatarUrl: '' }),
+  );
   await batch.commit();
   return snap.size;
 }

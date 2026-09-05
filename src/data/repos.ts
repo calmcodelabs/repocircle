@@ -68,7 +68,11 @@ export async function getExistingRepoIds(gid: string): Promise<Set<string>> {
 }
 
 /** Register repos that aren't already in the group. Returns how many were added. */
-export async function registerRepos(gid: string, me: MyProfile, ghRepos: GhRepo[]): Promise<number> {
+export async function registerRepos(
+  gid: string,
+  me: MyProfile,
+  ghRepos: GhRepo[],
+): Promise<number> {
   const existing = await getExistingRepoIds(gid);
   const fresh = ghRepos.filter((r) => !existing.has(String(r.id)));
   for (let i = 0; i < fresh.length; i += 400) {
@@ -87,7 +91,11 @@ export async function registerRepos(gid: string, me: MyProfile, ghRepos: GhRepo[
   return fresh.length;
 }
 
-export async function setRepoStatus(gid: string, repoId: string, status: RepoStatus): Promise<void> {
+export async function setRepoStatus(
+  gid: string,
+  repoId: string,
+  status: RepoStatus,
+): Promise<void> {
   await updateDoc(doc(db(), `groups/${gid}/repos/${repoId}`), { status });
 }
 
@@ -95,7 +103,9 @@ export async function setRepoStatus(gid: string, repoId: string, status: RepoSta
 export async function removeRepo(gid: string, me: MyProfile, repo: Repo): Promise<void> {
   for (const sub of ['events', 'activityDaily']) {
     for (;;) {
-      const snap = await getDocs(query(collection(db(), `groups/${gid}/repos/${repo.id}/${sub}`), limit(400)));
+      const snap = await getDocs(
+        query(collection(db(), `groups/${gid}/repos/${repo.id}/${sub}`), limit(400)),
+      );
       if (snap.empty) break;
       const batch = writeBatch(db());
       snap.forEach((d) => batch.delete(d.ref));
@@ -110,7 +120,6 @@ export async function removeRepo(gid: string, me: MyProfile, repo: Repo): Promis
 export function canManageRepo(repo: Repo, uid: string | undefined, isAdmin: boolean): boolean {
   return !!uid && (isAdmin || repo.ownerUid === uid || repo.registeredBy === uid);
 }
-
 
 export type MyRepo = Repo & { gid: string; groupName: string };
 

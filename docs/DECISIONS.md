@@ -132,3 +132,19 @@ primitives are unchanged — this is a change of who is in the room, not a rewri
 but it promotes filtering, member identity, a durable gated join link, and a
 joined-and-shipped record from optional to core. Recorded as a hypothesis to test;
 rationale and implications in `docs/POSITIONING.md`.
+
+
+**ADR-018 · Profiles are identity, not showcase; skills are seeded from code.**
+First milestone against ADR-017: at 200 semi-strangers a comment carries nothing
+unless the person does, so members get a page — but PRD §2 is explicit that
+profile/showcase layers killed prior attempts. The line we hold: profiles are
+group-scoped (no cross-circle identity), show declared offers (helpWith/learning)
+and derived facts (languages from repos actually shared here, counted client-side,
+never stored), and carry no aggregate numbers, streaks, or anything that ranks one
+member against another. The matcher joins repo.needs against member.helpWith with
+'anything' matching any non-empty offer. The coverage problem — blank forms stay
+blank — is solved by seeding the edit sheet from the languages in the member's own
+repos and asking for confirmation, not composition; suggestions never claim
+'design' or 'feedback' because code can't testify to those. helpWith shares the
+needs vocabulary so matching is an exact join, enforced in rules (closed set, no
+free text). Learning is bounded free text (6 × 24 chars, per-index rules checks).

@@ -3,9 +3,13 @@ import type { GhRepo } from './types';
 
 /** The signed-in member's public repos they own, most recently pushed first (F-04). */
 export async function listMyPublicRepos(): Promise<GhRepo[]> {
-  const page1 = await ghGet<GhRepo[]>('/user/repos?visibility=public&affiliation=owner&sort=pushed&per_page=100');
+  const page1 = await ghGet<GhRepo[]>(
+    '/user/repos?visibility=public&affiliation=owner&sort=pushed&per_page=100',
+  );
   if (page1.length < 100) return page1;
-  const page2 = await ghGet<GhRepo[]>('/user/repos?visibility=public&affiliation=owner&sort=pushed&per_page=100&page=2');
+  const page2 = await ghGet<GhRepo[]>(
+    '/user/repos?visibility=public&affiliation=owner&sort=pushed&per_page=100&page=2',
+  );
   return [...page1, ...page2]; // 200-repo cap is plenty for the import picker
 }
 
@@ -44,7 +48,9 @@ export async function createCollabIssue(
     });
   } catch (e) {
     if (!(e instanceof GhError) || e.kind !== 'forbidden') throw e;
-    issue = await ghSend<GhIssue>('POST', `/repos/${fullName}/issues`, payload, { immediate: true });
+    issue = await ghSend<GhIssue>('POST', `/repos/${fullName}/issues`, payload, {
+      immediate: true,
+    });
   }
   if (!issue) throw new Error('unexpected empty issue response');
   return issue;
@@ -55,7 +61,11 @@ export async function inviteCollaborator(fullName: string, username: string): Pr
   await ghSend('PUT', `/repos/${fullName}/collaborators/${encodeURIComponent(username)}`, {});
 }
 
-export async function closeIssueWithComment(fullName: string, issueNumber: number, comment: string): Promise<void> {
+export async function closeIssueWithComment(
+  fullName: string,
+  issueNumber: number,
+  comment: string,
+): Promise<void> {
   await ghSend('POST', `/repos/${fullName}/issues/${issueNumber}/comments`, { body: comment });
   await ghSend('PATCH', `/repos/${fullName}/issues/${issueNumber}`, { state: 'closed' });
 }

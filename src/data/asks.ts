@@ -28,7 +28,11 @@ function askDocs(snap: { docs: Array<{ id: string; data: () => unknown }> }): As
 }
 
 /** Open + claimed asks for the Home block, newest first. */
-export function watchNeedsHelp(gid: string, cb: (asks: Ask[]) => void, onError: (c: string) => void): Unsubscribe {
+export function watchNeedsHelp(
+  gid: string,
+  cb: (asks: Ask[]) => void,
+  onError: (c: string) => void,
+): Unsubscribe {
   const q = query(
     collection(db(), `groups/${gid}/asks`),
     where('state', 'in', ['open', 'claimed']),
@@ -51,11 +55,15 @@ export function watchNeedsHelp(gid: string, cb: (asks: Ask[]) => void, onError: 
 
 export function watchAsk(gid: string, askId: string, cb: (ask: Ask | null) => void): Unsubscribe {
   return onSnapshot(doc(db(), `groups/${gid}/asks/${askId}`), (snap) =>
-    cb(snap.exists() ? ({ id: snap.id, ...(snap.data() as Omit<Ask, 'id'>) }) : null),
+    cb(snap.exists() ? { id: snap.id, ...(snap.data() as Omit<Ask, 'id'>) } : null),
   );
 }
 
-export function watchClaims(gid: string, askId: string, cb: (claims: AskClaim[]) => void): Unsubscribe {
+export function watchClaims(
+  gid: string,
+  askId: string,
+  cb: (claims: AskClaim[]) => void,
+): Unsubscribe {
   return onSnapshot(collection(db(), `groups/${gid}/asks/${askId}/claims`), (snap) =>
     cb(snap.docs.map((d) => ({ uid: d.id, ...(d.data() as Omit<AskClaim, 'uid'>) }))),
   );
@@ -84,7 +92,14 @@ export function watchMyClaims(gid: string, uid: string, cb: (asks: Ask[]) => voi
 export async function createAsk(
   gid: string,
   profile: MyProfile,
-  input: { kind: AskKind; title: string; detail?: string; tags: string[]; repoId?: string | null; pairingUrl?: string | null },
+  input: {
+    kind: AskKind;
+    title: string;
+    detail?: string;
+    tags: string[];
+    repoId?: string | null;
+    pairingUrl?: string | null;
+  },
 ): Promise<string> {
   const id = randomToken(16);
   await setDoc(doc(db(), `groups/${gid}/asks/${id}`), {
@@ -109,7 +124,12 @@ export async function createAsk(
   return id;
 }
 
-export async function claimAsk(gid: string, ask: Ask, profile: MyProfile, note: string): Promise<void> {
+export async function claimAsk(
+  gid: string,
+  ask: Ask,
+  profile: MyProfile,
+  note: string,
+): Promise<void> {
   const batch = writeBatch(db());
   batch.set(doc(db(), `groups/${gid}/asks/${ask.id}/claims/${profile.uid}`), {
     login: profile.login,
@@ -142,7 +162,10 @@ export async function unclaimAsk(gid: string, ask: Ask, uid: string): Promise<vo
 }
 
 export async function resolveAsk(gid: string, askId: string): Promise<void> {
-  await updateDoc(doc(db(), `groups/${gid}/asks/${askId}`), { state: 'resolved', resolvedAt: serverTimestamp() });
+  await updateDoc(doc(db(), `groups/${gid}/asks/${askId}`), {
+    state: 'resolved',
+    resolvedAt: serverTimestamp(),
+  });
 }
 
 export async function reopenAsk(gid: string, askId: string): Promise<void> {
@@ -198,7 +221,14 @@ export async function fetchMyOpenItems(
           where('state', 'in', ['open', 'claimed']),
           limit(10),
         ),
-      ).then((s) => s.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Ask, 'id'>), gid: g.id, groupName: g.name }))),
+      ).then((s) =>
+        s.docs.map((d) => ({
+          id: d.id,
+          ...(d.data() as Omit<Ask, 'id'>),
+          gid: g.id,
+          groupName: g.name,
+        })),
+      ),
       getDocs(
         query(
           collection(db(), `groups/${g.id}/asks`),
@@ -206,7 +236,14 @@ export async function fetchMyOpenItems(
           where('state', 'in', ['open', 'claimed']),
           limit(10),
         ),
-      ).then((s) => s.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Ask, 'id'>), gid: g.id, groupName: g.name }))),
+      ).then((s) =>
+        s.docs.map((d) => ({
+          id: d.id,
+          ...(d.data() as Omit<Ask, 'id'>),
+          gid: g.id,
+          groupName: g.name,
+        })),
+      ),
     ]),
   );
   const seen = new Set<string>();

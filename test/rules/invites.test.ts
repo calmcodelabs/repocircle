@@ -1,5 +1,9 @@
 import { describe, it, beforeAll, beforeEach, afterAll } from 'vitest';
-import { assertFails, assertSucceeds, type RulesTestEnvironment } from '@firebase/rules-unit-testing';
+import {
+  assertFails,
+  assertSucceeds,
+  type RulesTestEnvironment,
+} from '@firebase/rules-unit-testing';
 import { doc, getDoc, getDocs, collection, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { createEnv, db, GID, inDays, memberDoc, seedGroup } from './helpers';
 
@@ -76,7 +80,10 @@ describe('invites + join flow', () => {
     await seedInvite('tok6');
     const newbie = env.authenticatedContext('newbie');
     await assertSucceeds(
-      setDoc(doc(db(newbie), `groups/${GID}/members/newbie`), memberDoc('newbie', 'member', 'tok6')),
+      setDoc(
+        doc(db(newbie), `groups/${GID}/members/newbie`),
+        memberDoc('newbie', 'member', 'tok6'),
+      ),
     );
   });
 
@@ -92,7 +99,10 @@ describe('invites + join flow', () => {
     await seedInvite('tok8', { expiresAt: inDays(-1) });
     const newbie = env.authenticatedContext('newbie');
     await assertFails(
-      setDoc(doc(db(newbie), `groups/${GID}/members/newbie`), memberDoc('newbie', 'member', 'tok8')),
+      setDoc(
+        doc(db(newbie), `groups/${GID}/members/newbie`),
+        memberDoc('newbie', 'member', 'tok8'),
+      ),
     );
   });
 
@@ -100,7 +110,10 @@ describe('invites + join flow', () => {
     await seedInvite('tok9', { revoked: true });
     const newbie = env.authenticatedContext('newbie');
     await assertFails(
-      setDoc(doc(db(newbie), `groups/${GID}/members/newbie`), memberDoc('newbie', 'member', 'tok9')),
+      setDoc(
+        doc(db(newbie), `groups/${GID}/members/newbie`),
+        memberDoc('newbie', 'member', 'tok9'),
+      ),
     );
   });
 
@@ -109,6 +122,8 @@ describe('invites + join flow', () => {
     const alice = env.authenticatedContext('alice');
     const bob = env.authenticatedContext('bob');
     await assertFails(updateDoc(doc(db(bob), `groups/${GID}/invites/tok10`), { revoked: true }));
-    await assertSucceeds(updateDoc(doc(db(alice), `groups/${GID}/invites/tok10`), { revoked: true }));
+    await assertSucceeds(
+      updateDoc(doc(db(alice), `groups/${GID}/invites/tok10`), { revoked: true }),
+    );
   });
 });

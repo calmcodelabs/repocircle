@@ -1,5 +1,9 @@
 import { describe, it, beforeAll, beforeEach, afterAll } from 'vitest';
-import { assertFails, assertSucceeds, type RulesTestEnvironment } from '@firebase/rules-unit-testing';
+import {
+  assertFails,
+  assertSucceeds,
+  type RulesTestEnvironment,
+} from '@firebase/rules-unit-testing';
 import { Timestamp, doc, getDoc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { createEnv, db, GID, seedGroup, memberDoc } from './helpers';
 
@@ -52,25 +56,33 @@ describe('repos', () => {
   it('guest cannot register; outsider cannot read', async () => {
     const gia = env.authenticatedContext('gia');
     const mallory = env.authenticatedContext('mallory');
-    await assertFails(setDoc(doc(db(gia), `groups/${GID}/repos/22222`), repoDoc({ registeredBy: 'gia' })));
+    await assertFails(
+      setDoc(doc(db(gia), `groups/${GID}/repos/22222`), repoDoc({ registeredBy: 'gia' })),
+    );
     await assertFails(getDoc(doc(db(mallory), `groups/${GID}/repos/12345`)));
   });
 
   it('registrant spoofing denied', async () => {
     const carol = env.authenticatedContext('carol');
-    await assertFails(setDoc(doc(db(carol), `groups/${GID}/repos/33333`), repoDoc({ registeredBy: 'bob' })));
+    await assertFails(
+      setDoc(doc(db(carol), `groups/${GID}/repos/33333`), repoDoc({ registeredBy: 'bob' })),
+    );
   });
 
   it('owner can change status; unrelated member cannot', async () => {
     const bob = env.authenticatedContext('bob');
     const carol = env.authenticatedContext('carol');
     await assertFails(updateDoc(doc(db(carol), `groups/${GID}/repos/12345`), { status: 'paused' }));
-    await assertSucceeds(updateDoc(doc(db(bob), `groups/${GID}/repos/12345`), { status: 'paused' }));
+    await assertSucceeds(
+      updateDoc(doc(db(bob), `groups/${GID}/repos/12345`), { status: 'paused' }),
+    );
   });
 
   it('admin can change status and archive', async () => {
     const alice = env.authenticatedContext('alice');
-    await assertSucceeds(updateDoc(doc(db(alice), `groups/${GID}/repos/12345`), { status: 'done', archived: true }));
+    await assertSucceeds(
+      updateDoc(doc(db(alice), `groups/${GID}/repos/12345`), { status: 'done', archived: true }),
+    );
   });
 
   it('any member may update poll state and stats (shared polling), not product fields', async () => {
@@ -93,8 +105,12 @@ describe('repos', () => {
   it('status enum and demoUrl scheme enforced', async () => {
     const bob = env.authenticatedContext('bob');
     await assertFails(updateDoc(doc(db(bob), `groups/${GID}/repos/12345`), { status: 'winning' }));
-    await assertFails(updateDoc(doc(db(bob), `groups/${GID}/repos/12345`), { demoUrl: 'http://insecure.example' }));
-    await assertSucceeds(updateDoc(doc(db(bob), `groups/${GID}/repos/12345`), { demoUrl: 'https://demo.example' }));
+    await assertFails(
+      updateDoc(doc(db(bob), `groups/${GID}/repos/12345`), { demoUrl: 'http://insecure.example' }),
+    );
+    await assertSucceeds(
+      updateDoc(doc(db(bob), `groups/${GID}/repos/12345`), { demoUrl: 'https://demo.example' }),
+    );
   });
 
   it('delete: registrant and admin yes, unrelated member no', async () => {
@@ -114,7 +130,11 @@ describe('idea board fields and interests', () => {
   it('owner sets pitch/needs/tags; an unrelated member cannot', async () => {
     const bob = env.authenticatedContext('bob');
     const carol = env.authenticatedContext('carol');
-    const idea = { pitch: 'What if your chat saved things for you?', needs: 'frontend', domainTags: ['web'] };
+    const idea = {
+      pitch: 'What if your chat saved things for you?',
+      needs: 'frontend',
+      domainTags: ['web'],
+    };
     await assertFails(updateDoc(doc(db(carol), `groups/${GID}/repos/12345`), idea));
     await assertSucceeds(updateDoc(doc(db(bob), `groups/${GID}/repos/12345`), idea));
   });
@@ -125,7 +145,9 @@ describe('idea board fields and interests', () => {
       updateDoc(doc(db(bob), `groups/${GID}/repos/12345`), { pitch: 'x'.repeat(201) }),
     );
     await assertFails(
-      updateDoc(doc(db(bob), `groups/${GID}/repos/12345`), { domainTags: ['a', 'b', 'c', 'd', 'e'] }),
+      updateDoc(doc(db(bob), `groups/${GID}/repos/12345`), {
+        domainTags: ['a', 'b', 'c', 'd', 'e'],
+      }),
     );
   });
 
@@ -136,12 +158,18 @@ describe('idea board fields and interests', () => {
       setDoc(doc(db(carol), `groups/${GID}/repos/12345/interests/carol`), interest),
     );
     await assertFails(
-      setDoc(doc(db(carol), `groups/${GID}/repos/12345/interests/bob`), { ...interest, login: 'bob' }),
+      setDoc(doc(db(carol), `groups/${GID}/repos/12345/interests/bob`), {
+        ...interest,
+        login: 'bob',
+      }),
     );
     // guests are read-only
     const gia = env.authenticatedContext('gia');
     await assertFails(
-      setDoc(doc(db(gia), `groups/${GID}/repos/12345/interests/gia`), { ...interest, login: 'gia' }),
+      setDoc(doc(db(gia), `groups/${GID}/repos/12345/interests/gia`), {
+        ...interest,
+        login: 'gia',
+      }),
     );
   });
 
@@ -149,10 +177,15 @@ describe('idea board fields and interests', () => {
     const carol = env.authenticatedContext('carol');
     await assertSucceeds(
       setDoc(doc(db(carol), `groups/${GID}/repos/12345/interests/carol`), {
-        login: 'carol', avatarUrl: '', createdAt: Timestamp.now(), v: 1,
+        login: 'carol',
+        avatarUrl: '',
+        createdAt: Timestamp.now(),
+        v: 1,
       }),
     );
-    await assertSucceeds(updateDoc(doc(db(carol), `groups/${GID}/repos/12345`), { interestCount: 1 }));
+    await assertSucceeds(
+      updateDoc(doc(db(carol), `groups/${GID}/repos/12345`), { interestCount: 1 }),
+    );
     await assertSucceeds(deleteDoc(doc(db(carol), `groups/${GID}/repos/12345/interests/carol`)));
   });
 });
@@ -174,21 +207,36 @@ describe('comments', () => {
   it('members comment as themselves; guests cannot; authorship cannot be forged', async () => {
     const carol = env.authenticatedContext('carol');
     const gia = env.authenticatedContext('gia');
-    await assertSucceeds(setDoc(doc(db(carol), `groups/${GID}/repos/12345/comments/c1`), comment('carol')));
-    await assertFails(setDoc(doc(db(carol), `groups/${GID}/repos/12345/comments/c2`), comment('bob')));
-    await assertFails(setDoc(doc(db(gia), `groups/${GID}/repos/12345/comments/c3`), comment('gia')));
+    await assertSucceeds(
+      setDoc(doc(db(carol), `groups/${GID}/repos/12345/comments/c1`), comment('carol')),
+    );
+    await assertFails(
+      setDoc(doc(db(carol), `groups/${GID}/repos/12345/comments/c2`), comment('bob')),
+    );
+    await assertFails(
+      setDoc(doc(db(gia), `groups/${GID}/repos/12345/comments/c3`), comment('gia')),
+    );
   });
 
   it('empty and oversize bodies are rejected, and nobody can self-pin', async () => {
     const carol = env.authenticatedContext('carol');
     await assertFails(
-      setDoc(doc(db(carol), `groups/${GID}/repos/12345/comments/c4`), { ...comment('carol'), body: '' }),
+      setDoc(doc(db(carol), `groups/${GID}/repos/12345/comments/c4`), {
+        ...comment('carol'),
+        body: '',
+      }),
     );
     await assertFails(
-      setDoc(doc(db(carol), `groups/${GID}/repos/12345/comments/c5`), { ...comment('carol'), body: 'x'.repeat(1001) }),
+      setDoc(doc(db(carol), `groups/${GID}/repos/12345/comments/c5`), {
+        ...comment('carol'),
+        body: 'x'.repeat(1001),
+      }),
     );
     await assertFails(
-      setDoc(doc(db(carol), `groups/${GID}/repos/12345/comments/c6`), { ...comment('carol'), pinned: true }),
+      setDoc(doc(db(carol), `groups/${GID}/repos/12345/comments/c6`), {
+        ...comment('carol'),
+        pinned: true,
+      }),
     );
   });
 
@@ -198,8 +246,12 @@ describe('comments', () => {
     });
     const carol = env.authenticatedContext('carol');
     const bob = env.authenticatedContext('bob');
-    await assertSucceeds(updateDoc(doc(db(carol), `groups/${GID}/repos/12345/comments/c7`), { body: 'edited' }));
-    await assertFails(updateDoc(doc(db(bob), `groups/${GID}/repos/12345/comments/c7`), { body: 'hijacked' }));
+    await assertSucceeds(
+      updateDoc(doc(db(carol), `groups/${GID}/repos/12345/comments/c7`), { body: 'edited' }),
+    );
+    await assertFails(
+      updateDoc(doc(db(bob), `groups/${GID}/repos/12345/comments/c7`), { body: 'hijacked' }),
+    );
   });
 
   it('only the repo owner or an admin can pin', async () => {
@@ -208,8 +260,12 @@ describe('comments', () => {
     });
     const carol = env.authenticatedContext('carol');
     const bob = env.authenticatedContext('bob'); // repo owner
-    await assertFails(updateDoc(doc(db(carol), `groups/${GID}/repos/12345/comments/c8`), { pinned: true }));
-    await assertSucceeds(updateDoc(doc(db(bob), `groups/${GID}/repos/12345/comments/c8`), { pinned: true }));
+    await assertFails(
+      updateDoc(doc(db(carol), `groups/${GID}/repos/12345/comments/c8`), { pinned: true }),
+    );
+    await assertSucceeds(
+      updateDoc(doc(db(bob), `groups/${GID}/repos/12345/comments/c8`), { pinned: true }),
+    );
   });
 
   it('author, repo owner and admin can delete; a bystander cannot', async () => {

@@ -15,7 +15,6 @@ import { Pill } from '../ui/Pill';
 import { toast } from '../ui/Toast';
 import { LIMITS } from '../util/limits';
 
-
 export function GroupSettings({ gid }: { gid: string }) {
   const me = myMembership.value;
   const iAmAdmin = me?.role === 'admin';
@@ -33,9 +32,7 @@ export function GroupSettings({ gid }: { gid: string }) {
       {iAmAdmin && <DiscordCard gid={gid} />}
       <LeaveCard gid={gid} />
       {iAmAdmin && <DeleteCard gid={gid} />}
-      {!iAmAdmin && (
-        <p class="small faint">Group profile and invites are managed by admins.</p>
-      )}
+      {!iAmAdmin && <p class="small faint">Group profile and invites are managed by admins.</p>}
     </main>
   );
 }
@@ -72,8 +69,24 @@ function ProfileCard({ gid }: { gid: string }) {
   return (
     <section class="card stack">
       <h3>Profile</h3>
-      <Field label="Name" value={name} onInput={(v) => { setName(v); setDirty(true); }} maxLength={LIMITS.GROUP_NAME_MAX} />
-      <Field label="Description" value={desc} onInput={(v) => { setDesc(v); setDirty(true); }} maxLength={LIMITS.GROUP_DESC_MAX} />
+      <Field
+        label="Name"
+        value={name}
+        onInput={(v) => {
+          setName(v);
+          setDirty(true);
+        }}
+        maxLength={LIMITS.GROUP_NAME_MAX}
+      />
+      <Field
+        label="Description"
+        value={desc}
+        onInput={(v) => {
+          setDesc(v);
+          setDirty(true);
+        }}
+        maxLength={LIMITS.GROUP_DESC_MAX}
+      />
       <Pill variant="primary" disabled={!nameOk || !dirty} busy={busy} onClick={() => void save()}>
         Save
       </Pill>
@@ -81,8 +94,10 @@ function ProfileCard({ gid }: { gid: string }) {
   );
 }
 
-
-const TOGGLES: Array<{ key: 'postAsks' | 'postClaims' | 'postCollabs' | 'postShipped'; label: string }> = [
+const TOGGLES: Array<{
+  key: 'postAsks' | 'postClaims' | 'postCollabs' | 'postShipped';
+  label: string;
+}> = [
   { key: 'postAsks', label: 'New asks & stuck flags' },
   { key: 'postClaims', label: 'Claims & resolutions' },
   { key: 'postCollabs', label: 'Collab requests & decisions' },
@@ -166,8 +181,8 @@ function DiscordCard({ gid }: { gid: string }) {
       <h3>Discord</h3>
       <p class="small dim">
         Server → channel ⚙ → Integrations → Webhooks → New Webhook → copy URL. Asks, claims and
-        collab requests will post there with links back here. Any member’s app can post through
-        it — treat it like the channel is group-writable (it already is).
+        collab requests will post there with links back here. Any member’s app can post through it —
+        treat it like the channel is group-writable (it already is).
       </p>
       <Field
         label="Webhook URL"
@@ -176,14 +191,22 @@ function DiscordCard({ gid }: { gid: string }) {
         placeholder="https://discord.com/api/webhooks/…"
         error={url && !urlOk ? 'That doesn’t look like a Discord webhook URL.' : undefined}
       />
-      <Field label="Channel label (just for you)" value={label} onInput={setLabel} maxLength={60} placeholder="#dev-help" />
+      <Field
+        label="Channel label (just for you)"
+        value={label}
+        onInput={setLabel}
+        maxLength={60}
+        placeholder="#dev-help"
+      />
       <div class="stack">
         {TOGGLES.map((t) => (
           <label key={t.key} class="row small">
             <input
               type="checkbox"
               checked={flags[t.key]}
-              onChange={(e) => setFlags({ ...flags, [t.key]: (e.currentTarget as HTMLInputElement).checked })}
+              onChange={(e) =>
+                setFlags({ ...flags, [t.key]: (e.currentTarget as HTMLInputElement).checked })
+              }
             />
             {t.label}
           </label>
@@ -198,7 +221,9 @@ function DiscordCard({ gid }: { gid: string }) {
           busy={busy}
           onClick={() =>
             void testDiscord(url.trim()).then((ok) =>
-              ok ? toast('Test post sent — check the channel') : toast('Discord rejected the test post.', { error: true }),
+              ok
+                ? toast('Test post sent — check the channel')
+                : toast('Discord rejected the test post.', { error: true }),
             )
           }
         >
@@ -216,7 +241,9 @@ function DiscordCard({ gid }: { gid: string }) {
 
 async function updateMyChecklist(gid: string, uid: string): Promise<void> {
   const { updateDoc: upd } = await import('firebase/firestore');
-  await upd(doc(db(), `groups/${gid}/members/${uid}`), { 'checklist.connectedChat': true }).catch(() => undefined);
+  await upd(doc(db(), `groups/${gid}/members/${uid}`), { 'checklist.connectedChat': true }).catch(
+    () => undefined,
+  );
 }
 
 function DeleteCard({ gid }: { gid: string }) {
@@ -246,8 +273,8 @@ function DeleteCard({ gid }: { gid: string }) {
       <h3>Delete circle</h3>
       <p class="small dim">
         Permanently deletes {groupName || 'this circle'} for everyone — its repo registry, asks,
-        activity history and invites. The GitHub repositories themselves are untouched. This
-        cannot be undone.
+        activity history and invites. The GitHub repositories themselves are untouched. This cannot
+        be undone.
       </p>
       <Field
         label={`Type “${groupName}” to confirm`}
@@ -299,11 +326,17 @@ function LeaveCard({ gid }: { gid: string }) {
       ) : (
         <p class="small dim">
           Your posts stay but are anonymized (“left the group”). Rejoining needs a fresh invite.
-          {members.length === 1 && ' You’re the only member — deleting the circle below is the cleaner exit.'}
+          {members.length === 1 &&
+            ' You’re the only member — deleting the circle below is the cleaner exit.'}
         </p>
       )}
       {confirming ? (
-        <Pill variant="danger" busy={busy} disabled={lastAdminWithOthers} onClick={() => void onLeave()}>
+        <Pill
+          variant="danger"
+          busy={busy}
+          disabled={lastAdminWithOthers}
+          onClick={() => void onLeave()}
+        >
           Yes, leave {activeGroup.value?.name ?? 'this group'}
         </Pill>
       ) : (

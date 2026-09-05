@@ -34,7 +34,11 @@ const FIRST_POLL_WINDOW_MS = 30 * 86_400_000; // backfill cap on a repo's first 
 const DAILY_KEEP_DAYS = 21;
 
 export type CycleEntry = { repo: string; outcome: string; at: number };
-export const pollState = signal<{ lastCycleAt: number | null; running: boolean; results: CycleEntry[] }>({
+export const pollState = signal<{
+  lastCycleAt: number | null;
+  running: boolean;
+  results: CycleEntry[];
+}>({
   lastCycleAt: null,
   running: false,
   results: [],
@@ -74,7 +78,9 @@ async function runCycle(gid: string, minStaleMs = POLL_INTERVAL_MS): Promise<voi
   cycleInFlight = true;
   pollState.value = { ...pollState.value, running: true };
   try {
-    const snap = await getDocs(query(collection(db(), `groups/${gid}/repos`), where('archived', '==', false)));
+    const snap = await getDocs(
+      query(collection(db(), `groups/${gid}/repos`), where('archived', '==', false)),
+    );
     const repos = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Repo, 'id'>) }));
     for (const repo of repos) {
       const last = repo.poll?.lastPolledAt?.toMillis() ?? 0;
@@ -150,7 +156,9 @@ async function pollRepo(gid: string, repo: Repo): Promise<string> {
   );
 
   // Merge daily counters, prune old buckets.
-  const daily: Record<string, DailyCounters> = { ...((repo as { daily?: Record<string, DailyCounters> }).daily ?? {}) };
+  const daily: Record<string, DailyCounters> = {
+    ...((repo as { daily?: Record<string, DailyCounters> }).daily ?? {}),
+  };
   for (const ev of normalized) {
     const key = dayKey(ev.occurredAt);
     const cur = daily[key] ?? { ...ZERO_COUNTERS };

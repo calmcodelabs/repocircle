@@ -1,5 +1,9 @@
 import { describe, it, beforeAll, beforeEach, afterAll } from 'vitest';
-import { assertFails, assertSucceeds, type RulesTestEnvironment } from '@firebase/rules-unit-testing';
+import {
+  assertFails,
+  assertSucceeds,
+  type RulesTestEnvironment,
+} from '@firebase/rules-unit-testing';
 import {
   Timestamp,
   collection,
@@ -61,7 +65,9 @@ describe('founder create-then-read (client flow)', () => {
 
     // 2) GroupShell read-back: group doc + members query (orderBy joinedAt)
     await assertSucceeds(getDoc(doc(d, `groups/${gid}`)));
-    await assertSucceeds(getDocs(query(collection(d, `groups/${gid}/members`), orderBy('joinedAt', 'asc'))));
+    await assertSucceeds(
+      getDocs(query(collection(d, `groups/${gid}/members`), orderBy('joinedAt', 'asc'))),
+    );
   });
 
   it('a non-member is denied reading the same group + members', async () => {
@@ -71,6 +77,8 @@ describe('founder create-then-read (client flow)', () => {
     });
     const mallory = env.authenticatedContext('mallory');
     await assertFails(getDoc(doc(db(mallory), 'groups/g2')));
-    await assertFails(getDocs(query(collection(db(mallory), 'groups/g2/members'), orderBy('joinedAt', 'asc'))));
+    await assertFails(
+      getDocs(query(collection(db(mallory), 'groups/g2/members'), orderBy('joinedAt', 'asc'))),
+    );
   });
 });

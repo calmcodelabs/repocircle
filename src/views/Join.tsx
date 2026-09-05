@@ -97,7 +97,9 @@ export function Join({ gid, token }: { gid: string; token: string }) {
                 <div class="stats stats--divided join__stats">
                   <div class="stat">
                     <span class="stat__value">{invite.memberCount ?? '–'}</span>
-                    <span class="stat__label">{invite.memberCount === 1 ? 'member' : 'members'}</span>
+                    <span class="stat__label">
+                      {invite.memberCount === 1 ? 'member' : 'members'}
+                    </span>
                   </div>
                   <div class="stat">
                     <span class="stat__value">{invite.repoCount ?? '–'}</span>
@@ -139,14 +141,17 @@ export function Join({ gid, token }: { gid: string; token: string }) {
                   <Icon name="users" />
                 </span>
                 <span class="small dim">
-                  Private to this circle. Reads public repos only, and there are no scores,
-                  rankings or leaderboards — anywhere.
+                  Private to this circle. Reads public repos only, and there are no scores, rankings
+                  or leaderboards — anywhere.
                 </span>
               </div>
             </section>
           </>
         ) : (
-          <EmptyState line={STATE_LINE[state as Exclude<InviteState, 'valid'>]} action={<a href="#/">Go home</a>} />
+          <EmptyState
+            line={STATE_LINE[state as Exclude<InviteState, 'valid'>]}
+            action={<a href="#/">Go home</a>}
+          />
         )}
       </main>
     </div>

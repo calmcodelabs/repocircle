@@ -79,10 +79,18 @@ export function AskComposer({ gid, onClose }: { gid: string; onClose: () => void
     <Sheet title={kind === 'ask' ? 'Post an ask' : 'Flag that you’re stuck'} onClose={onClose}>
       <div class="stack">
         <div class="segmented" role="group" aria-label="Kind">
-          <button class="segmented__btn" aria-pressed={kind === 'ask'} onClick={() => setKind('ask')}>
+          <button
+            class="segmented__btn"
+            aria-pressed={kind === 'ask'}
+            onClick={() => setKind('ask')}
+          >
             Ask
           </button>
-          <button class="segmented__btn" aria-pressed={kind === 'stuck'} onClick={() => setKind('stuck')}>
+          <button
+            class="segmented__btn"
+            aria-pressed={kind === 'stuck'}
+            onClick={() => setKind('stuck')}
+          >
             Stuck
           </button>
         </div>
@@ -91,7 +99,9 @@ export function AskComposer({ gid, onClose }: { gid: string; onClose: () => void
           value={title}
           onInput={setTitle}
           maxLength={LIMITS.TITLE_MAX}
-          placeholder={kind === 'ask' ? 'Review my auth PR' : 'Docker networking, containers can’t talk'}
+          placeholder={
+            kind === 'ask' ? 'Review my auth PR' : 'Docker networking, containers can’t talk'
+          }
           autofocus
         />
         {kind === 'ask' && (
@@ -123,7 +133,12 @@ export function AskComposer({ gid, onClose }: { gid: string; onClose: () => void
           <span class="field__label">Tags</span>
           <div class="row wrap">
             {tagChoices.map((t) => (
-              <button key={t} class={`chip ${tags.has(t) ? 'chip--accent' : ''}`} onClick={() => toggleTag(t)} aria-pressed={tags.has(t)}>
+              <button
+                key={t}
+                class={`chip ${tags.has(t) ? 'chip--accent' : ''}`}
+                onClick={() => toggleTag(t)}
+                aria-pressed={tags.has(t)}
+              >
                 {t}
               </button>
             ))}
@@ -136,7 +151,13 @@ export function AskComposer({ gid, onClose }: { gid: string; onClose: () => void
           placeholder="https:// Live Share, Codespaces, meet…"
           error={pairingOk ? undefined : 'Must be an https:// link'}
         />
-        <Pill variant="primary" big busy={busy} disabled={!titleOk || !pairingOk} onClick={() => void submit()}>
+        <Pill
+          variant="primary"
+          big
+          busy={busy}
+          disabled={!titleOk || !pairingOk}
+          onClick={() => void submit()}
+        >
           {kind === 'ask' ? 'Post ask' : 'Raise the flag'}
         </Pill>
       </div>

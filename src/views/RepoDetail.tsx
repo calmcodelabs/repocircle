@@ -72,8 +72,13 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
   useEffect(
     () =>
       onSnapshot(
-        query(collection(db(), `groups/${gid}/repos/${repoId}/events`), orderBy('occurredAt', 'desc'), limit(30)),
-        (snap) => setEvents(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<FeedEvent, 'id'>) }))),
+        query(
+          collection(db(), `groups/${gid}/repos/${repoId}/events`),
+          orderBy('occurredAt', 'desc'),
+          limit(30),
+        ),
+        (snap) =>
+          setEvents(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<FeedEvent, 'id'>) }))),
         (e) => log('warn', `events watch: ${e.code}`),
       ),
     [gid, repoId],
@@ -92,9 +97,16 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
 
   if (repo === undefined) return <span class="skeleton" />;
   if (repo === null)
-    return <EmptyState line="This repo isn’t registered here (anymore)." action={<a href={`#/g/${gid}/repos`}>All repos</a>} />;
+    return (
+      <EmptyState
+        line="This repo isn’t registered here (anymore)."
+        action={<a href={`#/g/${gid}/repos`}>All repos</a>}
+      />
+    );
 
-  const contributorsHint = activeMembers.value?.filter((m) => m.login === repo.githubOwnerLogin);
+  const ownerMember = activeMembers.value?.find(
+    (m) => m.login.toLowerCase() === repo.githubOwnerLogin.toLowerCase(),
+  );
 
   return (
     <main class="stack">
@@ -102,7 +114,11 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
         <div class="row">
           <span class={`langdot ${langClass(repo.language)}`} />
           <h2 class="mono repodetail__name">{repo.fullName}</h2>
-          <Chip tone={repo.status === 'building' ? 'accent' : repo.status === 'paused' ? 'warn' : 'default'}>
+          <Chip
+            tone={
+              repo.status === 'building' ? 'accent' : repo.status === 'paused' ? 'warn' : 'default'
+            }
+          >
             {repo.status}
           </Chip>
           {repo.poll?.failing && <Chip tone="danger">poll failing</Chip>}
@@ -134,18 +150,31 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
           </span>
         </div>
         <div class="row small faint">
-          <Avatar login={repo.githubOwnerLogin} src={`https://avatars.githubusercontent.com/${repo.githubOwnerLogin}`} />
-          <span class="mono">@{repo.githubOwnerLogin}</span>
-          {contributorsHint && contributorsHint.length > 0 && <Chip tone="accent">in this circle</Chip>}
+          {ownerMember ? (
+            <a class="row member__link" href={`#/g/${gid}/m/${ownerMember.uid}`}>
+              <Avatar
+                login={repo.githubOwnerLogin}
+                src={`https://avatars.githubusercontent.com/${repo.githubOwnerLogin}`}
+              />
+              <span class="mono">@{repo.githubOwnerLogin}</span>
+              <Chip tone="accent">in this circle</Chip>
+            </a>
+          ) : (
+            <>
+              <Avatar
+                login={repo.githubOwnerLogin}
+                src={`https://avatars.githubusercontent.com/${repo.githubOwnerLogin}`}
+              />
+              <span class="mono">@{repo.githubOwnerLogin}</span>
+            </>
+          )}
           <span class="topbar__spacer" />
           {canManageRepo(repo, uid, iAmAdmin) ? (
             <a class="small" href={`#/g/${gid}/repos`}>
               manage in Repos →
             </a>
           ) : (
-            canWrite && (
-              <Pill onClick={() => setCollabOpen(true)}>Request to collaborate</Pill>
-            )
+            canWrite && <Pill onClick={() => setCollabOpen(true)}>Request to collaborate</Pill>
           )}
         </div>
       </section>
@@ -157,7 +186,9 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
         title="What people think"
       />
 
-      {collabOpen && repo && <CollabSheet gid={gid} repo={repo} onClose={() => setCollabOpen(false)} />}
+      {collabOpen && repo && (
+        <CollabSheet gid={gid} repo={repo} onClose={() => setCollabOpen(false)} />
+      )}
 
       <InterestButton gid={gid} repo={repo} />
 
@@ -169,10 +200,18 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
         <img class="repodetail__shot" src={socialPreviewUrl(repo.fullName)} alt="" loading="lazy" />
         {readme === undefined && <span class="skeleton" />}
         {readme === null && (
-          <EmptyState icon="repo" line="No README yet — a few lines there help people judge the idea." />
+          <EmptyState
+            icon="repo"
+            line="No README yet — a few lines there help people judge the idea."
+          />
         )}
         {readme && <p class="readme">{readme}</p>}
-        <a class="small" href={`${repo.htmlUrl}#readme`} target="_blank" rel="noopener noreferrer nofollow">
+        <a
+          class="small"
+          href={`${repo.htmlUrl}#readme`}
+          target="_blank"
+          rel="noopener noreferrer nofollow"
+        >
           Read the full README on GitHub ↗
         </a>
       </section>
@@ -188,7 +227,13 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
           <EmptyState line="Nothing captured yet — activity appears within ~15 minutes of happening on GitHub." />
         )}
         {events?.map((ev) => (
-          <a key={ev.id} class="row event" href={ev.url} target="_blank" rel="noopener noreferrer nofollow">
+          <a
+            key={ev.id}
+            class="row event"
+            href={ev.url}
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+          >
             <span class="tile tile--sm" aria-hidden="true">
               <Icon name={TYPE_ICON[ev.type] ?? 'commit'} size={14} />
             </span>
