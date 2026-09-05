@@ -560,3 +560,37 @@
   border-radius: 9px;
   font-size: 13px;
 }
+
+
+/* join: welcome for a first-time visitor arriving by invite */
+.join__panel {
+  width: min(480px, 100%);
+  padding-top: 6svh;
+}
+.join__card {
+  width: 100%;
+  justify-items: start;
+  text-align: left;
+  gap: 12px;
+}
+.join__card .row {
+  justify-content: flex-start;
+}
+.join__desc {
+  font-size: 15px;
+}
+.join__stats {
+  margin: 2px 0;
+}
+.join__role {
+  gap: 8px;
+}
+.join__what {
+  width: 100%;
+  text-align: left;
+  gap: 12px;
+}
+.join__point {
+  align-items: flex-start;
+  gap: 12px;
+}

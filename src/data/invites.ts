@@ -28,7 +28,7 @@ export function inviteState(inv: Invite | null): InviteState {
 export async function createInvite(
   gid: string,
   profile: MyProfile,
-  groupName: string,
+  preview: { groupName: string; groupDescription: string; memberCount: number; repoCount: number },
   role: 'member' | 'guest',
   days: 1 | 7 | 30,
   label: string,
@@ -40,7 +40,12 @@ export async function createInvite(
     revoked: false,
     createdBy: profile.uid,
     createdByLogin: profile.login,
-    groupName,
+    // Security rules stop an outsider reading the group itself, so the invite
+    // carries what the join screen needs to feel like a real invitation.
+    groupName: preview.groupName,
+    groupDescription: preview.groupDescription.slice(0, 280),
+    memberCount: preview.memberCount,
+    repoCount: preview.repoCount,
     createdAt: serverTimestamp(),
     label,
     v: 1,

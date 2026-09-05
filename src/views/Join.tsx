@@ -6,6 +6,7 @@ import { myProfile, myUserDoc } from '../data/users';
 import { navigate } from '../router';
 import { Avatar } from '../ui/Avatar';
 import { Chip } from '../ui/Chip';
+import { Icon } from '../ui/Icon';
 import { EmptyState } from '../ui/EmptyState';
 import { Mark } from '../ui/Mark';
 import { Pill } from '../ui/Pill';
@@ -73,22 +74,68 @@ export function Join({ gid, token }: { gid: string; token: string }) {
       <main class="join__panel">
         <Mark size={44} />
         {state === 'valid' && invite ? (
-          <div class="hero hero--dim stack join__card rise">
-            <div class="row">
-              {invite.createdByLogin && <Avatar login={invite.createdByLogin} />}
-              <p>
-                <b>{invite.createdByLogin ?? 'Someone'}</b> invited you to
-              </p>
+          <>
+            <div class="hero hero--dim stack join__card rise">
+              <div class="row">
+                {invite.createdByLogin && <Avatar login={invite.createdByLogin} />}
+                <p class="small dim">
+                  <b>@{invite.createdByLogin ?? 'Someone'}</b> invited you to
+                </p>
+              </div>
+              <h2>{invite.groupName ?? 'a RepoCircle circle'}</h2>
+              {invite.groupDescription && <p class="lead join__desc">{invite.groupDescription}</p>}
+              {(invite.memberCount || invite.repoCount) && (
+                <div class="stats stats--divided join__stats">
+                  <div class="stat">
+                    <span class="stat__value">{invite.memberCount ?? '–'}</span>
+                    <span class="stat__label">{invite.memberCount === 1 ? 'member' : 'members'}</span>
+                  </div>
+                  <div class="stat">
+                    <span class="stat__value">{invite.repoCount ?? '–'}</span>
+                    <span class="stat__label">{invite.repoCount === 1 ? 'repo' : 'repos'}</span>
+                  </div>
+                </div>
+              )}
+              <div class="row join__role">
+                <span class="small dim">You’ll join as</span>
+                <Chip tone={invite.role === 'guest' ? 'default' : 'accent'}>{invite.role}</Chip>
+              </div>
+              <Pill variant="primary" big busy={busy} onClick={() => void onJoin()}>
+                Join circle
+              </Pill>
             </div>
-            <h2>{invite.groupName ?? 'a RepoCircle group'}</h2>
-            <div class="row">
-              <span class="small dim">You’ll join as</span>
-              <Chip tone={invite.role === 'guest' ? 'default' : 'accent'}>{invite.role}</Chip>
-            </div>
-            <Pill variant="primary" big busy={busy} onClick={() => void onJoin()}>
-              Join group
-            </Pill>
-          </div>
+
+            <section class="card stack join__what rise-2">
+              <span class="hero__label">New here? This is RepoCircle</span>
+              <div class="row join__point">
+                <span class="tile tile--accent">
+                  <Icon name="repo" />
+                </span>
+                <span class="small dim">
+                  See every repo your circle is building, with real GitHub activity — no digging
+                  through timelines.
+                </span>
+              </div>
+              <div class="row join__point">
+                <span class="tile tile--accent">
+                  <Icon name="handshake" />
+                </span>
+                <span class="small dim">
+                  Ask for a hand, or jump in on someone else’s work — one tap to request
+                  collaborator access on GitHub.
+                </span>
+              </div>
+              <div class="row join__point">
+                <span class="tile">
+                  <Icon name="users" />
+                </span>
+                <span class="small dim">
+                  Private to this circle. Reads public repos only, and there are no scores,
+                  rankings or leaderboards — anywhere.
+                </span>
+              </div>
+            </section>
+          </>
         ) : (
           <EmptyState line={STATE_LINE[state as Exclude<InviteState, 'valid'>]} action={<a href="#/">Go home</a>} />
         )}

@@ -3,6 +3,7 @@ import { deleteDoc, doc, getDoc, serverTimestamp, setDoc } from 'firebase/firest
 import { db } from '../firebase';
 import { sessionUser } from '../auth/session';
 import { invalidateDiscordCache, testDiscord, type DiscordConfig } from '../notify/discord';
+import { collection, getCountFromServer } from 'firebase/firestore';
 import { activeGroup, activeMembers, myMembership } from '../data/activeGroup';
 import { updateGroupProfile } from '../data/groups';
 import { createInvite, inviteState, inviteUrl, revokeInvite, watchInvites } from '../data/invites';
@@ -100,11 +101,29 @@ function InvitesCard({ gid }: { gid: string }) {
   async function onCreate() {
     const uid = sessionUser.value?.uid;
     const profile = uid ? myProfile(uid) : null;
-    const groupName = activeGroup.value?.name;
-    if (!profile || !groupName) return;
+    const group = activeGroup.value;
+    if (!profile || !group) return;
     setBusy(true);
     try {
-      const token = await createInvite(gid, profile, groupName, role, days, label.trim());
+      let repoCount = 0;
+      try {
+        repoCount = (await getCountFromServer(collection(db(), `groups/${gid}/repos`))).data().count;
+      } catch {
+        // preview count is nice-to-have; never block the invite on it
+      }
+      const token = await createInvite(
+        gid,
+        profile,
+        {
+          groupName: group.name,
+          groupDescription: group.description ?? '',
+          memberCount: activeMembers.value?.length ?? 1,
+          repoCount,
+        },
+        role,
+        days,
+        label.trim(),
+      );
       setFresh(inviteUrl(gid, token));
       setLabel('');
     } catch {

@@ -45,6 +45,9 @@ export type Invite = {
   createdBy: string;
   createdByLogin?: string;
   groupName?: string;
+  groupDescription?: string;
+  memberCount?: number;
+  repoCount?: number;
   createdAt: Timestamp | null;
   label?: string;
   v: 1;

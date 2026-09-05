@@ -111,7 +111,7 @@ service cloud.firestore {
         allow create: if isAdmin(gid)
           && request.resource.data.keys().hasOnly(
                ['role', 'expiresAt', 'revoked', 'createdBy', 'createdByLogin', 'groupName',
-                'createdAt', 'label', 'v'])
+                'groupDescription', 'memberCount', 'repoCount', 'createdAt', 'label', 'v'])
           && request.resource.data.role in ['member', 'guest']   // never admin-by-link
           && request.resource.data.revoked == false
           && request.resource.data.expiresAt is timestamp
