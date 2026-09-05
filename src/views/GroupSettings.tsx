@@ -3,31 +3,17 @@ import { deleteDoc, doc, getDoc, serverTimestamp, setDoc } from 'firebase/firest
 import { db } from '../firebase';
 import { sessionUser } from '../auth/session';
 import { invalidateDiscordCache, testDiscord, type DiscordConfig } from '../notify/discord';
-import { collection, getCountFromServer } from 'firebase/firestore';
 import { activeGroup, activeMembers, myMembership } from '../data/activeGroup';
 import { updateGroupProfile } from '../data/groups';
-import { createInvite, inviteState, inviteUrl, revokeInvite, watchInvites } from '../data/invites';
+import { InviteManager } from './InviteManager';
 import { leaveGroup } from '../data/members';
 import { myProfile } from '../data/users';
-import type { Invite } from '../data/types';
 import { navigate } from '../router';
-import { Chip } from '../ui/Chip';
-import { EmptyState } from '../ui/EmptyState';
 import { Field } from '../ui/Field';
 import { Pill } from '../ui/Pill';
-import { Sheet } from '../ui/Sheet';
 import { toast } from '../ui/Toast';
 import { LIMITS } from '../util/limits';
-import { relTime } from '../util/time';
 
-async function copyText(text: string): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(text);
-    toast('Link copied');
-  } catch {
-    toast('Copy failed — long-press / right-click the link instead.', { error: true });
-  }
-}
 
 export function GroupSettings({ gid }: { gid: string }) {
   const me = myMembership.value;
@@ -37,7 +23,12 @@ export function GroupSettings({ gid }: { gid: string }) {
     <main class="stack">
       <h2>Settings</h2>
       {iAmAdmin && <ProfileCard gid={gid} />}
-      {iAmAdmin && <InvitesCard gid={gid} />}
+      {iAmAdmin && (
+        <section class="card stack">
+          <h3>Invite links</h3>
+          <InviteManager gid={gid} />
+        </section>
+      )}
       {iAmAdmin && <DiscordCard gid={gid} />}
       <LeaveCard gid={gid} />
       {!iAmAdmin && (
@@ -88,125 +79,6 @@ function ProfileCard({ gid }: { gid: string }) {
   );
 }
 
-function InvitesCard({ gid }: { gid: string }) {
-  const [invites, setInvites] = useState<Invite[] | null>(null);
-  const [role, setRole] = useState<'member' | 'guest'>('member');
-  const [days, setDays] = useState<1 | 7 | 30>(7);
-  const [label, setLabel] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [fresh, setFresh] = useState<string | null>(null);
-
-  useEffect(() => watchInvites(gid, setInvites), [gid]);
-
-  async function onCreate() {
-    const uid = sessionUser.value?.uid;
-    const profile = uid ? myProfile(uid) : null;
-    const group = activeGroup.value;
-    if (!profile || !group) return;
-    setBusy(true);
-    try {
-      let repoCount = 0;
-      try {
-        repoCount = (await getCountFromServer(collection(db(), `groups/${gid}/repos`))).data().count;
-      } catch {
-        // preview count is nice-to-have; never block the invite on it
-      }
-      const token = await createInvite(
-        gid,
-        profile,
-        {
-          groupName: group.name,
-          groupDescription: group.description ?? '',
-          memberCount: activeMembers.value?.length ?? 1,
-          repoCount,
-        },
-        role,
-        days,
-        label.trim(),
-      );
-      setFresh(inviteUrl(gid, token));
-      setLabel('');
-    } catch {
-      toast('Could not create invite.', { error: true });
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <section class="card stack">
-      <h3>Invite links</h3>
-      <div class="row wrap">
-        <div class="segmented" role="group" aria-label="Invite role">
-          {(['member', 'guest'] as const).map((r) => (
-            <button key={r} class="segmented__btn" aria-pressed={role === r} onClick={() => setRole(r)}>
-              {r}
-            </button>
-          ))}
-        </div>
-        <div class="segmented" role="group" aria-label="Expires">
-          {([1, 7, 30] as const).map((d) => (
-            <button key={d} class="segmented__btn" aria-pressed={days === d} onClick={() => setDays(d)}>
-              {d === 1 ? '24h' : `${d}d`}
-            </button>
-          ))}
-        </div>
-      </div>
-      <Field label="Label (just for you)" value={label} onInput={setLabel} maxLength={LIMITS.INVITE_LABEL_MAX} placeholder="posted in club Discord" />
-      <Pill variant="primary" busy={busy} onClick={() => void onCreate()}>
-        Create invite link
-      </Pill>
-
-      {invites === null && <span class="skeleton" />}
-      {invites?.length === 0 && <EmptyState line="No invites yet — create the first one above." />}
-      {invites?.map((inv) => {
-        const st = inviteState(inv);
-        return (
-          <div key={inv.token} class="row invite">
-            <div class="invite__meta">
-              <div class="row">
-                <span class="small">{inv.label || 'unlabeled'}</span>
-                <Chip tone={inv.role === 'guest' ? 'default' : 'accent'}>{inv.role}</Chip>
-                {st !== 'valid' && <Chip tone="danger">{st}</Chip>}
-              </div>
-              <span class="small faint">
-                {st === 'valid' ? `expires ${relTime(inv.expiresAt)}` : `created by @${inv.createdByLogin ?? '?'}`}
-              </span>
-            </div>
-            <span class="topbar__spacer" />
-            {st === 'valid' && (
-              <>
-                <Pill onClick={() => void copyText(inviteUrl(gid, inv.token))}>Copy</Pill>
-                <Pill
-                  variant="ghost"
-                  onClick={() => {
-                    const uid = sessionUser.value?.uid;
-                    const profile = uid ? myProfile(uid) : null;
-                    if (profile) void revokeInvite(gid, profile, inv.token).then(() => toast('Invite revoked'));
-                  }}
-                >
-                  Revoke
-                </Pill>
-              </>
-            )}
-          </div>
-        );
-      })}
-
-      {fresh && (
-        <Sheet title="Invite link ready" onClose={() => setFresh(null)}>
-          <div class="stack">
-            <p class="small dim">Anyone with this link can join until it expires — share it in your group’s chat.</p>
-            <p class="mono small invite__url">{fresh}</p>
-            <Pill variant="primary" onClick={() => void copyText(fresh)}>
-              Copy link
-            </Pill>
-          </div>
-        </Sheet>
-      )}
-    </section>
-  );
-}
 
 const TOGGLES: Array<{ key: 'postAsks' | 'postClaims' | 'postCollabs' | 'postShipped'; label: string }> = [
   { key: 'postAsks', label: 'New asks & stuck flags' },

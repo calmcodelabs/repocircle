@@ -14,6 +14,7 @@ import { Pill } from '../ui/Pill';
 import { doc as fsDoc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { ChecklistCard } from './ChecklistCard';
+import { InviteSheet } from './InviteManager';
 import { CollabInbox } from './CollabInbox';
 import { sparkSeries } from '../poll/engine';
 import { Spark } from '../ui/Spark';
@@ -32,6 +33,8 @@ export function GroupHome({ gid }: { gid: string }) {
   const [myClaims, setMyClaims] = useState<Ask[]>([]);
   const [unblocked, setUnblocked] = useState(0);
   const [hasDiscord, setHasDiscord] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const iAmAdmin = me?.role === 'admin';
   const uid = sessionUser.value?.uid;
   const canWrite = !!me && me.role !== 'guest' && me.role !== 'alumnus';
 
@@ -152,7 +155,7 @@ export function GroupHome({ gid }: { gid: string }) {
         )}
       </section>
 
-      <ChecklistCard gid={gid} hasDiscord={hasDiscord} />
+      <ChecklistCard gid={gid} hasDiscord={hasDiscord} memberCount={members?.length ?? 1} />
 
       <CollabInbox gid={gid} />
 
@@ -226,10 +229,23 @@ export function GroupHome({ gid }: { gid: string }) {
           <span class="sectionhead__title">Members</span>
           {members && <span class="sectionhead__count">{members.length}</span>}
           <span class="topbar__spacer" />
+          {iAmAdmin && (
+            <Pill onClick={() => setInviteOpen(true)}>Invite people</Pill>
+          )}
           {me && <Chip tone={me.role === 'admin' ? 'accent' : 'default'}>you: {me.role}</Chip>}
         </div>
         {members === null ? (
           <span class="skeleton" />
+        ) : members.length === 1 && iAmAdmin ? (
+          <EmptyState
+            icon="users"
+            line="Just you in here so far — invite your circle and their work shows up on this page."
+            action={
+              <Pill variant="primary" onClick={() => setInviteOpen(true)}>
+                Invite people
+              </Pill>
+            }
+          />
         ) : (
           <div class="row home__avatars">
             {members.slice(0, 8).map((m) => (
@@ -241,6 +257,8 @@ export function GroupHome({ gid }: { gid: string }) {
           </div>
         )}
       </section>
+
+      {inviteOpen && <InviteSheet gid={gid} onClose={() => setInviteOpen(false)} />}
     </main>
   );
 }

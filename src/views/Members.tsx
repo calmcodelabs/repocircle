@@ -7,6 +7,7 @@ import { activeMembers, myMembership } from '../data/activeGroup';
 import { removeMember, setAvailability, setRole } from '../data/members';
 import { myProfile } from '../data/users';
 import { AVAILABILITY_LABEL, ROLE_LABEL, type Availability, type AvailabilityStatus, type Member, type Role } from '../data/types';
+import { InviteSheet } from './InviteManager';
 import { Avatar } from '../ui/Avatar';
 import { Chip } from '../ui/Chip';
 import { EmptyState } from '../ui/EmptyState';
@@ -32,6 +33,7 @@ export function Members({ gid }: { gid: string }) {
   const iAmAdmin = me?.role === 'admin';
   const [editAvail, setEditAvail] = useState(false);
   const [manage, setManage] = useState<Member | null>(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   useEffect(() => {
     const uid = sessionUser.value?.uid;
@@ -43,7 +45,32 @@ export function Members({ gid }: { gid: string }) {
 
   return (
     <main class="stack">
-      <h2>Members</h2>
+      <div class="row">
+        <h2>Members</h2>
+        {members && <span class="sectionhead__count">{members.length}</span>}
+        <span class="topbar__spacer" />
+        {iAmAdmin && (
+          <Pill variant="primary" onClick={() => setInviteOpen(true)}>
+            Invite people
+          </Pill>
+        )}
+      </div>
+
+      {iAmAdmin && members?.length === 1 && (
+        <section class="hero hero--dim stack rise">
+          <span class="hero__label">It’s just you so far</span>
+          <h3>Bring your circle in</h3>
+          <p class="small dim">
+            RepoCircle only works with people in it — share an invite link and your friends’ repos
+            and asks start showing up here.
+          </p>
+          <div>
+            <Pill variant="primary" big onClick={() => setInviteOpen(true)}>
+              Create an invite link
+            </Pill>
+          </div>
+        </section>
+      )}
       {members === null && <span class="skeleton" />}
       {members?.length === 0 && <EmptyState line="Nobody here yet — share an invite link from Settings." />}
       {members?.map((m) => {
@@ -84,6 +111,7 @@ export function Members({ gid }: { gid: string }) {
         />
       )}
       {manage && <ManageSheet gid={gid} target={manage} onClose={() => setManage(null)} />}
+      {inviteOpen && <InviteSheet gid={gid} onClose={() => setInviteOpen(false)} />}
     </main>
   );
 }
