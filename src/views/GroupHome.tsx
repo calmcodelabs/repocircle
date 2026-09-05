@@ -47,9 +47,27 @@ export function GroupHome({ gid }: { gid: string }) {
   );
   useEffect(() => (uid ? watchMyAsks(gid, uid, setMyAsks) : undefined), [gid, uid]);
   useEffect(() => (uid ? watchMyClaims(gid, uid, setMyClaims) : undefined), [gid, uid]);
+  // count() always hits the server (never the cache), and `needsHelp` gets a new
+  // array identity on every snapshot delivery — depending on it re-queried on every
+  // listener tick and burned quota fast. Key on what can actually change the count,
+  // and never more than once a minute.
+  const openCount = needsHelp?.length ?? 0;
   useEffect(() => {
+    const key = `rc.unblocked.${gid}`;
+    let last = 0;
+    try {
+      last = Number(sessionStorage.getItem(key) ?? 0);
+    } catch {
+      /* storage unavailable */
+    }
+    if (Date.now() - last < 60_000) return;
+    try {
+      sessionStorage.setItem(key, String(Date.now()));
+    } catch {
+      /* storage unavailable */
+    }
     void unblockedThisWeek(gid).then(setUnblocked).catch(() => undefined);
-  }, [gid, needsHelp]);
+  }, [gid, openCount]);
   useEffect(() => {
     void getDoc(fsDoc(db(), `groups/${gid}/integrations/discord`))
       .then((s) => setHasDiscord(s.exists()))
