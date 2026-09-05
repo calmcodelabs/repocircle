@@ -89,6 +89,28 @@ export const AVAILABILITY_LABEL: Record<AvailabilityStatus, string> = {
 
 export type RepoStatus = 'idea' | 'building' | 'paused' | 'done';
 
+/** What the owner wants from the circle — turns a repo into a request. */
+export type RepoNeed = 'feedback' | 'frontend' | 'backend' | 'ml' | 'design' | 'anything';
+
+export const REPO_NEEDS: Array<{ key: RepoNeed; label: string }> = [
+  { key: 'feedback', label: 'Just want feedback' },
+  { key: 'frontend', label: 'Need frontend help' },
+  { key: 'backend', label: 'Need backend help' },
+  { key: 'ml', label: 'Need ML help' },
+  { key: 'design', label: 'Need design help' },
+  { key: 'anything', label: 'Need a co-builder' },
+];
+
+export const DOMAIN_TAGS = ['web', 'mobile', 'ML', 'tooling', 'game', 'hardware', 'data', 'other'];
+
+export type RepoInterest = {
+  uid: string;
+  login: string;
+  avatarUrl: string;
+  note?: string;
+  createdAt: Timestamp | null;
+};
+
 export type Repo = {
   id: string; // GitHub numeric repo id as string (doc id)
   fullName: string;
@@ -106,6 +128,13 @@ export type Repo = {
   poll: { lastPolledAt: Timestamp | null; etag: string | null; failing: boolean; lastEventId?: string | null };
   stats7d: { commits: number; prsOpened: number; prsMerged: number; issues: number; releases: number };
   daily?: Record<string, { commits: number; prsOpened: number; prsMerged: number; issuesOpened: number; releases: number }>;
+  /** The human sentence: what is this idea, in the owner's words. */
+  pitch?: string;
+  needs?: RepoNeed | null;
+  domainTags?: string[];
+  /** Owner has moved on and would like someone else to take it over. */
+  seekingOwner?: boolean;
+  interestCount?: number;
   createdAt: Timestamp | null;
   v: 1;
 };

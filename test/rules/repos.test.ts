@@ -109,3 +109,50 @@ describe('repos', () => {
     await assertSucceeds(deleteDoc(doc(db(alice), `groups/${GID}/repos/12345`)));
   });
 });
+
+describe('idea board fields and interests', () => {
+  it('owner sets pitch/needs/tags; an unrelated member cannot', async () => {
+    const bob = env.authenticatedContext('bob');
+    const carol = env.authenticatedContext('carol');
+    const idea = { pitch: 'What if your chat saved things for you?', needs: 'frontend', domainTags: ['web'] };
+    await assertFails(updateDoc(doc(db(carol), `groups/${GID}/repos/12345`), idea));
+    await assertSucceeds(updateDoc(doc(db(bob), `groups/${GID}/repos/12345`), idea));
+  });
+
+  it('pitch length and tag count are capped', async () => {
+    const bob = env.authenticatedContext('bob');
+    await assertFails(
+      updateDoc(doc(db(bob), `groups/${GID}/repos/12345`), { pitch: 'x'.repeat(201) }),
+    );
+    await assertFails(
+      updateDoc(doc(db(bob), `groups/${GID}/repos/12345`), { domainTags: ['a', 'b', 'c', 'd', 'e'] }),
+    );
+  });
+
+  it('anyone may register interest as themselves, nobody may forge it', async () => {
+    const carol = env.authenticatedContext('carol');
+    const interest = { login: 'carol', avatarUrl: '', createdAt: Timestamp.now(), v: 1 };
+    await assertSucceeds(
+      setDoc(doc(db(carol), `groups/${GID}/repos/12345/interests/carol`), interest),
+    );
+    await assertFails(
+      setDoc(doc(db(carol), `groups/${GID}/repos/12345/interests/bob`), { ...interest, login: 'bob' }),
+    );
+    // guests are read-only
+    const gia = env.authenticatedContext('gia');
+    await assertFails(
+      setDoc(doc(db(gia), `groups/${GID}/repos/12345/interests/gia`), { ...interest, login: 'gia' }),
+    );
+  });
+
+  it('interest can be withdrawn by its author, and the count is member-writable', async () => {
+    const carol = env.authenticatedContext('carol');
+    await assertSucceeds(
+      setDoc(doc(db(carol), `groups/${GID}/repos/12345/interests/carol`), {
+        login: 'carol', avatarUrl: '', createdAt: Timestamp.now(), v: 1,
+      }),
+    );
+    await assertSucceeds(updateDoc(doc(db(carol), `groups/${GID}/repos/12345`), { interestCount: 1 }));
+    await assertSucceeds(deleteDoc(doc(db(carol), `groups/${GID}/repos/12345/interests/carol`)));
+  });
+});

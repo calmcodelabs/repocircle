@@ -4,7 +4,7 @@ import { activeGroup, activeMembers, myMembership } from '../data/activeGroup';
 import { claimAsk, unblockedThisWeek, watchMyAsks, watchMyClaims, watchNeedsHelp } from '../data/asks';
 import { watchRepos } from '../data/repos';
 import { myProfile } from '../data/users';
-import type { Ask, Repo } from '../data/types';
+import { REPO_NEEDS, type Ask, type Repo } from '../data/types';
 import { toast } from '../ui/Toast';
 import { notifyDiscord } from '../notify/discord';
 import { Avatar } from '../ui/Avatar';
@@ -97,6 +97,13 @@ export function GroupHome({ gid }: { gid: string }) {
   const live = repos?.filter((r) => !r.archived && r.status !== 'paused' && r.status !== 'done') ?? [];
   const weekMs = Date.now() - 7 * 86_400_000;
   const active = live.filter((r) => (r.lastEventAt?.toMillis() ?? 0) >= weekMs);
+  // Fresh ideas are the news in a circle that creates constantly — a two-day-old
+  // repo has no activity to speak of, so it would otherwise look like the deadest
+  // thing on the page.
+  const fresh = (repos ?? [])
+    .filter((r) => !r.archived && (r.createdAt?.toMillis() ?? 0) >= weekMs)
+    .slice(0, 6);
+  const needing = (repos ?? []).filter((r) => !r.archived && (r.needs || r.seekingOwner)).slice(0, 5);
 
   return (
     <main class="stack">
@@ -127,6 +134,54 @@ export function GroupHome({ gid }: { gid: string }) {
           </div>
         </div>
       </section>
+
+      {fresh.length > 0 && (
+        <section class="card stack rise-2">
+          <div class="sectionhead">
+            <span class="sectionhead__mark" />
+            <span class="sectionhead__title">New this week</span>
+            <span class="sectionhead__count">{fresh.length}</span>
+          </div>
+          {fresh.map((r) => (
+            <a key={r.id} class="idea" href={`#/g/${gid}/repo/${r.id}`}>
+              <span class="row">
+                <span class={`langdot ${langClass(r.language)}`} />
+                <span class="mono idea__name">{r.fullName.split('/')[1] ?? r.fullName}</span>
+                <span class="small faint">@{r.githubOwnerLogin}</span>
+              </span>
+              {(r.pitch || r.description) && (
+                <span class="idea__pitch">{r.pitch || r.description}</span>
+              )}
+            </a>
+          ))}
+        </section>
+      )}
+
+      {needing.length > 0 && (
+        <section class="card stack rise-2">
+          <div class="sectionhead">
+            <span class="sectionhead__mark sectionhead__mark--warn" />
+            <span class="sectionhead__title">Wants a hand</span>
+            <span class="sectionhead__count">{needing.length}</span>
+            <span class="topbar__spacer" />
+            <a class="small" href={`#/g/${gid}/repos`}>
+              All repos →
+            </a>
+          </div>
+          {needing.map((r) => (
+            <a key={r.id} class="row home__repo" href={`#/g/${gid}/repo/${r.id}`}>
+              <span class="row">
+                <span class={`langdot ${langClass(r.language)}`} />
+                <span class="mono">{r.fullName.split('/')[1] ?? r.fullName}</span>
+              </span>
+              <span class="row">
+                {r.seekingOwner && <Chip tone="warn">needs an owner</Chip>}
+                {r.needs && <Chip tone="accent">{REPO_NEEDS.find((n) => n.key === r.needs)?.label}</Chip>}
+              </span>
+            </a>
+          ))}
+        </section>
+      )}
 
       <section class="card stack rise-2">
         <div class="sectionhead">

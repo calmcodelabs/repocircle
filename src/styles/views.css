@@ -661,3 +661,81 @@
   font-size: 13px;
   margin-bottom: 12px;
 }
+
+/* idea board */
+.repo__shot {
+  display: block;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--bg-overlay);
+  aspect-ratio: 2 / 1;
+  margin: -2px 0 2px;
+}
+.repo__shot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.repo__pitch {
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--text);
+  text-wrap: pretty;
+}
+.repofilter {
+  gap: 6px;
+  margin-bottom: 2px;
+}
+.repofilter .chip {
+  cursor: pointer;
+  text-transform: lowercase;
+}
+.interest {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.interest__faces {
+  gap: 6px;
+}
+.interest__btn {
+  cursor: pointer;
+}
+.idea {
+  display: grid;
+  gap: 3px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  color: var(--text);
+}
+.idea:hover {
+  background: var(--bg-overlay);
+  text-decoration: none;
+}
+.idea__name {
+  font-weight: 500;
+}
+.idea__pitch {
+  font-size: 13.5px;
+  color: var(--text-dim);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.repodetail__shot {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  display: block;
+}
+.readme {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-dim);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

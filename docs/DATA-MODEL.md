@@ -98,6 +98,11 @@ publicPages/{slug}                          # opt-in public group page mirror (G
 | lastEventAt | ts \| null | Drives "Active this week" ordering |
 | poll | map | `{ lastPolledAt: ts, etag: string, failing: bool }` — engine state (ARCH §5) |
 | stats7d | map | `{ commits, prsOpened, prsMerged, issues, releases }` — recomputed during polls |
+| pitch | string ≤ 200 | M9: the idea in the owner's words — what a friend would understand, not the stack |
+| needs | enum \| null | `feedback`, `frontend`, `backend`, `ml`, `design`, `anything` — turns a repo into a request |
+| domainTags | string[] ≤ 4 | web/ML/tooling/… — the browse axis once a circle has dozens of repos |
+| seekingOwner | bool | Owner has moved on; someone else may adopt it |
+| interestCount | number | Mirror of the `interests` subcollection (display only) |
 | createdAt | ts | |
 
 ### `groups/{gid}/repos/{repoId}/events/{eventId}` — eventId = GitHub event id
@@ -110,6 +115,11 @@ publicPages/{slug}                          # opt-in public group page mirror (G
 | occurredAt | ts | From GitHub payload |
 | source | `"poll"` | `"webhook"` reserved for Phase 3 |
 | expireAt | ts | occurredAt + 180 d → **Firestore TTL policy** deletes it (PRD §11 retention, zero code) |
+
+### `groups/{gid}/repos/{repoId}/interests/{uid}`
+`{ login, avatarUrl, note?, createdAt }` — "I'm interested", one doc per member,
+self-write only. Deliberately lighter than a collab request (which opens a GitHub
+issue): this is the first, cheap signal that an idea found a second brain.
 
 ### `groups/{gid}/repos/{repoId}/activityDaily/{YYYY-MM-DD}`
 **Superseded in M3** by an embedded `daily` map on the repo doc (21-day window,

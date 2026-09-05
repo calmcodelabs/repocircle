@@ -16,7 +16,7 @@ import { db } from '../firebase';
 import type { GhRepo } from '../github/types';
 import { audit } from './audit';
 import { resilientWatch } from './resilientWatch';
-import type { MyProfile, Repo, RepoStatus } from './types';
+import type { MyProfile, Repo, RepoInterest, RepoNeed, RepoStatus } from './types';
 
 /** Map a GitHub API repo onto our doc shape (rules-compatible: clamps + allowlists). */
 export function toRepoDoc(gh: GhRepo, me: MyProfile) {
@@ -139,4 +139,62 @@ export async function fetchMyRepos(
     .flatMap((r) => r.value);
   repos.sort((a, b) => (b.lastEventAt?.toMillis() ?? 0) - (a.lastEventAt?.toMillis() ?? 0));
   return repos;
+}
+
+// --- Idea board (M9) ---
+
+/** Owner-authored idea fields: the pitch, what help is wanted, how to browse it. */
+export async function setIdeaDetails(
+  gid: string,
+  repoId: string,
+  fields: { pitch: string; needs: RepoNeed | null; domainTags: string[]; seekingOwner: boolean },
+): Promise<void> {
+  await updateDoc(doc(db(), `groups/${gid}/repos/${repoId}`), {
+    pitch: fields.pitch.slice(0, 200),
+    needs: fields.needs,
+    domainTags: fields.domainTags.slice(0, 4),
+    seekingOwner: fields.seekingOwner,
+  });
+}
+
+export function watchInterests(
+  gid: string,
+  repoId: string,
+  cb: (list: RepoInterest[]) => void,
+): Unsubscribe {
+  return onSnapshot(collection(db(), `groups/${gid}/repos/${repoId}/interests`), (snap) =>
+    cb(snap.docs.map((d) => ({ uid: d.id, ...(d.data() as Omit<RepoInterest, 'uid'>) }))),
+  );
+}
+
+/** One tap: "this looks good, I'd help." Deliberately lighter than a collab request. */
+export async function addInterest(
+  gid: string,
+  repoId: string,
+  profile: MyProfile,
+  currentCount: number,
+): Promise<void> {
+  const batch = writeBatch(db());
+  batch.set(doc(db(), `groups/${gid}/repos/${repoId}/interests/${profile.uid}`), {
+    login: profile.login,
+    avatarUrl: profile.avatarUrl,
+    createdAt: serverTimestamp(),
+    v: 1,
+  });
+  batch.update(doc(db(), `groups/${gid}/repos/${repoId}`), { interestCount: currentCount + 1 });
+  await batch.commit();
+}
+
+export async function removeInterest(
+  gid: string,
+  repoId: string,
+  uid: string,
+  currentCount: number,
+): Promise<void> {
+  const batch = writeBatch(db());
+  batch.delete(doc(db(), `groups/${gid}/repos/${repoId}/interests/${uid}`));
+  batch.update(doc(db(), `groups/${gid}/repos/${repoId}`), {
+    interestCount: Math.max(currentCount - 1, 0),
+  });
+  await batch.commit();
 }

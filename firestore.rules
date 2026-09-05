@@ -135,7 +135,8 @@ service cloud.firestore {
           && request.resource.data.keys().hasOnly(
                ['fullName', 'htmlUrl', 'description', 'language', 'topics', 'githubOwnerLogin',
                 'ownerUid', 'registeredBy', 'status', 'demoUrl', 'archived', 'lastEventAt',
-                'poll', 'stats7d', 'daily', 'createdAt', 'v'])
+                'poll', 'stats7d', 'daily', 'pitch', 'needs', 'domainTags', 'seekingOwner',
+                'interestCount', 'createdAt', 'v'])
           && request.resource.data.registeredBy == me()
           && str(request.resource.data.fullName, 3, 140)
           && request.resource.data.status in ['idea', 'building', 'paused', 'done']
@@ -149,14 +150,22 @@ service cloud.firestore {
           && request.resource.data.keys().hasOnly(
                ['fullName', 'htmlUrl', 'description', 'language', 'topics', 'githubOwnerLogin',
                 'ownerUid', 'registeredBy', 'status', 'demoUrl', 'archived', 'lastEventAt',
-                'poll', 'stats7d', 'daily', 'createdAt', 'v'])
+                'poll', 'stats7d', 'daily', 'pitch', 'needs', 'domainTags', 'seekingOwner',
+                'interestCount', 'createdAt', 'v'])
           && request.resource.data.registeredBy == resource.data.registeredBy
           && request.resource.data.status in ['idea', 'building', 'paused', 'done']
           && optHttpsUrl(request.resource.data, 'demoUrl')
           && optStr(request.resource.data, 'description', 500)
+          && optStr(request.resource.data, 'pitch', 200)
+          && (!('domainTags' in request.resource.data)
+              || (request.resource.data.domainTags is list
+                  && request.resource.data.domainTags.size() <= 4))
           && (
+            // Anyone may bump interestCount (mirror of the interests subcollection);
+            // everything descriptive belongs to the owner, registrant or an admin.
             !request.resource.data.diff(resource.data).affectedKeys()
-               .hasAny(['status', 'demoUrl', 'archived'])
+               .hasAny(['status', 'demoUrl', 'archived', 'pitch', 'needs', 'domainTags',
+                        'seekingOwner'])
             || isAdmin(gid)
             || resource.data.ownerUid == me()
             || resource.data.registeredBy == me()
@@ -177,6 +186,17 @@ service cloud.firestore {
             && optHttpsUrl(request.resource.data, 'url');
           allow update: if false;
           allow delete: if isMember(gid) && canManageRepo(gid, repoId);
+        }
+
+        // "I'm interested" — one doc per member, and only ever your own.
+        match /interests/{uid} {
+          allow read: if isMember(gid);
+          allow create: if canWrite(gid) && me() == uid
+            && request.resource.data.keys().hasOnly(['login', 'avatarUrl', 'note', 'createdAt', 'v'])
+            && str(request.resource.data.login, 1, 60)
+            && optStr(request.resource.data, 'note', 140);
+          allow update: if false;
+          allow delete: if me() == uid || isAdmin(gid) || canManageRepo(gid, repoId);
         }
 
         match /activityDaily/{day} {

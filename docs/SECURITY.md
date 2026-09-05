@@ -241,7 +241,7 @@ Known refinements queued for M8 hardening (tracked in PLAN): per-field validatio
 - **CSP** served via `<meta http-equiv="Content-Security-Policy">` (Pages can't set
   headers):
   `default-src 'none'; script-src 'self' https://apis.google.com (Firebase Auth popup relay); style-src 'self'; font-src 'self';
-  img-src 'self' https://avatars.githubusercontent.com data:;
+  img-src 'self' https://avatars.githubusercontent.com https://opengraph.githubassets.com data:;
   connect-src 'self' https://api.github.com https://*.googleapis.com
   https://securetoken.googleapis.com https://identitytoolkit.googleapis.com
   https://discord.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none';

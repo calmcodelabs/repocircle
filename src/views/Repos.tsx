@@ -5,7 +5,10 @@ import { activeMembers, myMembership } from '../data/activeGroup';
 import { canManageRepo, registerRepos, removeRepo, setRepoStatus, watchRepos } from '../data/repos';
 import { excludeFromSync, hasDecidedSharing, setRepoSyncMode, syncMyRepos } from '../data/repoSync';
 import { myProfile } from '../data/users';
-import { REPO_STATUSES, type Repo, type RepoStatus } from '../data/types';
+import { REPO_NEEDS, REPO_STATUSES, type Repo, type RepoStatus } from '../data/types';
+import { IdeaSheet } from './IdeaSheet';
+import { InterestButton } from './InterestButton';
+import { socialPreviewUrl } from '../github/repos';
 import { GhError } from '../github/client';
 import { pollState, refreshNow, sparkSeries } from '../poll/engine';
 import { Spark } from '../ui/Spark';
@@ -39,6 +42,8 @@ export function Repos({ gid }: { gid: string }) {
   const [manage, setManage] = useState<Repo | null>(null);
   const [collabFor, setCollabFor] = useState<Repo | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [ideaFor, setIdeaFor] = useState<Repo | null>(null);
+  const [filter, setFilter] = useState<string>('all');
   const autoOpened = useRef(false);
 
   const me = myMembership.value;
@@ -53,6 +58,15 @@ export function Repos({ gid }: { gid: string }) {
       }),
     [gid],
   );
+
+  const tagsInUse = [...new Set((repos ?? []).flatMap((r) => r.domainTags ?? []))].slice(0, 8);
+  const weekAgo = Date.now() - 7 * 86_400_000;
+  const visible = (repos ?? []).filter((r) => {
+    if (filter === 'all') return true;
+    if (filter === 'needs help') return !!r.needs || r.seekingOwner;
+    if (filter === 'new') return (r.createdAt?.toMillis() ?? 0) >= weekAgo;
+    return (r.domainTags ?? []).includes(filter);
+  });
 
   // Every member gets asked to share once — the founder AND everyone invited after
   // them (PRD F-04). Keyed on "have I shared anything here", not "is the circle
@@ -125,6 +139,21 @@ export function Repos({ gid }: { gid: string }) {
         )}
       </div>
 
+      {repos && repos.length > 0 && (
+        <div class="row wrap repofilter">
+          {['all', 'needs help', 'new', ...tagsInUse].map((f) => (
+            <button
+              key={f}
+              class={`chip ${filter === f ? 'chip--accent' : ''}`}
+              aria-pressed={filter === f}
+              onClick={() => setFilter(f)}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+      )}
+
       {repos === null && <span class="skeleton" />}
       {repos?.length === 0 && (
         <EmptyState
@@ -132,8 +161,18 @@ export function Repos({ gid }: { gid: string }) {
           action={canAdd ? <Pill onClick={() => void openImport()}>Import my repos</Pill> : undefined}
         />
       )}
+      {visible.length === 0 && repos && repos.length > 0 && (
+        <EmptyState
+          icon="repo"
+          line={
+            filter === 'needs help'
+              ? 'Nobody has asked for help yet — owners can set that from the card menu.'
+              : 'Nothing under this filter yet.'
+          }
+        />
+      )}
       <div class="repogrid">
-        {repos?.map((r) => (
+        {visible.map((r) => (
           <RepoCard
             key={r.id}
             gid={gid}
@@ -142,6 +181,7 @@ export function Repos({ gid }: { gid: string }) {
             canCollab={canAdd && !canManageRepo(r, uid, iAmAdmin)}
             onManage={() => setManage(r)}
             onCollab={() => setCollabFor(r)}
+            onEditIdea={() => setIdeaFor(r)}
           />
         ))}
       </div>
@@ -158,6 +198,7 @@ export function Repos({ gid }: { gid: string }) {
       {addOpen && <AddRepoSheet gid={gid} onClose={() => setAddOpen(false)} />}
       {manage && <ManageRepoSheet gid={gid} repo={manage} onClose={() => setManage(null)} />}
       {collabFor && <CollabSheet gid={gid} repo={collabFor} onClose={() => setCollabFor(null)} />}
+      {ideaFor && <IdeaSheet gid={gid} repo={ideaFor} onClose={() => setIdeaFor(null)} />}
       {inviteOpen && (
         <InviteSheet
           gid={gid}
@@ -176,6 +217,7 @@ function RepoCard({
   canCollab,
   onManage,
   onCollab,
+  onEditIdea,
 }: {
   gid: string;
   repo: Repo;
@@ -183,16 +225,26 @@ function RepoCard({
   canCollab: boolean;
   onManage: () => void;
   onCollab: () => void;
+  onEditIdea: () => void;
 }) {
   const shortName = repo.fullName.split('/')[1] ?? repo.fullName;
+  const needLabel = REPO_NEEDS.find((n) => n.key === repo.needs)?.label;
   return (
     <div class="card card--interactive repo">
+      <a class="repo__shot" href={`#/g/${gid}/repo/${repo.id}`} aria-hidden="true" tabindex={-1}>
+        <img src={socialPreviewUrl(repo.fullName)} alt="" loading="lazy" />
+      </a>
       <div class="row">
         <a class="mono repo__name" href={`#/g/${gid}/repo/${repo.id}`}>
           {shortName}
         </a>
         <Chip tone={STATUS_TONE[repo.status]}>{repo.status}</Chip>
         <span class="topbar__spacer" />
+        {canManage && (
+          <button class="repo__more" onClick={onEditIdea} aria-label={`Edit the idea behind ${shortName}`}>
+            <Icon name="ask" size={15} />
+          </button>
+        )}
         {canManage ? (
           <button class="repo__more" onClick={onManage} aria-label={`Manage ${shortName}`}>
             ⋯
@@ -205,7 +257,17 @@ function RepoCard({
           )
         )}
       </div>
-      {repo.description && <p class="small dim repo__desc">{repo.description}</p>}
+      {repo.pitch ? (
+        <p class="repo__pitch">{repo.pitch}</p>
+      ) : (
+        repo.description && <p class="small dim repo__desc">{repo.description}</p>
+      )}
+      {(needLabel || repo.seekingOwner) && (
+        <div class="row wrap">
+          {needLabel && <Chip tone="accent">{needLabel}</Chip>}
+          {repo.seekingOwner && <Chip tone="warn">Looking for a new owner</Chip>}
+        </div>
+      )}
       <div class="row small dim repo__meta">
         {repo.language && (
           <span class="chip">
@@ -213,9 +275,11 @@ function RepoCard({
             {repo.language}
           </span>
         )}
-        {repo.topics.slice(0, 2).map((t) => (
+        {(repo.domainTags ?? []).slice(0, 3).map((t) => (
           <Chip key={t}>{t}</Chip>
         ))}
+        {(repo.domainTags ?? []).length === 0 &&
+          repo.topics.slice(0, 2).map((t) => <Chip key={t}>{t}</Chip>)}
         {repo.lastEventAt && <span class="chip">{relTime(repo.lastEventAt)}</span>}
         <span class="topbar__spacer" />
         {repo.demoUrl && (
@@ -230,6 +294,7 @@ function RepoCard({
         <span class="topbar__spacer" />
         <Spark series={sparkSeries(repo.daily, 14)} label={`activity over the last 14 days`} />
       </div>
+      <InterestButton gid={gid} repo={repo} />
     </div>
   );
 }

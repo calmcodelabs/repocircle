@@ -59,3 +59,25 @@ export async function closeIssueWithComment(fullName: string, issueNumber: numbe
   await ghSend('POST', `/repos/${fullName}/issues/${issueNumber}/comments`, { body: comment });
   await ghSend('PATCH', `/repos/${fullName}/issues/${issueNumber}`, { state: 'closed' });
 }
+
+/**
+ * README text for the idea preview. Most idea-repos have a decent README and
+ * little else, so this is often the only way to judge what something is.
+ * Returns plain markdown source, trimmed to the first meaningful chunk.
+ */
+export async function fetchReadme(fullName: string): Promise<string | null> {
+  try {
+    const res = await ghGet<{ content?: string; encoding?: string }>(`/repos/${fullName}/readme`);
+    if (!res.content || res.encoding !== 'base64') return null;
+    const binary = atob(res.content.replace(/\n/g, ''));
+    const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+    return new TextDecoder('utf-8').decode(bytes);
+  } catch {
+    return null; // no README, or private/missing — not worth surfacing as an error
+  }
+}
+
+/** GitHub renders a social preview card for every repo; free visual for an idea. */
+export function socialPreviewUrl(fullName: string): string {
+  return `https://opengraph.githubassets.com/1/${fullName}`;
+}

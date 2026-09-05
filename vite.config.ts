@@ -15,7 +15,7 @@ const CSP = [
   "script-src 'self' https://apis.google.com",
   "style-src 'self'",
   "font-src 'self'",
-  "img-src 'self' https://avatars.githubusercontent.com data:",
+  "img-src 'self' https://avatars.githubusercontent.com https://opengraph.githubassets.com data:",
   "connect-src 'self' https://api.github.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://discord.com",
   "frame-src https://*.firebaseapp.com",
   "base-uri 'none'",

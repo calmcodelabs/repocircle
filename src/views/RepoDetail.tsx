@@ -6,6 +6,10 @@ import { sessionUser } from '../auth/session';
 import { canManageRepo } from '../data/repos';
 import type { Repo } from '../data/types';
 import { doc, onSnapshot as onDoc } from 'firebase/firestore';
+import { fetchReadme, socialPreviewUrl } from '../github/repos';
+import { readmePreview } from '../util/readme';
+import { InterestButton } from './InterestButton';
+import { REPO_NEEDS } from '../data/types';
 import { sparkSeries } from '../poll/engine';
 import { CollabSheet } from './CollabSheet';
 import { Pill } from '../ui/Pill';
@@ -45,6 +49,7 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
   const [repo, setRepo] = useState<Repo | null | undefined>(undefined);
   const [events, setEvents] = useState<FeedEvent[] | null>(null);
   const [collabOpen, setCollabOpen] = useState(false);
+  const [readme, setReadme] = useState<string | null | undefined>(undefined);
   const uid = sessionUser.value?.uid;
   const me = myMembership.value;
   const iAmAdmin = me?.role === 'admin';
@@ -73,6 +78,17 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
     [gid, repoId],
   );
 
+  useEffect(() => {
+    if (!repo?.fullName) return;
+    let alive = true;
+    void fetchReadme(repo.fullName).then((md) => {
+      if (alive) setReadme(md ? readmePreview(md) : null);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [repo?.fullName]);
+
   if (repo === undefined) return <span class="skeleton" />;
   if (repo === null)
     return <EmptyState line="This repo isn’t registered here (anymore)." action={<a href={`#/g/${gid}/repos`}>All repos</a>} />;
@@ -90,7 +106,17 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
           </Chip>
           {repo.poll?.failing && <Chip tone="danger">poll failing</Chip>}
         </div>
+        {repo.pitch && <p class="lead">{repo.pitch}</p>}
         {repo.description && <p class="small dim">{repo.description}</p>}
+        <div class="row wrap">
+          {repo.needs && (
+            <Chip tone="accent">{REPO_NEEDS.find((n) => n.key === repo.needs)?.label}</Chip>
+          )}
+          {repo.seekingOwner && <Chip tone="warn">Looking for a new owner</Chip>}
+          {(repo.domainTags ?? []).map((t) => (
+            <Chip key={t}>{t}</Chip>
+          ))}
+        </div>
         <div class="row small">
           <a href={repo.htmlUrl} target="_blank" rel="noopener noreferrer nofollow">
             GitHub ↗
@@ -124,6 +150,24 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
       </section>
 
       {collabOpen && repo && <CollabSheet gid={gid} repo={repo} onClose={() => setCollabOpen(false)} />}
+
+      <InterestButton gid={gid} repo={repo} />
+
+      <section class="card stack rise-2">
+        <div class="sectionhead">
+          <span class="sectionhead__mark" />
+          <span class="sectionhead__title">What it looks like</span>
+        </div>
+        <img class="repodetail__shot" src={socialPreviewUrl(repo.fullName)} alt="" loading="lazy" />
+        {readme === undefined && <span class="skeleton" />}
+        {readme === null && (
+          <EmptyState icon="repo" line="No README yet — a few lines there help people judge the idea." />
+        )}
+        {readme && <p class="readme">{readme}</p>}
+        <a class="small" href={`${repo.htmlUrl}#readme`} target="_blank" rel="noopener noreferrer nofollow">
+          Read the full README on GitHub ↗
+        </a>
+      </section>
 
       <section class="card stack rise-2">
         <div class="sectionhead">
