@@ -111,8 +111,9 @@ publicPages/{slug}                          # opt-in public group page mirror (G
 | expireAt | ts | occurredAt + 180 d → **Firestore TTL policy** deletes it (PRD §11 retention, zero code) |
 
 ### `groups/{gid}/repos/{repoId}/activityDaily/{YYYY-MM-DD}`
-`{ commits, prsOpened, prsMerged, issuesOpened, releases: number }` — increment-merged
-during ingestion; a 14-day query renders the sparkline. Kept forever (tiny).
+**Superseded in M3** by an embedded `daily` map on the repo doc (21-day window,
+pruned during polls): one doc read renders card + sparkline instead of a 14-doc
+query. The subcollection rules remain for the Phase-3 webhook path.
 
 ### `groups/{gid}/asks/{askId}`
 | Field | Type | Notes |

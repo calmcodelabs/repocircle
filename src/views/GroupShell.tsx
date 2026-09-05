@@ -36,6 +36,17 @@ export function GroupShell({ gid, children }: { gid: string; children: Component
   }, [gid]);
 
   useEffect(() => {
+    const off = () => toast('You’re offline — reads come from cache, writes sync later.', { error: true });
+    const on = () => toast('Back online');
+    window.addEventListener('offline', off);
+    window.addEventListener('online', on);
+    return () => {
+      window.removeEventListener('offline', off);
+      window.removeEventListener('online', on);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!switcherOpen) return;
     let alive = true;
     void fetchMyGroups(myUserDoc.value?.groupIds ?? []).then((gs) => {

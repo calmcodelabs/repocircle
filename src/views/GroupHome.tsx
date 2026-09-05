@@ -11,6 +11,9 @@ import { Avatar } from '../ui/Avatar';
 import { Chip } from '../ui/Chip';
 import { EmptyState } from '../ui/EmptyState';
 import { Pill } from '../ui/Pill';
+import { doc as fsDoc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase';
+import { ChecklistCard } from './ChecklistCard';
 import { CollabInbox } from './CollabInbox';
 import { sparkSeries } from '../poll/engine';
 import { Spark } from '../ui/Spark';
@@ -28,6 +31,7 @@ export function GroupHome({ gid }: { gid: string }) {
   const [myAsks, setMyAsks] = useState<Ask[]>([]);
   const [myClaims, setMyClaims] = useState<Ask[]>([]);
   const [unblocked, setUnblocked] = useState(0);
+  const [hasDiscord, setHasDiscord] = useState(false);
   const uid = sessionUser.value?.uid;
   const canWrite = !!me && me.role !== 'guest' && me.role !== 'alumnus';
 
@@ -43,6 +47,11 @@ export function GroupHome({ gid }: { gid: string }) {
   useEffect(() => {
     void unblockedThisWeek(gid).then(setUnblocked).catch(() => undefined);
   }, [gid, needsHelp]);
+  useEffect(() => {
+    void getDoc(fsDoc(db(), `groups/${gid}/integrations/discord`))
+      .then((s) => setHasDiscord(s.exists()))
+      .catch(() => undefined);
+  }, [gid]);
 
   async function quickClaim(ask: Ask) {
     const profile = uid ? myProfile(uid) : null;
@@ -123,6 +132,8 @@ export function GroupHome({ gid }: { gid: string }) {
           </div>
         )}
       </section>
+
+      <ChecklistCard gid={gid} hasDiscord={hasDiscord} />
 
       <CollabInbox gid={gid} />
 

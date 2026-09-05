@@ -5,6 +5,7 @@ import { myProfile } from '../data/users';
 import { GhError } from '../github/client';
 import { closeIssueWithComment, inviteCollaborator } from '../github/repos';
 import { hasPublicRepoScope } from './CollabSheet';
+import { notifyDiscord } from '../notify/discord';
 import { Avatar } from '../ui/Avatar';
 import { Chip } from '../ui/Chip';
 import { Pill } from '../ui/Pill';
@@ -49,6 +50,9 @@ export function CollabInbox({ gid }: { gid: string }) {
               `@${req.requesterLogin} invited as a collaborator — check your GitHub notifications. 🤝 _(via RepoCircle)_`,
             );
           toast(`Invitation sent to @${req.requesterLogin}`);
+          notifyDiscord(gid, 'postCollabs', {
+            title: `✅ @${req.requesterLogin} is now a collaborator on ${req.repoFullName.split('/')[1]}`,
+          });
         } else {
           if (req.githubIssueNumber)
             await closeIssueWithComment(

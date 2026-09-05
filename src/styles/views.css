@@ -442,3 +442,31 @@
 .fab:active {
   transform: scale(0.97);
 }
+
+/* checklist */
+.check {
+  width: 20px;
+  height: 20px;
+  border-radius: 99px;
+  border: 1px solid var(--line-strong);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex: none;
+  color: var(--accent);
+}
+.check--done {
+  background: var(--accent-soft);
+  border-color: transparent;
+}
+.checklist__row {
+  padding: 4px 0;
+  color: var(--text);
+}
+.checklist__row:hover {
+  text-decoration: none;
+}
+.checklist__done {
+  text-decoration: line-through;
+}

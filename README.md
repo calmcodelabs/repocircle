@@ -11,9 +11,11 @@ claims it; the app removes the friction of becoming a collaborator on GitHub.
 No leaderboards. No rankings. No chat product. GitHub stays the source of truth;
 Discord/Slack stay the conversation. RepoCircle is the group's shared window.
 
-> **Status: M0 walking skeleton built** — app shell, GitHub auth, security rules
-> (emulator-tested), CI→Pages pipeline. Blocked only on the one-time
-> [Firebase/OAuth setup](docs/SETUP.md) before live sign-in works. Plan: [`docs/PLAN.md`](docs/PLAN.md).
+> **Status: Phase 1 feature-complete** — groups & invites, repo registry with
+> GitHub import, live activity polling with sparklines, asks & stuck flags with
+> claims, collaborator requests (real GitHub issues + invitations), Discord
+> notifications, personal homepage, PWA with offline support. 58 security-rules
+> tests + 30 unit tests in CI. In final testing before the first real group.
 
 ## How it's built and hosted
 

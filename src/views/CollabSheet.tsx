@@ -5,6 +5,7 @@ import { myProfile, myUserDoc } from '../data/users';
 import type { Repo } from '../data/types';
 import { GhError } from '../github/client';
 import { createCollabIssue } from '../github/repos';
+import { notifyDiscord } from '../notify/discord';
 import { Field } from '../ui/Field';
 import { Pill } from '../ui/Pill';
 import { Sheet } from '../ui/Sheet';
@@ -42,6 +43,10 @@ export function CollabSheet({ gid, repo, onClose }: { gid: string; repo: Repo; o
       const issue = await createCollabIssue(repo.fullName, profile.login, note.trim(), backlink);
       await attachIssueNumber(gid, reqId, issue.number);
       toast(`Request sent — issue #${issue.number} opened on ${repo.fullName}`);
+      notifyDiscord(gid, 'postCollabs', {
+        title: `🔑 @${profile.login} asked to collaborate on ${repo.fullName.split('/')[1]}`,
+        path: `#/g/${gid}/repo/${repo.id}`,
+      });
       onClose();
     } catch (e) {
       log('warn', `collab request failed: ${e instanceof GhError ? e.kind : 'firestore'}`);

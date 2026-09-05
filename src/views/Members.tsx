@@ -1,4 +1,6 @@
-import { useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 import { Timestamp } from 'firebase/firestore';
 import { sessionUser } from '../auth/session';
 import { activeMembers, myMembership } from '../data/activeGroup';
@@ -30,6 +32,14 @@ export function Members({ gid }: { gid: string }) {
   const iAmAdmin = me?.role === 'admin';
   const [editAvail, setEditAvail] = useState(false);
   const [manage, setManage] = useState<Member | null>(null);
+
+  useEffect(() => {
+    const uid = sessionUser.value?.uid;
+    if (uid)
+      void updateDoc(doc(db(), `groups/${gid}/members/${uid}`), { 'checklist.visitedMembers': true }).catch(
+        () => undefined,
+      );
+  }, [gid]);
 
   return (
     <main class="stack">
@@ -95,6 +105,9 @@ function AvailabilitySheet({ gid, current, onClose }: { gid: string; current: Av
     };
     try {
       await setAvailability(gid, uid, availability);
+      void updateDoc(doc(db(), `groups/${gid}/members/${uid}`), { 'checklist.setAvailability': true }).catch(
+        () => undefined,
+      );
       toast('Availability updated');
       onClose();
     } catch {

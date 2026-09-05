@@ -117,6 +117,15 @@ rules-denied.
 
 ## M3 · Activity ingestion engine — *riskiest system, built early* (~4–5 days)
 
+> **Progress note (2026-09-05, "one go" build):** engineering for M3–M7 landed in a
+> single session, plus M8's adversarial rules suite (58 emulator tests total).
+> Deviations: activity rollups live in an embedded 21-day `daily` map on the repo doc
+> (not the activityDaily subcollection — one read per card instead of 14); checklist
+> is a guide, not a module gate (soft version of F-12 unlocks); collab-request label
+> is best-effort (GitHub drops labels from non-push users). Remaining before launch:
+> Opus browser-test pass, TTL policy console step, phone device spike, week-of-dogfood
+> observation (M8 exit criterion).
+
 Objective: ARCHITECTURE §5 running in production: polling claims, ETag economy,
 idempotent events, daily rollups, sparklines, "Active this week" (F-05, F-11 data,
 I-01-as-polling).
