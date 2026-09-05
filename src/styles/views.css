@@ -650,3 +650,14 @@
   margin-top: 2px;
   flex: none;
 }
+
+
+.staleboard {
+  border: 1px solid var(--warn);
+  background: var(--warn-soft);
+  color: var(--warn);
+  border-radius: var(--r-input);
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}

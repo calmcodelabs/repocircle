@@ -3,7 +3,7 @@ import type { Unsubscribe } from 'firebase/firestore';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { sessionUser } from '../auth/session';
-import { log } from '../util/log';
+import { log, noteServerError } from '../util/log';
 import { watchMembers } from './members';
 import { resilientWatch } from './resilientWatch';
 import type { Group, Member } from './types';
@@ -51,6 +51,8 @@ export function setActiveGroup(gid: string | null): void {
       {
         onGiveUp: (code) => {
           log('warn', `group watch: ${code}`);
+          noteServerError(code, 'group');
+          if (code === 'resource-exhausted' || code === 'unavailable') return;
           activeDenied.value = true;
           activeGroup.value = null;
         },

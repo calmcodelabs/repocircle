@@ -5,7 +5,7 @@ import {
   collection,
   deleteDoc,
   doc,
-  getCountFromServer,
+  getDocs,
   limit,
   onSnapshot,
   orderBy,
@@ -18,7 +18,7 @@ import {
   type Unsubscribe,
 } from 'firebase/firestore';
 import { db } from '../firebase';
-import { log } from '../util/log';
+import { log, noteServerError } from '../util/log';
 import { randomToken } from './ids';
 import { resilientWatch } from './resilientWatch';
 import type { Ask, AskClaim, AskKind, MyProfile } from './types';
@@ -153,21 +153,27 @@ export async function deleteAsk(gid: string, askId: string): Promise<void> {
   await deleteDoc(doc(db(), `groups/${gid}/asks/${askId}`));
 }
 
-/** Group-level "unblocked this week" (G-05): resolved count, never per-member. */
+/**
+ * Group-level "unblocked this week" (G-05): resolved count, never per-member.
+ * A plain limited query rather than count(): aggregations always go to the server
+ * and cannot fall back to cache, which made this the first thing to break whenever
+ * the backend was unhappy. A circle resolves nowhere near 200 asks a week.
+ */
 export async function unblockedThisWeek(gid: string): Promise<number> {
   const weekAgo = Timestamp.fromMillis(Date.now() - 7 * 86_400_000);
   const q = query(
     collection(db(), `groups/${gid}/asks`),
     where('state', '==', 'resolved'),
     where('resolvedAt', '>=', weekAgo),
+    limit(200),
   );
   try {
-    const snap = await getCountFromServer(q);
-    return snap.data().count;
+    const snap = await getDocs(q);
+    return snap.size;
   } catch (e) {
-    // A missing composite index shows up here as failed-precondition; surfacing it
-    // beats silently rendering 0 forever.
-    log('warn', `unblocked count failed: ${(e as { code?: string }).code ?? 'unknown'}`);
+    const code = (e as { code?: string }).code;
+    log('warn', `unblocked count failed: ${code ?? 'unknown'}`);
+    noteServerError(code, 'unblocked count');
     return 0;
   }
 }

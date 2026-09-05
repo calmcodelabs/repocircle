@@ -5,6 +5,7 @@ import { activeDenied, activeGroup, myMembership, setActiveGroup } from '../data
 import { forgetGroup } from '../data/groups';
 import { myUserDoc } from '../data/users';
 import { toast } from '../ui/Toast';
+import { serverUnavailable } from '../util/log';
 import { Pill } from '../ui/Pill';
 import { AskComposer } from './AskComposer';
 import { startPolling, stopPolling } from '../poll/engine';
@@ -116,6 +117,12 @@ export function GroupShell({ gid, children }: { gid: string; children: Component
           <button class="menu__item menu__item--dim" onClick={() => void signOutApp()}>
             Sign out
           </button>
+        </div>
+      )}
+
+      {serverUnavailable.value && (
+        <div class="staleboard" role="status">
+          {serverUnavailable.value}
         </div>
       )}
 
