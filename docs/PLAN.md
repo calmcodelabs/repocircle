@@ -22,24 +22,30 @@ warmth) and A-07 custom tags (needed by ask composer anyway).
 
 ## M0 · Foundations & walking skeleton — *"it deploys, it signs in"* (~2–3 days)
 
+> **Progress note (2026-09-05):** all M0 engineering landed in one session — scaffold,
+> design system, auth+vault, rules (36 emulator tests green), CI. Remaining before M0
+> can close: the owner's one-time console setup (SETUP §A/§B: OAuth App + Firebase
+> project + config paste + rules deploy), then live sign-in verification and the
+> device spike on real hardware. Bundle: 189 KB gz JS (budget 220).
+
 Objective: the full pipeline works end-to-end with near-zero product code: repo →
 CI → Pages → Firebase auth → Firestore write behind rules. De-risks platform quirks
 (iOS PWA sign-in!) before features exist.
 
-- [ ] Vite + Preact + TS scaffold; strict tsconfig; ESLint (incl. `innerHTML` ban) + Prettier
-- [ ] Design tokens (UI.md §1) as CSS custom properties; Inter self-hosted; base
+- [x] Vite + Preact + TS scaffold; strict tsconfig; ESLint (incl. `innerHTML` ban) + Prettier
+- [x] Design tokens (UI.md §1) as CSS custom properties; Inter self-hosted; base
       components: Card, Pill, Chip, Sheet, Skeleton, EmptyState, Toast
-- [ ] Hash router with the route map from ARCHITECTURE §3; app shell (top bar, empty Home)
-- [ ] `firebase.ts` init + `firebase-config.ts` (from SETUP B5); Firestore offline
+- [x] Hash router with the route map from ARCHITECTURE §3; app shell (top bar, empty Home)
+- [x] `firebase.ts` init + `firebase-config.ts` (from SETUP B5); Firestore offline
       persistence on
-- [ ] Auth: sign-in/out with GitHub provider (`read:user user:email`); session store;
+- [x] Auth: sign-in/out with GitHub provider (`read:user user:email`); session store;
       `users/{uid}` upsert; token vault (SECURITY §5) with unit tests
-- [ ] Deploy `firestore.rules` v1 (SECURITY §3) + `firestore.indexes.json`; emulator
+- [x] Deploy `firestore.rules` v1 (SECURITY §3) + `firestore.indexes.json`; emulator
       wired; first 10 rules tests green (users/*, default-deny)
-- [ ] GitHub Actions: lint → typecheck → test → build → deploy-pages (SHA-pinned,
+- [x] GitHub Actions: lint → typecheck → test → build → deploy-pages (SHA-pinned,
       minimal permissions); replaces the placeholder page; PWA manifest + icons +
       installability (SW ships in M7)
-- [ ] CSP meta tag active (SECURITY §6) — verified zero console violations
+- [x] CSP meta tag active (SECURITY §6) — verified zero console violations
 - [ ] **Device spike**: sign in + write a doc on Android Chrome, desktop Chrome/Firefox,
       iOS Safari **and iOS installed-PWA** — document popup vs redirect findings in
       DECISIONS (this is risk R1, retired here or replanned *now*)

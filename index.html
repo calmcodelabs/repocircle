@@ -1,71 +1,20 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
-<meta name="theme-color" content="#0E0F12">
-<meta name="description" content="RepoCircle — see what your group is building. Ask to join in.">
-<title>RepoCircle</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='26' fill='none' stroke='%233ECF8E' stroke-width='5'/%3E%3Ccircle cx='32' cy='12' r='7' fill='%230E0F12' stroke='%233ECF8E' stroke-width='4'/%3E%3Ccircle cx='49' cy='45' r='7' fill='%230E0F12' stroke='%233ECF8E' stroke-width='4'/%3E%3Ccircle cx='15' cy='45' r='7' fill='%230E0F12' stroke='%233ECF8E' stroke-width='4'/%3E%3C/svg%3E">
-<style>
-  :root{
-    --bg:#0E0F12; --raised:#16181D; --line:rgba(255,255,255,.07);
-    --text:#EDEEF0; --dim:#9CA3AD; --faint:#5C6370; --accent:#3ECF8E;
-  }
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{
-    min-height:100svh; display:grid; place-items:center; padding:24px;
-    background:var(--bg); color:var(--text);
-    font:15px/1.5 "Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-    -webkit-font-smoothing:antialiased;
-  }
-  .halo{position:fixed; inset:0; pointer-events:none;
-    background:radial-gradient(600px 420px at 50% 32%, rgba(62,207,142,.07), transparent 70%)}
-  main{position:relative; width:min(420px,100%); text-align:center}
-  .mark{width:56px; height:56px; margin:0 auto 20px; display:block}
-  h1{font-size:26px; font-weight:600; letter-spacing:-.02em}
-  .tag{margin-top:10px; color:var(--dim)}
-  .card{
-    margin-top:28px; padding:20px; text-align:left;
-    background:var(--raised); border:1px solid var(--line); border-radius:16px;
-  }
-  .row{display:flex; gap:10px; align-items:baseline; padding:7px 0; color:var(--dim); font-size:13px}
-  .row b{color:var(--text); font-weight:500}
-  .dot{width:7px; height:7px; border-radius:99px; background:var(--accent); flex:none; align-self:center}
-  .dot.idle{background:var(--faint)}
-  .status{
-    margin-top:22px; display:inline-flex; align-items:center; gap:8px;
-    padding:8px 16px; border:1px solid var(--line); border-radius:999px;
-    color:var(--dim); font-size:13px;
-  }
-  .pulse{width:8px; height:8px; border-radius:99px; background:var(--accent);
-    animation:pulse 2.4s ease-out infinite}
-  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(62,207,142,.5)}70%{box-shadow:0 0 0 9px rgba(62,207,142,0)}100%{box-shadow:0 0 0 0 rgba(62,207,142,0)}}
-  @media (prefers-reduced-motion:reduce){.pulse{animation:none}}
-  footer{margin-top:26px; font-size:12px; color:var(--faint)}
-</style>
-</head>
-<body>
-<div class="halo"></div>
-<main>
-  <svg class="mark" viewBox="0 0 64 64" aria-hidden="true">
-    <circle cx="32" cy="32" r="26" fill="none" stroke="#3ECF8E" stroke-width="4" opacity=".9"/>
-    <circle cx="32" cy="12" r="6.5" fill="#0E0F12" stroke="#3ECF8E" stroke-width="3.5"/>
-    <circle cx="49" cy="45" r="6.5" fill="#0E0F12" stroke="#3ECF8E" stroke-width="3.5"/>
-    <circle cx="15" cy="45" r="6.5" fill="#0E0F12" stroke="#3ECF8E" stroke-width="3.5"/>
-  </svg>
-  <h1>RepoCircle</h1>
-  <p class="tag">See what your group is building.<br>Ask to join in.</p>
-
-  <div class="card" aria-label="What RepoCircle will do">
-    <div class="row"><span class="dot"></span><span><b>Your circle's repos</b> — one calm view of where the energy is</span></div>
-    <div class="row"><span class="dot" style="background:#F5A524"></span><span><b>Stuck? Flag it</b> — a friend claims it, no scores, no judging</span></div>
-    <div class="row"><span class="dot idle"></span><span><b>Join in</b> — one tap to request collaborator access on GitHub</span></div>
-  </div>
-
-  <div class="status"><span class="pulse"></span>In development — first release building now</div>
-  <footer>A CalmCode Labs project</footer>
-</main>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!--CSP-->
+    <meta name="theme-color" content="#0E0F12" />
+    <meta name="description" content="RepoCircle — see what your group is building. Ask to join in." />
+    <title>RepoCircle</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icons/icon-192.png" type="image/png" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+    <link rel="preload" href="fonts/InterVariable.woff2" as="font" type="font/woff2" crossorigin />
+  </head>
+  <body>
+    <div id="app"></div>
+    <noscript>RepoCircle needs JavaScript — it is a client-only app talking to Firebase and GitHub.</noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>

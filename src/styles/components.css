@@ -1,0 +1,324 @@
+/* Base component styles — docs/UI.md. Class-based (CSP: no inline styles). */
+
+/* layout frame */
+.app {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 0 var(--gutter) 96px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+  position: sticky;
+  top: 0;
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  backdrop-filter: blur(12px);
+  z-index: 10;
+}
+.topbar__spacer {
+  flex: 1;
+}
+.topbar__mark {
+  width: 28px;
+  height: 28px;
+  display: block;
+}
+
+.halo {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(640px 440px at 50% 28%, var(--accent-soft), transparent 70%);
+  opacity: 0.55;
+  z-index: -1;
+}
+
+/* card */
+.card {
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  padding: 16px;
+}
+@media (min-width: 720px) {
+  .card {
+    padding: 20px;
+  }
+}
+.card--flush {
+  padding: 0;
+}
+
+/* pill buttons */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: var(--r-pill);
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid var(--line);
+  background: var(--bg-overlay);
+  color: var(--text);
+  transition:
+    border-color var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease),
+    transform var(--t-fast) var(--ease);
+}
+.pill:hover {
+  border-color: var(--line-strong);
+}
+.pill:active {
+  transform: scale(0.98);
+}
+.pill--primary {
+  background: var(--accent);
+  border-color: transparent;
+  color: #08120d;
+}
+.pill--primary:hover {
+  filter: brightness(1.06);
+}
+.pill--ghost {
+  background: transparent;
+}
+.pill--danger {
+  background: transparent;
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.pill--big {
+  padding: 13px 24px;
+  font-size: 15px;
+}
+.pill[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* chips */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: var(--r-pill);
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--bg-overlay);
+  border: 1px solid var(--line);
+  color: var(--text-dim);
+}
+.chip--accent {
+  background: var(--accent-soft);
+  border-color: transparent;
+  color: var(--accent);
+}
+.chip--warn {
+  background: var(--warn-soft);
+  border-color: transparent;
+  color: var(--warn);
+}
+.chip--danger {
+  background: var(--danger-soft);
+  border-color: transparent;
+  color: var(--danger);
+}
+
+/* status dot */
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--r-pill);
+  background: var(--text-faint);
+  flex: none;
+}
+.dot--accent {
+  background: var(--accent);
+}
+.dot--warn {
+  background: var(--warn);
+}
+
+/* avatar */
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line-strong);
+  background: var(--bg-overlay);
+  display: block;
+}
+.avatar--lg {
+  width: 44px;
+  height: 44px;
+}
+
+/* form fields */
+.field {
+  display: grid;
+  gap: 6px;
+}
+.field__label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-dim);
+}
+.field__input {
+  background: var(--bg-overlay);
+  border: 1px solid var(--line);
+  border-radius: var(--r-input);
+  color: var(--text);
+  padding: 11px 14px;
+  width: 100%;
+  transition: border-color var(--t-fast) var(--ease);
+}
+.field__input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+.field__hint {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+.field__hint--error {
+  color: var(--danger);
+}
+
+/* sheet: bottom on mobile, centered on desktop */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 40;
+  animation: fade-in var(--t-med) var(--ease);
+}
+.sheet {
+  position: fixed;
+  z-index: 41;
+  inset: auto 0 0 0;
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-bottom: none;
+  border-radius: var(--r-card) var(--r-card) 0 0;
+  padding: 20px var(--gutter) calc(20px + env(safe-area-inset-bottom));
+  max-height: 88svh;
+  overflow-y: auto;
+  animation: sheet-up var(--t-med) var(--ease);
+}
+@media (min-width: 720px) {
+  .sheet {
+    inset: 50% auto auto 50%;
+    transform: translate(-50%, -50%);
+    width: min(480px, calc(100vw - 48px));
+    border-radius: var(--r-card);
+    border-bottom: 1px solid var(--line);
+    box-shadow: var(--shadow-overlay);
+    animation: fade-in var(--t-med) var(--ease);
+  }
+}
+.sheet__title {
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+@keyframes sheet-up {
+  from {
+    translate: 0 24px;
+    opacity: 0;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* toast */
+.toasts {
+  position: fixed;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  left: 50%;
+  translate: -50% 0;
+  display: grid;
+  gap: 8px;
+  z-index: 50;
+  width: min(420px, calc(100vw - 32px));
+}
+.toast {
+  background: var(--bg-overlay);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-input);
+  box-shadow: var(--shadow-overlay);
+  padding: 12px 16px;
+  font-size: 14px;
+  animation: sheet-up var(--t-med) var(--ease);
+}
+.toast--error {
+  border-color: var(--danger);
+}
+
+/* skeleton */
+.skeleton {
+  display: block;
+  border-radius: 8px;
+  background: linear-gradient(100deg, var(--bg-raised) 40%, var(--bg-overlay) 50%, var(--bg-raised) 60%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+  min-height: 14px;
+}
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* empty state */
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  text-align: center;
+  padding: 28px 16px;
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+/* lists */
+.stack {
+  display: grid;
+  gap: 12px;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* segmented control */
+.segmented {
+  display: inline-flex;
+  background: var(--bg-overlay);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  padding: 3px;
+  gap: 2px;
+}
+.segmented__btn {
+  border-radius: var(--r-pill);
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-dim);
+}
+.segmented__btn[aria-pressed='true'] {
+  background: var(--bg-raised);
+  color: var(--text);
+  border: 1px solid var(--line-strong);
+}

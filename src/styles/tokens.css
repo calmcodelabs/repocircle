@@ -1,0 +1,54 @@
+/* RepoCircle design tokens — docs/UI.md §1. Dark is the default and primary theme. */
+
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/InterVariable.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* surfaces */
+  --bg: #0e0f12;
+  --bg-raised: #16181d;
+  --bg-overlay: #1d2026;
+  --line: rgba(255, 255, 255, 0.07);
+  --line-strong: rgba(255, 255, 255, 0.14);
+
+  /* text */
+  --text: #edeef0;
+  --text-dim: #9ca3ad;
+  --text-faint: #5c6370;
+
+  /* semantic accents — used sparingly */
+  --accent: #3ecf8e;
+  --accent-soft: rgba(62, 207, 142, 0.12);
+  --warn: #f5a524;
+  --warn-soft: rgba(245, 165, 36, 0.12);
+  --danger: #f0565e;
+  --danger-soft: rgba(240, 86, 94, 0.12);
+  --info: #6e9bf5;
+
+  /* type */
+  --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'JetBrains Mono', Menlo, monospace;
+
+  /* geometry */
+  --r-card: 16px;
+  --r-input: 12px;
+  --r-pill: 999px;
+  --gutter: 16px;
+  --shadow-overlay: 0 8px 24px rgba(0, 0, 0, 0.35);
+
+  /* motion */
+  --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --t-fast: 150ms;
+  --t-med: 200ms;
+}
+
+@media (min-width: 720px) {
+  :root {
+    --gutter: 24px;
+  }
+}

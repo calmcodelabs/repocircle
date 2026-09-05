@@ -1,0 +1,60 @@
+/* Screen-specific styles. */
+
+.signin {
+  display: grid;
+  place-items: center;
+  min-height: 100svh;
+  padding-bottom: 0;
+}
+.signin__panel {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  text-align: center;
+  width: min(420px, 100%);
+  padding: 24px 0;
+}
+.signin__tag {
+  margin-bottom: 10px;
+}
+.signin__error {
+  color: var(--danger);
+}
+.signin__setup {
+  text-align: left;
+  display: grid;
+  gap: 8px;
+}
+.signin__link {
+  color: var(--info);
+  font-size: inherit;
+}
+.signin__link:hover {
+  text-decoration: underline;
+}
+
+.home__menu {
+  position: absolute;
+  right: var(--gutter);
+  top: 60px;
+  z-index: 20;
+  width: min(300px, calc(100vw - 32px));
+  box-shadow: var(--shadow-overlay);
+}
+
+.diag__pre {
+  overflow-x: auto;
+  white-space: pre;
+}
+.diag__err {
+  color: var(--danger);
+}
+
+.splash__bar {
+  width: 140px;
+  height: 20px;
+}
+.stack > .skeleton {
+  height: 72px;
+  border-radius: var(--r-card);
+}

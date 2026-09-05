@@ -1,0 +1,301 @@
+rules_version = '2';
+
+// RepoCircle security rules v1 — the entire server-side authorization layer.
+// Design + threat model: docs/SECURITY.md. Limits mirror src/util/limits.ts.
+// Principles: default deny; membership gates every group path; role checks on
+// privileged writes; key allowlists + shape validation on every create/update;
+// state machines enforced here, not in the client.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- helpers ----------
+    function signedIn() { return request.auth != null; }
+    function me() { return request.auth.uid; }
+    function memberPath(gid) {
+      return /databases/$(database)/documents/groups/$(gid)/members/$(me());
+    }
+    function isMember(gid) { return signedIn() && exists(memberPath(gid)); }
+    function memberRole(gid) { return get(memberPath(gid)).data.role; }
+    // guest + alumnus are read-only roles
+    function canWrite(gid) {
+      return isMember(gid) && memberRole(gid) in ['admin', 'member', 'mentor'];
+    }
+    function isAdmin(gid) { return isMember(gid) && memberRole(gid) == 'admin'; }
+    function str(x, min, max) { return x is string && x.size() >= min && x.size() <= max; }
+    function optStr(d, k, max) { return !(k in d) || d[k] == null || str(d[k], 0, max); }
+    function optHttpsUrl(d, k) {
+      return !(k in d) || d[k] == null || (d[k] is string && d[k].matches('^https://.{1,300}$'));
+    }
+    function inviteValid(gid, token) {
+      let inv = get(/databases/$(database)/documents/groups/$(gid)/invites/$(token)).data;
+      return inv.revoked == false && inv.expiresAt > request.time;
+    }
+    function repoData(gid, repoId) {
+      return get(/databases/$(database)/documents/groups/$(gid)/repos/$(repoId)).data;
+    }
+    function canManageRepo(gid, repoId) {
+      return isAdmin(gid)
+        || repoData(gid, repoId).registeredBy == me()
+        || repoData(gid, repoId).ownerUid == me();
+    }
+
+    // ---------- users ----------
+    match /users/{uid} {
+      allow get: if signedIn() && me() == uid;
+      allow list, delete: if false;
+      allow create, update: if signedIn() && me() == uid
+        && request.resource.data.keys().hasOnly(
+             ['githubId', 'login', 'name', 'avatarUrl', 'scopesGranted', 'groupIds',
+              'checklist', 'createdAt', 'lastSeenAt', 'v'])
+        && str(request.resource.data.login, 1, 60)
+        // githubId immutable once set
+        && (resource == null || !('githubId' in resource.data)
+            || request.resource.data.githubId == resource.data.githubId);
+    }
+
+    // ---------- groups ----------
+    match /groups/{gid} {
+      allow get: if isMember(gid);
+      allow list: if false;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(
+             ['name', 'description', 'visibility', 'createdBy', 'memberCount', 'settings',
+              'createdAt', 'v'])
+        && request.resource.data.createdBy == me()
+        && str(request.resource.data.name, 3, 50)
+        && optStr(request.resource.data, 'description', 280)
+        && request.resource.data.visibility == 'private';
+      allow update: if isAdmin(gid)
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['name', 'description', 'visibility', 'settings', 'memberCount'])
+        && str(request.resource.data.name, 3, 50)
+        && optStr(request.resource.data, 'description', 280)
+        && request.resource.data.visibility in ['private', 'public_page'];
+      allow delete: if false; // Phase-2 tool with deliberate ceremony
+
+      // ---------- members ----------
+      match /members/{uid} {
+        allow read: if isMember(gid);
+        allow create: if signedIn() && me() == uid
+          && request.resource.data.keys().hasOnly(
+               ['role', 'login', 'name', 'avatarUrl', 'availability', 'helpWith', 'learning',
+                'checklist', 'joinedAt', 'joinedVia', 'v'])
+          && str(request.resource.data.login, 1, 60)
+          && (
+            (request.resource.data.joinedVia == 'founder'
+              && getAfter(/databases/$(database)/documents/groups/$(gid)).data.createdBy == me()
+              && request.resource.data.role == 'admin')
+            ||
+            (request.resource.data.joinedVia != 'founder'
+              && inviteValid(gid, request.resource.data.joinedVia)
+              && request.resource.data.role ==
+                   get(/databases/$(database)/documents/groups/$(gid)/invites/$(request.resource.data.joinedVia)).data.role)
+          );
+        allow update: if
+          (me() == uid && isMember(gid)
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['availability', 'helpWith', 'learning', 'checklist',
+                           'login', 'name', 'avatarUrl']))
+          ||
+          (isAdmin(gid) && me() != uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role'])
+            && request.resource.data.role in ['admin', 'member', 'guest', 'mentor', 'alumnus']);
+        allow delete: if me() == uid || isAdmin(gid);
+      }
+
+      // ---------- invites (token = doc id; get-only, never list) ----------
+      match /invites/{token} {
+        allow get: if signedIn();
+        allow list: if false;
+        allow create: if isAdmin(gid)
+          && request.resource.data.keys().hasOnly(
+               ['role', 'expiresAt', 'revoked', 'createdBy', 'createdAt', 'label', 'v'])
+          && request.resource.data.role in ['member', 'guest']   // never admin-by-link
+          && request.resource.data.revoked == false
+          && request.resource.data.expiresAt is timestamp
+          && request.resource.data.expiresAt > request.time
+          && request.resource.data.expiresAt <= request.time + duration.value(30, 'd')
+          && request.resource.data.createdBy == me()
+          && optStr(request.resource.data, 'label', 40);
+        allow update: if isAdmin(gid)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['revoked', 'label'])
+          && optStr(request.resource.data, 'label', 40);
+        allow delete: if isAdmin(gid);
+      }
+
+      // ---------- repos ----------
+      match /repos/{repoId} {
+        allow read: if isMember(gid);
+        allow create: if canWrite(gid)
+          && repoId.matches('[0-9]{1,16}')
+          && request.resource.data.keys().hasOnly(
+               ['fullName', 'htmlUrl', 'description', 'language', 'topics', 'githubOwnerLogin',
+                'ownerUid', 'registeredBy', 'status', 'demoUrl', 'archived', 'lastEventAt',
+                'poll', 'stats7d', 'createdAt', 'v'])
+          && request.resource.data.registeredBy == me()
+          && str(request.resource.data.fullName, 3, 140)
+          && request.resource.data.status in ['idea', 'building', 'paused', 'done']
+          && request.resource.data.archived == false
+          && optHttpsUrl(request.resource.data, 'demoUrl')
+          && optHttpsUrl(request.resource.data, 'htmlUrl')
+          && optStr(request.resource.data, 'description', 500);
+        allow update: if canWrite(gid)
+          && request.resource.data.keys().hasOnly(
+               ['fullName', 'htmlUrl', 'description', 'language', 'topics', 'githubOwnerLogin',
+                'ownerUid', 'registeredBy', 'status', 'demoUrl', 'archived', 'lastEventAt',
+                'poll', 'stats7d', 'createdAt', 'v'])
+          && request.resource.data.registeredBy == resource.data.registeredBy
+          && request.resource.data.status in ['idea', 'building', 'paused', 'done']
+          && optHttpsUrl(request.resource.data, 'demoUrl')
+          && optStr(request.resource.data, 'description', 500);
+        allow delete: if isMember(gid) && canManageRepo(gid, repoId);
+
+        // events: append-only (TTL reaps); deletes only via deregistration sweep
+        match /events/{eventId} {
+          allow read: if isMember(gid);
+          allow create: if canWrite(gid)
+            && request.resource.data.keys().hasOnly(
+                 ['type', 'actorLogin', 'actorAvatarUrl', 'summary', 'url', 'occurredAt',
+                  'source', 'expireAt', 'v'])
+            && str(request.resource.data.summary, 1, 200)
+            && request.resource.data.occurredAt is timestamp
+            && request.resource.data.expireAt is timestamp
+            && request.resource.data.source == 'poll'
+            && optHttpsUrl(request.resource.data, 'url');
+          allow update: if false;
+          allow delete: if isMember(gid) && canManageRepo(gid, repoId);
+        }
+
+        match /activityDaily/{day} {
+          allow read: if isMember(gid);
+          allow create, update: if canWrite(gid)
+            && day.matches('20[0-9]{2}-[0-9]{2}-[0-9]{2}')
+            && request.resource.data.keys().hasOnly(
+                 ['commits', 'prsOpened', 'prsMerged', 'issuesOpened', 'releases', 'v'])
+            && request.resource.data.commits is int && request.resource.data.commits >= 0
+            && request.resource.data.prsOpened is int && request.resource.data.prsOpened >= 0
+            && request.resource.data.prsMerged is int && request.resource.data.prsMerged >= 0
+            && request.resource.data.issuesOpened is int && request.resource.data.issuesOpened >= 0
+            && request.resource.data.releases is int && request.resource.data.releases >= 0;
+          allow delete: if isMember(gid) && canManageRepo(gid, repoId);
+        }
+      }
+
+      // ---------- asks & stuck flags ----------
+      match /asks/{askId} {
+        allow read: if isMember(gid);
+        allow create: if canWrite(gid)
+          && request.resource.data.keys().hasAll(['kind', 'title', 'state', 'authorUid', 'createdAt'])
+          && request.resource.data.keys().hasOnly(
+               ['kind', 'title', 'detail', 'tags', 'repoId', 'pairingUrl', 'authorUid',
+                'authorLogin', 'authorAvatarUrl', 'state', 'claimCount', 'createdAt',
+                'resolvedAt', 'v'])
+          && request.resource.data.authorUid == me()
+          && request.resource.data.state == 'open'
+          && request.resource.data.kind in ['ask', 'stuck']
+          && str(request.resource.data.title, 4, 120)
+          && optStr(request.resource.data, 'detail', 500)
+          && (!('tags' in request.resource.data)
+              || (request.resource.data.tags is list && request.resource.data.tags.size() <= 8))
+          && optHttpsUrl(request.resource.data, 'pairingUrl')
+          && (!('claimCount' in request.resource.data) || request.resource.data.claimCount == 0);
+        allow update: if canWrite(gid) && (
+          // author (or admin): edit content, resolve/reopen own ask
+          ((resource.data.authorUid == me() || isAdmin(gid))
+            && request.resource.data.authorUid == resource.data.authorUid
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['title', 'detail', 'tags', 'repoId', 'pairingUrl', 'state',
+                           'resolvedAt', 'claimCount'])
+            && str(request.resource.data.title, 4, 120)
+            && optStr(request.resource.data, 'detail', 500)
+            && request.resource.data.state in ['open', 'claimed', 'resolved'])
+          ||
+          // any writer: claim / unclaim transitions only (never to resolved)
+          (request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['state', 'claimCount'])
+            && resource.data.state in ['open', 'claimed']
+            && request.resource.data.state in ['open', 'claimed']
+            && request.resource.data.claimCount is int
+            && request.resource.data.claimCount >= 0)
+        );
+        allow delete: if resource.data.authorUid == me() || isAdmin(gid);
+
+        match /claims/{uid} {
+          allow read: if isMember(gid);
+          allow create: if canWrite(gid) && me() == uid
+            && request.resource.data.keys().hasOnly(['login', 'avatarUrl', 'note', 'claimedAt', 'v'])
+            && optStr(request.resource.data, 'note', 140);
+          allow update: if false;
+          allow delete: if me() == uid || isAdmin(gid);
+        }
+      }
+
+      // ---------- collaborator requests ----------
+      match /collabRequests/{reqId} {
+        allow read: if isMember(gid);
+        allow create: if canWrite(gid)
+          && request.resource.data.keys().hasOnly(
+               ['repoId', 'repoFullName', 'requesterUid', 'requesterLogin', 'note',
+                'githubIssueNumber', 'state', 'decidedBy', 'decidedAt', 'createdAt', 'v'])
+          && request.resource.data.requesterUid == me()
+          && request.resource.data.state == 'pending'
+          && str(request.resource.data.note, 1, 280);
+        allow update: if isMember(gid) && (
+          // decide: repo owner or admin
+          (resource.data.state == 'pending'
+            && request.resource.data.state in ['accepted', 'declined']
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['state', 'decidedBy', 'decidedAt'])
+            && request.resource.data.decidedBy == me()
+            && (isAdmin(gid) || repoData(gid, resource.data.repoId).ownerUid == me()))
+          ||
+          // requester: attach issue number after creating it on GitHub
+          (resource.data.requesterUid == me()
+            && resource.data.state == 'pending'
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['githubIssueNumber']))
+          ||
+          // requester: cancel while pending
+          (resource.data.requesterUid == me()
+            && resource.data.state == 'pending'
+            && request.resource.data.state == 'cancelled'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['state']))
+        );
+        allow delete: if false;
+      }
+
+      // ---------- integrations ----------
+      match /integrations/{kind} {
+        allow read: if isMember(gid);   // members' clients post to the webhook (SECURITY §7)
+        allow create, update: if isAdmin(gid) && kind in ['discord', 'slack']
+          && request.resource.data.keys().hasOnly(
+               ['webhookUrl', 'channelLabel', 'postAsks', 'postClaims', 'postCollabs',
+                'postShipped', 'configuredBy', 'updatedAt', 'v'])
+          && (kind != 'discord'
+              || request.resource.data.webhookUrl
+                   .matches('^https://discord\\.com/api/webhooks/[0-9]{1,30}/[A-Za-z0-9_.-]{1,120}$'))
+          && optStr(request.resource.data, 'channelLabel', 60);
+        allow delete: if isAdmin(gid);
+      }
+
+      // ---------- audit log ----------
+      match /auditLog/{entryId} {
+        allow read: if isAdmin(gid);
+        allow create: if isMember(gid)
+          && request.resource.data.keys().hasOnly(
+               ['actorUid', 'actorLogin', 'action', 'subjectType', 'subjectId', 'detail',
+                'createdAt', 'v'])
+          && request.resource.data.actorUid == me()
+          && str(request.resource.data.action, 1, 40)
+          && optStr(request.resource.data, 'detail', 200);
+        allow update, delete: if false;
+      }
+    }
+
+    // ---------- default deny backstop ----------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
