@@ -161,10 +161,18 @@ export async function unclaimAsk(gid: string, ask: Ask, uid: string): Promise<vo
   await batch.commit();
 }
 
-export async function resolveAsk(gid: string, askId: string): Promise<void> {
+export async function resolveAsk(
+  gid: string,
+  askId: string,
+  resolvedWith?: { uid: string; login: string } | null,
+): Promise<void> {
   await updateDoc(doc(db(), `groups/${gid}/asks/${askId}`), {
     state: 'resolved',
     resolvedAt: serverTimestamp(),
+    // One fact, never a count: who got the author unstuck (ADR-019).
+    ...(resolvedWith
+      ? { resolvedWithUid: resolvedWith.uid, resolvedWithLogin: resolvedWith.login }
+      : {}),
   });
 }
 

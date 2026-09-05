@@ -179,19 +179,43 @@ export function watchInterests(
 /** One tap: "this looks good, I'd help." Deliberately lighter than a collab request. */
 export async function addInterest(
   gid: string,
-  repoId: string,
+  repo: Pick<Repo, 'id' | 'ownerUid'>,
   profile: MyProfile,
   currentCount: number,
 ): Promise<void> {
   const batch = writeBatch(db());
-  batch.set(doc(db(), `groups/${gid}/repos/${repoId}/interests/${profile.uid}`), {
+  batch.set(doc(db(), `groups/${gid}/repos/${repo.id}/interests/${profile.uid}`), {
     login: profile.login,
     avatarUrl: profile.avatarUrl,
+    // Denormalized for the owner's away-inbox; rules verify both against parents.
+    gid,
+    repoOwnerUid: repo.ownerUid,
     createdAt: serverTimestamp(),
     v: 1,
   });
-  batch.update(doc(db(), `groups/${gid}/repos/${repoId}`), { interestCount: currentCount + 1 });
+  batch.update(doc(db(), `groups/${gid}/repos/${repo.id}`), { interestCount: currentCount + 1 });
   await batch.commit();
+}
+
+/**
+ * Handover: ownership moves to a member who raised their hand. One write, the
+ * credit line ("taken over by @x · started by @y") reads straight from it.
+ */
+export async function adoptRepo(
+  gid: string,
+  actor: MyProfile,
+  repo: Repo,
+  adopter: { uid: string; login: string },
+): Promise<void> {
+  await updateDoc(doc(db(), `groups/${gid}/repos/${repo.id}`), {
+    ownerUid: adopter.uid,
+    adoptedByUid: adopter.uid,
+    adoptedByLogin: adopter.login,
+    adoptedFromLogin: repo.adoptedFromLogin ?? repo.githubOwnerLogin,
+    adoptedAt: serverTimestamp(),
+    seekingOwner: false,
+  });
+  audit(gid, actor, 'repo_adopted', 'repo', repo.fullName, `→ @${adopter.login}`);
 }
 
 export async function removeInterest(

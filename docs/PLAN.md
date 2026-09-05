@@ -267,6 +267,25 @@ the serverless redesign; ingestion complexity moved client-side rather than remo
   - 84 rules + 50 unit tests. Guardrails per ADR-018: group-scoped, no counters,
     no comparison — identity, not showcase.
 
+- **M12 · The circle's story (2026-09-06).** Six features, one thesis: the human
+  loop, made visible. **Building together** (Home: repos where the owner plus ≥1
+  accepted collaborator are both here — the product working, shown as fact).
+  **New in the circle** (arrivals ≤7d introduced by their skills). **A repo's
+  journey** (started → hands raised → joined → adopted → released; pure builder
+  in `src/util/journey.ts`). **Credit lines** (ask resolution optionally names
+  who unblocked you; adoption names starter and successor — single facts, never
+  aggregated, ADR-019). **Watch a repo** (`users/{uid}/watches`, self-only) and
+  **While you were away** on the personal home (replies/mentions/interest across
+  circles, `src/data/inbox.ts`, watermarked by `users.lastSeenAt`, throttled).
+  Infrastructure: comments/interests denormalize `gid` (+`replyToUid`,
+  `repoOwnerUid` — both spoof-checked against parents); collection-group read
+  rules require gid-pinned queries (this also FIXED M10's Recent discussion,
+  which was silently denied server-side); 4 collection-group composite indexes;
+  **closed a real hole: any member could reassign repo `ownerUid`** — ownership
+  now moves only via a recorded handover to a member. Adoption transfers in-app
+  ownership (collab routing, management rights); GitHub stays untouched.
+  102 rules + 66 unit tests.
+
 ---
 
 ## §6 · Phase 2 outline (after retention signal, PRD §13)

@@ -80,6 +80,24 @@ export async function cancelCollabRequest(gid: string, reqId: string): Promise<v
   await updateDoc(doc(db(), `groups/${gid}/collabRequests/${reqId}`), { state: 'cancelled' });
 }
 
+/** All accepted collaborations in the circle — the Building-together facts. */
+export async function fetchAcceptedCollabs(gid: string): Promise<CollabRequest[]> {
+  const { getDocs } = await import('firebase/firestore');
+  const snap = await getDocs(
+    query(collection(db(), `groups/${gid}/collabRequests`), where('state', '==', 'accepted')),
+  );
+  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<CollabRequest, 'id'>) }));
+}
+
+/** Every request that ever touched one repo (journey needs accepted ones). */
+export async function fetchRepoCollabs(gid: string, repoId: string): Promise<CollabRequest[]> {
+  const { getDocs } = await import('firebase/firestore');
+  const snap = await getDocs(
+    query(collection(db(), `groups/${gid}/collabRequests`), where('repoId', '==', repoId)),
+  );
+  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<CollabRequest, 'id'>) }));
+}
+
 /** Requests awaiting MY decision (repos I own in this group). */
 export function watchOwnerInbox(
   gid: string,

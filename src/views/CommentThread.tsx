@@ -101,6 +101,8 @@ export function CommentThread({
           parentId: replyTo?.id ?? null,
           mentions,
           repoRefs,
+          // Routes the parent author's away-inbox; never yourself.
+          replyToUid: replyTo && replyTo.authorUid !== profile.uid ? replyTo.authorUid : null,
         });
         notifyDiscord(gid, 'postClaims', {
           title: `@${profile.login} commented on a ${subject.kind === 'repo' ? 'repo' : 'ask'}`,

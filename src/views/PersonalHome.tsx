@@ -4,7 +4,11 @@ import { fetchMyOpenItems, type MyAsk } from '../data/asks';
 import { fetchMyGroups } from '../data/groups';
 import { fetchMyRepos, type MyRepo } from '../data/repos';
 import type { Group } from '../data/types';
-import { myUserDoc } from '../data/users';
+import { markSeen, myUserDoc } from '../data/users';
+import { fetchInbox } from '../data/inbox';
+import type { InboxItem } from '../util/inboxItems';
+import { fetchWatchedRepos, removeWatch, type WatchedRepo } from '../data/watches';
+import { CommentBody } from './CommentBody';
 import { navigate } from '../router';
 import { Avatar } from '../ui/Avatar';
 import { Chip } from '../ui/Chip';
@@ -25,6 +29,8 @@ export function PersonalHome() {
   const [repos, setRepos] = useState<MyRepo[] | null>(null);
   const [openItems, setOpenItems] = useState<MyAsk[] | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [inbox, setInbox] = useState<InboxItem[] | null>(null);
+  const [watched, setWatched] = useState<WatchedRepo[] | null>(null);
 
   const groupIds = me?.groupIds ?? [];
 
@@ -49,6 +55,28 @@ export function PersonalHome() {
     };
     // groupIds identity changes on every snapshot; string-join keeps this stable
   }, [groupIds.join(','), u?.uid]);
+
+  // The away-inbox and watched repos are visit-time digests, not live wires:
+  // one getDocs sweep on arrival, then the watermark advances (throttled).
+  useEffect(() => {
+    if (!u || !me) return;
+    let alive = true;
+    void fetchInbox(me.groupIds, u.uid, me.login, me.lastSeenAt).then((items) => {
+      if (!alive) return;
+      setInbox(items);
+      markSeen(u.uid);
+    });
+    void fetchWatchedRepos(u.uid, me.groupIds).then((w) => alive && setWatched(w));
+    return () => {
+      alive = false;
+    };
+  }, [u?.uid, me?.login, groupIds.join(',')]);
+
+  const KIND_LINE: Record<InboxItem['kind'], string> = {
+    reply: 'replied to you',
+    mention: 'mentioned you',
+    interest: 'raised a hand for your repo',
+  };
 
   return (
     <div class="app">
@@ -91,6 +119,34 @@ export function PersonalHome() {
           <p class="lead">Circles, repos and open loops — everything yours, in one place.</p>
         </section>
 
+        {inbox !== null && inbox.length > 0 && (
+          <section class="card stack rise-2">
+            <div class="sectionhead">
+              <span class="sectionhead__mark" />
+              <span class="sectionhead__title">While you were away</span>
+              {inbox.some((i) => i.isNew) && (
+                <span class="sectionhead__count">{inbox.filter((i) => i.isNew).length} new</span>
+              )}
+            </div>
+            {inbox.map((item) => (
+              <a key={item.key} class="recent" href={item.href}>
+                <span class="row small faint">
+                  {item.isNew && <span class="dot dot--accent" aria-label="new" />}
+                  <Avatar login={item.actorLogin} src={item.actorAvatarUrl} />
+                  <b>@{item.actorLogin}</b>
+                  <span>{KIND_LINE[item.kind]}</span>
+                  <span>{relTime(item.at)}</span>
+                </span>
+                {item.body && (
+                  <span class="recent__body">
+                    <CommentBody body={item.body} />
+                  </span>
+                )}
+              </a>
+            ))}
+          </section>
+        )}
+
         <section class="stack rise-2">
           <div class="sectionhead">
             <span class="sectionhead__mark" />
@@ -113,6 +169,42 @@ export function PersonalHome() {
             </a>
           </div>
         </section>
+
+        {watched !== null && watched.length > 0 && (
+          <section class="card stack rise-2">
+            <div class="sectionhead">
+              <span class="sectionhead__mark" />
+              <span class="sectionhead__title">Repos you watch</span>
+              <span class="sectionhead__count">{watched.length}</span>
+            </div>
+            {watched.map(({ watch, repo }) =>
+              repo ? (
+                <div key={watch.id} class="row home__repo phome__watch">
+                  <a class="row phome__watchlink" href={`#/g/${watch.gid}/repo/${repo.id}`}>
+                    <span class={`langdot ${langClass(repo.language)}`} />
+                    <span class="mono">{repo.fullName}</span>
+                    {repo.lastEventAt && (
+                      <span class="small faint">{relTime(repo.lastEventAt)}</span>
+                    )}
+                  </a>
+                  <span class="topbar__spacer" />
+                  <button
+                    class="chip"
+                    aria-label={`Unwatch ${repo.fullName}`}
+                    onClick={() =>
+                      u &&
+                      void removeWatch(u.uid, watch.gid, watch.repoId).then(() =>
+                        setWatched((w) => (w ?? []).filter((x) => x.watch.id !== watch.id)),
+                      )
+                    }
+                  >
+                    watching ×
+                  </button>
+                </div>
+              ) : null,
+            )}
+          </section>
+        )}
 
         <section class="card stack rise-2">
           <div class="sectionhead">

@@ -30,7 +30,7 @@ export function InterestButton({ gid, repo }: { gid: string; repo: Repo }) {
     try {
       if (mine) await removeInterest(gid, repo.id, profile.uid, interests.length);
       else {
-        await addInterest(gid, repo.id, profile, interests.length);
+        await addInterest(gid, repo, profile, interests.length);
         toast(`@${repo.githubOwnerLogin} will see you’re interested`);
       }
     } catch {

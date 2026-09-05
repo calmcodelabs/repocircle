@@ -929,3 +929,47 @@
 .profile__lang {
   gap: 5px;
 }
+
+/* M12: home story rows */
+.home__arrival {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.home__faces {
+  gap: 2px;
+}
+.home__faces .avatar {
+  width: 22px;
+  height: 22px;
+}
+
+/* M12: repo journey */
+.journey {
+  display: grid;
+  gap: 8px;
+}
+.journey__row {
+  gap: 10px;
+}
+.member--picked {
+  outline: 1px solid var(--accent);
+  border-radius: 12px;
+}
+
+/* M12: personal home additions */
+.phome__watch {
+  min-width: 0;
+}
+.phome__watchlink {
+  gap: 8px;
+  min-width: 0;
+  color: inherit;
+  overflow: hidden;
+}
+.phome__watchlink .mono {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

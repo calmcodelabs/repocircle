@@ -169,6 +169,11 @@ export type Repo = {
   domainTags?: string[];
   /** Owner has moved on and would like someone else to take it over. */
   seekingOwner?: boolean;
+  /** Set on handover: ownership moved in-app; the credit line reads from these. */
+  adoptedByUid?: string;
+  adoptedByLogin?: string;
+  adoptedFromLogin?: string;
+  adoptedAt?: Timestamp | null;
   interestCount?: number;
   commentCount?: number;
   createdAt: Timestamp | null;
@@ -197,6 +202,9 @@ export type Ask = {
   commentCount?: number;
   createdAt: Timestamp | null;
   resolvedAt?: Timestamp | null;
+  /** Who got the author unstuck — one fact, never aggregated (ADR-019). */
+  resolvedWithUid?: string;
+  resolvedWithLogin?: string;
   v: 1;
 };
 

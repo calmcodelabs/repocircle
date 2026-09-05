@@ -66,6 +66,27 @@ service cloud.firestore {
             || request.resource.data.githubId == resource.data.githubId);
     }
 
+    // ---------- users/{uid}/watches — repos I follow across circles ----------
+    match /users/{uid}/watches/{watchId} {
+      allow read, delete: if signedIn() && me() == uid;
+      allow create, update: if signedIn() && me() == uid
+        && request.resource.data.keys().hasOnly(['gid', 'repoId', 'fullName', 'addedAt', 'v'])
+        && str(request.resource.data.gid, 1, 60)
+        && str(request.resource.data.repoId, 1, 20)
+        && str(request.resource.data.fullName, 3, 140);
+    }
+
+    // ---------- collection-group reads (recent discussion, away-inbox) ----------
+    // A collection-group query only passes when it pins gid with an equality
+    // filter: the engine then binds resource.data.gid to that constant and can
+    // prove isMember(). Docs written before the gid field simply never match.
+    match /{path=**}/comments/{commentId} {
+      allow read: if signedIn() && resource.data.gid is string && isMember(resource.data.gid);
+    }
+    match /{path=**}/interests/{interestUid} {
+      allow read: if signedIn() && resource.data.gid is string && isMember(resource.data.gid);
+    }
+
     // ---------- groups ----------
     match /groups/{gid} {
       allow get: if isMember(gid);
@@ -165,6 +186,7 @@ service cloud.firestore {
                ['fullName', 'htmlUrl', 'description', 'language', 'topics', 'githubOwnerLogin',
                 'ownerUid', 'registeredBy', 'status', 'demoUrl', 'archived', 'lastEventAt',
                 'poll', 'stats7d', 'daily', 'pitch', 'needs', 'domainTags', 'seekingOwner',
+                'adoptedByUid', 'adoptedByLogin', 'adoptedFromLogin', 'adoptedAt',
                 'interestCount', 'commentCount', 'createdAt', 'v'])
           && request.resource.data.registeredBy == resource.data.registeredBy
           && request.resource.data.status in ['idea', 'building', 'paused', 'done']
@@ -179,10 +201,21 @@ service cloud.firestore {
             // everything descriptive belongs to the owner, registrant or an admin.
             !request.resource.data.diff(resource.data).affectedKeys()
                .hasAny(['status', 'demoUrl', 'archived', 'pitch', 'needs', 'domainTags',
-                        'seekingOwner'])
+                        'seekingOwner', 'ownerUid', 'adoptedByUid', 'adoptedByLogin',
+                        'adoptedFromLogin', 'adoptedAt'])
             || isAdmin(gid)
             || resource.data.ownerUid == me()
             || resource.data.registeredBy == me()
+          )
+          && optStr(request.resource.data, 'adoptedByLogin', 60)
+          && optStr(request.resource.data, 'adoptedFromLogin', 60)
+          && (
+            // ownership never moves silently: a change must be a recorded
+            // handover to a real member of this circle
+            request.resource.data.ownerUid == resource.data.ownerUid
+            || (request.resource.data.ownerUid is string
+                && exists(/databases/$(database)/documents/groups/$(gid)/members/$(request.resource.data.ownerUid))
+                && request.resource.data.adoptedByUid == request.resource.data.ownerUid)
           );
         allow delete: if isMember(gid) && canManageRepo(gid, repoId);
 
@@ -209,10 +242,13 @@ service cloud.firestore {
           allow create: if canWrite(gid)
             && request.resource.data.keys().hasOnly(
                  ['authorUid', 'authorLogin', 'authorAvatarUrl', 'body', 'parentId',
-                  'mentions', 'repoRefs', 'pinned', 'createdAt', 'editedAt', 'v'])
+                  'mentions', 'repoRefs', 'pinned', 'gid', 'replyToUid', 'createdAt',
+                  'editedAt', 'v'])
             && request.resource.data.authorUid == me()
             && str(request.resource.data.body, 1, 1000)
             && request.resource.data.pinned == false
+            && (!('gid' in request.resource.data) || request.resource.data.gid == gid)
+            && optStr(request.resource.data, 'replyToUid', 128)
             && (!('mentions' in request.resource.data)
                 || (request.resource.data.mentions is list
                     && request.resource.data.mentions.size() <= 10));
@@ -235,9 +271,14 @@ service cloud.firestore {
         match /interests/{uid} {
           allow read: if isMember(gid);
           allow create: if canWrite(gid) && me() == uid
-            && request.resource.data.keys().hasOnly(['login', 'avatarUrl', 'note', 'createdAt', 'v'])
+            && request.resource.data.keys().hasOnly(
+                 ['login', 'avatarUrl', 'note', 'gid', 'repoOwnerUid', 'createdAt', 'v'])
             && str(request.resource.data.login, 1, 60)
-            && optStr(request.resource.data, 'note', 140);
+            && optStr(request.resource.data, 'note', 140)
+            && (!('gid' in request.resource.data) || request.resource.data.gid == gid)
+            // repoOwnerUid routes the owner's away-inbox — it must be the truth
+            && (!('repoOwnerUid' in request.resource.data)
+                || request.resource.data.repoOwnerUid == repoData(gid, repoId).ownerUid);
           allow update: if false;
           allow delete: if me() == uid || isAdmin(gid) || canManageRepo(gid, repoId);
         }
@@ -282,7 +323,10 @@ service cloud.firestore {
             && request.resource.data.diff(resource.data).affectedKeys()
                  .hasOnly(['title', 'detail', 'tags', 'repoId', 'pairingUrl', 'state',
                            'resolvedAt', 'claimCount', 'claimerUids', 'commentCount',
-                           'authorLogin', 'authorAvatarUrl'])
+                           'authorLogin', 'authorAvatarUrl', 'resolvedWithUid',
+                           'resolvedWithLogin'])
+            && optStr(request.resource.data, 'resolvedWithUid', 128)
+            && optStr(request.resource.data, 'resolvedWithLogin', 60)
             && str(request.resource.data.title, 4, 120)
             && optStr(request.resource.data, 'detail', 500)
             && request.resource.data.state in ['open', 'claimed', 'resolved'])
@@ -304,10 +348,13 @@ service cloud.firestore {
           allow create: if canWrite(gid)
             && request.resource.data.keys().hasOnly(
                  ['authorUid', 'authorLogin', 'authorAvatarUrl', 'body', 'parentId',
-                  'mentions', 'repoRefs', 'pinned', 'createdAt', 'editedAt', 'v'])
+                  'mentions', 'repoRefs', 'pinned', 'gid', 'replyToUid', 'createdAt',
+                  'editedAt', 'v'])
             && request.resource.data.authorUid == me()
             && str(request.resource.data.body, 1, 1000)
-            && request.resource.data.pinned == false;
+            && request.resource.data.pinned == false
+            && (!('gid' in request.resource.data) || request.resource.data.gid == gid)
+            && optStr(request.resource.data, 'replyToUid', 128);
           allow update: if isMember(gid) && (
             (resource.data.authorUid == me() && canWrite(gid)
               && request.resource.data.diff(resource.data).affectedKeys()

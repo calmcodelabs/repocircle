@@ -2,6 +2,7 @@ import {
   collection,
   collectionGroup,
   doc,
+  where,
   increment,
   limit,
   onSnapshot,
@@ -61,7 +62,14 @@ export async function addComment(
   gid: string,
   subject: CommentSubject,
   profile: MyProfile,
-  input: { body: string; parentId?: string | null; mentions: string[]; repoRefs: string[] },
+  input: {
+    body: string;
+    parentId?: string | null;
+    mentions: string[];
+    repoRefs: string[];
+    /** Author of the comment being replied to — routes their away-inbox. */
+    replyToUid?: string | null;
+  },
 ): Promise<string> {
   const id = randomToken(16);
   const batch = writeBatch(db());
@@ -74,6 +82,9 @@ export async function addComment(
     mentions: input.mentions,
     repoRefs: input.repoRefs,
     pinned: false,
+    // gid is denormalized for collection-group reads; rules pin it to the path.
+    gid,
+    ...(input.replyToUid ? { replyToUid: input.replyToUid } : {}),
     createdAt: serverTimestamp(),
     v: 1,
   });
@@ -130,7 +141,14 @@ export function watchRecentComments(
   cb: (list: RecentComment[]) => void,
   onError?: (code: string) => void,
 ): Unsubscribe {
-  const q = query(collectionGroup(db(), 'comments'), orderBy('createdAt', 'desc'), limit(30));
+  // gid equality is what lets rules prove membership for a collection-group
+  // read — without it the whole query is denied server-side (M12 fix).
+  const q = query(
+    collectionGroup(db(), 'comments'),
+    where('gid', '==', gid),
+    orderBy('createdAt', 'desc'),
+    limit(30),
+  );
   return onSnapshot(
     q,
     (snap) => {

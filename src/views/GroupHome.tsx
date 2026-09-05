@@ -10,8 +10,9 @@ import {
 } from '../data/asks';
 import { watchRepos } from '../data/repos';
 import { myProfile } from '../data/users';
-import { REPO_NEEDS, type Ask, type Repo } from '../data/types';
+import { HELP_AREAS, REPO_NEEDS, type Ask, type Repo } from '../data/types';
 import { ownsRepo } from '../util/skills';
+import { fetchAcceptedCollabs, type CollabRequest } from '../data/collabs';
 import { SkillsSheet } from './Profile';
 import { toast } from '../ui/Toast';
 import { notifyDiscord } from '../notify/discord';
@@ -45,6 +46,7 @@ export function GroupHome({ gid }: { gid: string }) {
   const [hasDiscord, setHasDiscord] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [skillsOpen, setSkillsOpen] = useState(false);
+  const [collabs, setCollabs] = useState<CollabRequest[]>([]);
   const [recent, setRecent] = useState<RecentComment[]>([]);
   const iAmAdmin = me?.role === 'admin';
   const uid = sessionUser.value?.uid;
@@ -114,6 +116,15 @@ export function GroupHome({ gid }: { gid: string }) {
       }),
     [gid],
   );
+  useEffect(() => {
+    let alive = true;
+    void fetchAcceptedCollabs(gid)
+      .then((c) => alive && setCollabs(c))
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [gid]);
 
   const live =
     repos?.filter((r) => !r.archived && r.status !== 'paused' && r.status !== 'done') ?? [];
@@ -150,6 +161,31 @@ export function GroupHome({ gid }: { gid: string }) {
   const needing = (repos ?? [])
     .filter((r) => !r.archived && (r.needs || r.seekingOwner) && !forYouIds.has(r.id))
     .slice(0, 5);
+  // Building together (M12): the product working, made visible. A repo whose
+  // owner is here plus at least one accepted collaborator — facts only, drawn
+  // from the collab requests we already store. No counts, no ranking (ADR-019).
+  const memberByUid = new Map((members ?? []).map((m) => [m.uid, m]));
+  const together = (repos ?? [])
+    .filter((r) => !r.archived)
+    .map((r) => {
+      const owner = (members ?? []).find((m) => ownsRepo(r, m));
+      const mates = collabs
+        .filter((c) => c.repoId === r.id && memberByUid.has(c.requesterUid))
+        .map((c) => memberByUid.get(c.requesterUid)!)
+        .filter((m) => m.uid !== owner?.uid);
+      const uniq = [...new Map(mates.map((m) => [m.uid, m])).values()];
+      return owner && uniq.length > 0 ? { repo: r, owner, mates: uniq } : null;
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null)
+    .slice(0, 5);
+
+  // New in the circle (M12): arrivals within a week, introduced by what they
+  // bring — the moment 200 semi-strangers stop being invisible on day one.
+  const arrivals = (members ?? [])
+    .filter((m) => m.uid !== uid && (m.joinedAt?.toMillis() ?? 0) >= weekMs)
+    .sort((a, b) => (b.joinedAt?.toMillis() ?? 0) - (a.joinedAt?.toMillis() ?? 0))
+    .slice(0, 5);
+
   // Ask once, quietly, and only when there's something to match against.
   const skillsPrompt =
     canWrite && mySkills.length === 0 && (repos ?? []).some((r) => r.needs && !r.archived);
@@ -232,6 +268,36 @@ export function GroupHome({ gid }: { gid: string }) {
         </section>
       )}
 
+      {arrivals.length > 0 && (
+        <section class="card stack rise-2">
+          <div class="sectionhead">
+            <span class="sectionhead__mark" />
+            <span class="sectionhead__title">New in the circle</span>
+          </div>
+          {arrivals.map((m) => {
+            const skills = m.helpWith
+              .map((h) => HELP_AREAS.find((a) => a.key === h)?.label ?? h)
+              .join(', ');
+            return (
+              <a key={m.uid} class="row home__repo" href={`#/g/${gid}/m/${m.uid}`}>
+                <span class="row">
+                  <Avatar src={m.avatarUrl} login={m.login} />
+                  <span class="mono">@{m.login}</span>
+                </span>
+                <span class="small dim home__arrival">
+                  {skills && <span>{skills}</span>}
+                  {m.learning.length > 0 && (
+                    <span class="faint"> · learning {m.learning.slice(0, 3).join(', ')}</span>
+                  )}
+                </span>
+                <span class="topbar__spacer" />
+                <span class="small faint">{relTime(m.joinedAt)}</span>
+              </a>
+            );
+          })}
+        </section>
+      )}
+
       {fresh.length > 0 && (
         <section class="card stack rise-2">
           <div class="sectionhead">
@@ -249,6 +315,33 @@ export function GroupHome({ gid }: { gid: string }) {
               {(r.pitch || r.description) && (
                 <span class="idea__pitch">{r.pitch || r.description}</span>
               )}
+            </a>
+          ))}
+        </section>
+      )}
+
+      {together.length > 0 && (
+        <section class="card stack rise-2">
+          <div class="sectionhead">
+            <span class="sectionhead__mark" />
+            <span class="sectionhead__title">Building together</span>
+            <span class="sectionhead__count">{together.length}</span>
+          </div>
+          {together.map(({ repo: r, owner, mates }) => (
+            <a key={r.id} class="row home__repo" href={`#/g/${gid}/repo/${r.id}`}>
+              <span class="row">
+                <span class={`langdot ${langClass(r.language)}`} />
+                <span class="mono">{r.fullName.split('/')[1] ?? r.fullName}</span>
+              </span>
+              <span class="small dim">
+                @{owner.login} with {mates.map((m) => `@${m.login}`).join(', ')}
+              </span>
+              <span class="topbar__spacer" />
+              <span class="row home__faces">
+                {[owner, ...mates].slice(0, 4).map((m) => (
+                  <Avatar key={m.uid} src={m.avatarUrl} login={m.login} />
+                ))}
+              </span>
             </a>
           ))}
         </section>

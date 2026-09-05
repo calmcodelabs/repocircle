@@ -148,3 +148,17 @@ repos and asking for confirmation, not composition; suggestions never claim
 'design' or 'feedback' because code can't testify to those. helpWith shares the
 needs vocabulary so matching is an exact join, enforced in rules (closed set, no
 free text). Learning is bounded free text (6 × 24 chars, per-index rules checks).
+
+
+**ADR-019 · The story is told from facts, and no fact is ever aggregated.**
+M12 makes the human loop visible: who joined whom, who raised a hand, who got
+someone unstuck, who took over what. Every one of these is a single recorded
+fact rendered where it happened — a journey line on the repo, a credit line on
+the ask, a "with @x" on Home. The line we will not cross: no fact is ever
+counted, summed, or ranked across people. "@priya had the answer" is warmth;
+"priya: 12 resolves" is a leaderboard wearing a coat, and the PRD's no-ranking
+principle (§3) applies to derived numbers exactly as it does to stored ones.
+Corollaries: the away-inbox is a visit-time digest (getDocs + lastSeenAt
+watermark), not a notification system; watches are private to the watcher;
+inbox routing fields (gid, replyToUid, repoOwnerUid) are denormalized onto docs
+and rules-verified against their parents so nobody can pollute anyone's inbox.

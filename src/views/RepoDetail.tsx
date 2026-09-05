@@ -4,7 +4,7 @@ import { db } from '../firebase';
 import { activeMembers, myMembership } from '../data/activeGroup';
 import { sessionUser } from '../auth/session';
 import { canManageRepo } from '../data/repos';
-import type { Repo } from '../data/types';
+import type { Repo, RepoInterest } from '../data/types';
 import { doc, onSnapshot as onDoc } from 'firebase/firestore';
 import { fetchReadme, socialPreviewUrl } from '../github/repos';
 import { readmePreview } from '../util/readme';
@@ -13,6 +13,14 @@ import { InterestButton } from './InterestButton';
 import { REPO_NEEDS } from '../data/types';
 import { sparkSeries } from '../poll/engine';
 import { CollabSheet } from './CollabSheet';
+import { fetchRepoCollabs, type CollabRequest } from '../data/collabs';
+import { adoptRepo, watchInterests } from '../data/repos';
+import { addWatch, isWatching, removeWatch } from '../data/watches';
+import { myProfile } from '../data/users';
+import { buildJourney } from '../util/journey';
+import { Sheet } from '../ui/Sheet';
+import { toast } from '../ui/Toast';
+import { ownsRepo } from '../util/skills';
 import { Pill } from '../ui/Pill';
 import { Icon, type IconName } from '../ui/Icon';
 import { Avatar } from '../ui/Avatar';
@@ -51,6 +59,10 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
   const [events, setEvents] = useState<FeedEvent[] | null>(null);
   const [collabOpen, setCollabOpen] = useState(false);
   const [readme, setReadme] = useState<string | null | undefined>(undefined);
+  const [interests, setInterests] = useState<RepoInterest[]>([]);
+  const [repoCollabs, setRepoCollabs] = useState<CollabRequest[]>([]);
+  const [watching, setWatching] = useState<boolean | null>(null);
+  const [handOver, setHandOver] = useState(false);
   const uid = sessionUser.value?.uid;
   const me = myMembership.value;
   const iAmAdmin = me?.role === 'admin';
@@ -84,6 +96,25 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
     [gid, repoId],
   );
 
+  useEffect(() => watchInterests(gid, repoId, setInterests), [gid, repoId]);
+  useEffect(() => {
+    let alive = true;
+    void fetchRepoCollabs(gid, repoId)
+      .then((c) => alive && setRepoCollabs(c))
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [gid, repoId]);
+  useEffect(() => {
+    let alive = true;
+    if (!uid) return;
+    void isWatching(uid, gid, repoId).then((w) => alive && setWatching(w));
+    return () => {
+      alive = false;
+    };
+  }, [uid, gid, repoId]);
+
   useEffect(() => {
     if (!repo?.fullName) return;
     let alive = true;
@@ -103,6 +134,30 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
         action={<a href={`#/g/${gid}/repos`}>All repos</a>}
       />
     );
+
+  async function toggleWatch() {
+    if (!uid || !repo || watching === null) return;
+    setWatching(!watching);
+    try {
+      if (watching) await removeWatch(uid, gid, repoId);
+      else await addWatch(uid, gid, repo);
+    } catch {
+      setWatching(watching);
+      toast('Could not save that — check your connection.', { error: true });
+    }
+  }
+
+  const journey = repo
+    ? buildJourney(
+        repo,
+        interests,
+        repoCollabs,
+        (events ?? [])
+          .filter((e) => e.type === 'release')
+          .map((e) => ({ occurredAt: e.occurredAt, summary: e.summary })),
+      )
+    : [];
+  const isMine = !!repo && !!me && ownsRepo(repo, me);
 
   const ownerMember = activeMembers.value?.find(
     (m) => m.login.toLowerCase() === repo.githubOwnerLogin.toLowerCase(),
@@ -129,7 +184,13 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
           {repo.needs && (
             <Chip tone="accent">{REPO_NEEDS.find((n) => n.key === repo.needs)?.label}</Chip>
           )}
-          {repo.seekingOwner && <Chip tone="warn">Looking for a new owner</Chip>}
+          {repo.adoptedByLogin ? (
+            <Chip tone="accent">
+              taken over by @{repo.adoptedByLogin} · started by @{repo.adoptedFromLogin}
+            </Chip>
+          ) : (
+            repo.seekingOwner && <Chip tone="warn">Looking for a new owner</Chip>
+          )}
           {(repo.domainTags ?? []).map((t) => (
             <Chip key={t}>{t}</Chip>
           ))}
@@ -169,6 +230,16 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
             </>
           )}
           <span class="topbar__spacer" />
+          {!isMine && uid && watching !== null && (
+            <Pill variant={watching ? 'ghost' : undefined} onClick={() => void toggleWatch()}>
+              {watching ? 'Watching' : 'Watch'}
+            </Pill>
+          )}
+          {repo.seekingOwner && isMine && interests.length > 0 && (
+            <Pill variant="primary" onClick={() => setHandOver(true)}>
+              Hand it over
+            </Pill>
+          )}
           {canManageRepo(repo, uid, iAmAdmin) ? (
             <a class="small" href={`#/g/${gid}/repos`}>
               manage in Repos →
@@ -189,8 +260,35 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
       {collabOpen && repo && (
         <CollabSheet gid={gid} repo={repo} onClose={() => setCollabOpen(false)} />
       )}
+      {handOver && repo && (
+        <HandOverSheet
+          gid={gid}
+          repo={repo}
+          interests={interests}
+          onClose={() => setHandOver(false)}
+        />
+      )}
 
       <InterestButton gid={gid} repo={repo} />
+
+      {journey.length > 1 && (
+        <section class="card stack rise-2">
+          <div class="sectionhead">
+            <span class="sectionhead__mark" />
+            <span class="sectionhead__title">The journey</span>
+          </div>
+          <div class="journey">
+            {journey.map((m) => (
+              <div key={`${m.kind}${m.text}${m.at?.toMillis() ?? 0}`} class="row journey__row">
+                <span class={`dot ${m.kind === 'release' ? 'dot--accent' : ''}`} />
+                <span class="small">{m.text}</span>
+                <span class="topbar__spacer" />
+                <span class="small faint">{m.at ? relTime(m.at) : ''}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section class="card stack rise-2">
         <div class="sectionhead">
@@ -245,5 +343,72 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
         ))}
       </section>
     </main>
+  );
+}
+
+/**
+ * M12 — adoption made real: ownership moves to someone who raised a hand. The
+ * GitHub repo stays where it is (transfer there is GitHub's ceremony, not
+ * ours); in-app ownership drives collab routing and management rights.
+ */
+function HandOverSheet({
+  gid,
+  repo,
+  interests,
+  onClose,
+}: {
+  gid: string;
+  repo: Repo;
+  interests: RepoInterest[];
+  onClose: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [picked, setPicked] = useState<RepoInterest | null>(null);
+  const uid = sessionUser.value?.uid;
+  const candidates = interests.filter(
+    (i) => activeMembers.value?.some((m) => m.uid === i.uid) && i.uid !== uid,
+  );
+
+  async function confirm() {
+    const profile = uid ? myProfile(uid) : null;
+    if (!profile || !picked) return;
+    setBusy(true);
+    try {
+      await adoptRepo(gid, profile, repo, picked);
+      toast(`@${picked.login} owns ${repo.fullName.split('/')[1]} here now`);
+      onClose();
+    } catch {
+      toast('Handover failed — check your connection.', { error: true });
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Sheet title={`Hand over ${repo.fullName.split('/')[1]}`} onClose={onClose}>
+      <div class="stack">
+        <p class="small dim">
+          They become the owner in this circle — collab requests route to them and the card credits
+          you as the starter. On GitHub itself nothing changes.
+        </p>
+        {candidates.length === 0 && (
+          <p class="small faint">Nobody who raised a hand is still in the circle.</p>
+        )}
+        {candidates.map((i) => (
+          <button
+            key={i.uid}
+            class={`row member ${picked?.uid === i.uid ? 'member--picked' : ''}`}
+            aria-pressed={picked?.uid === i.uid}
+            onClick={() => setPicked(i)}
+          >
+            <Avatar src={i.avatarUrl} login={i.login} />
+            <span class="mono">@{i.login}</span>
+            {i.note && <span class="small faint">{i.note}</span>}
+          </button>
+        ))}
+        <Pill variant="primary" busy={busy} disabled={!picked} onClick={() => void confirm()}>
+          {picked ? `Hand it to @${picked.login}` : 'Pick someone'}
+        </Pill>
+      </div>
+    </Sheet>
   );
 }

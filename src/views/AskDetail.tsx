@@ -21,6 +21,7 @@ import { Chip } from '../ui/Chip';
 import { EmptyState } from '../ui/EmptyState';
 import { Field } from '../ui/Field';
 import { Pill } from '../ui/Pill';
+import { Sheet } from '../ui/Sheet';
 import { toast } from '../ui/Toast';
 import { LIMITS } from '../util/limits';
 import { relTime } from '../util/time';
@@ -29,6 +30,7 @@ import { relTime } from '../util/time';
 export function AskDetail({ gid, askId }: { gid: string; askId: string }) {
   const [ask, setAsk] = useState<Ask | null | undefined>(undefined);
   const [claims, setClaims] = useState<AskClaim[]>([]);
+  const [resolvePick, setResolvePick] = useState(false);
   const [claimNote, setClaimNote] = useState('');
   const [claiming, setClaiming] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -73,14 +75,21 @@ export function AskDetail({ gid, askId }: { gid: string; askId: string }) {
     }
   }
 
-  async function doResolve() {
+  async function doResolve(withClaimer?: AskClaim | null) {
     if (!ask) return;
     setBusy(true);
+    setResolvePick(false);
     try {
-      await resolveAsk(gid, ask.id);
+      await resolveAsk(
+        gid,
+        ask.id,
+        withClaimer ? { uid: withClaimer.uid, login: withClaimer.login } : null,
+      );
       toast('Resolved — one more unblocked');
       notifyDiscord(gid, 'postClaims', {
-        title: `Resolved: ${ask.title}`,
+        title: withClaimer
+          ? `Resolved with @${withClaimer.login}: ${ask.title}`
+          : `Resolved: ${ask.title}`,
         path: `#/g/${gid}/ask/${ask.id}`,
       });
     } catch {
@@ -137,6 +146,19 @@ export function AskDetail({ gid, askId }: { gid: string; askId: string }) {
           <Avatar login={ask.authorLogin} src={ask.authorAvatarUrl} />
           <span>@{ask.authorLogin} asked</span>
         </div>
+        {ask.state === 'resolved' && (
+          <div class="row small">
+            <span class="dot dot--accent" />
+            {ask.resolvedWithLogin ? (
+              <span>
+                Resolved — <b>@{ask.resolvedWithLogin}</b> had the answer
+              </span>
+            ) : (
+              <span>Resolved</span>
+            )}
+            {ask.resolvedAt && <span class="faint">{relTime(ask.resolvedAt)}</span>}
+          </div>
+        )}
       </section>
 
       <section class="card stack rise-2">
@@ -214,7 +236,11 @@ export function AskDetail({ gid, askId }: { gid: string; askId: string }) {
           </div>
           <div class="row wrap">
             {ask.state !== 'resolved' ? (
-              <Pill variant="primary" busy={busy} onClick={() => void doResolve()}>
+              <Pill
+                variant="primary"
+                busy={busy}
+                onClick={() => (claims.length > 0 ? setResolvePick(true) : void doResolve())}
+              >
                 Mark resolved
               </Pill>
             ) : (
@@ -242,6 +268,23 @@ export function AskDetail({ gid, askId }: { gid: string; askId: string }) {
             )}
           </div>
         </section>
+      )}
+      {resolvePick && (
+        <Sheet title="Who got you unstuck?" onClose={() => setResolvePick(false)}>
+          <div class="stack">
+            <p class="small dim">
+              One name on the ask, that's all — no tallies anywhere. Skip it if it doesn't fit.
+            </p>
+            {claims.map((c) => (
+              <button key={c.uid} class="row member" onClick={() => void doResolve(c)}>
+                <Avatar src={c.avatarUrl} login={c.login} />
+                <span class="mono">@{c.login}</span>
+                {c.note && <span class="small faint">{c.note}</span>}
+              </button>
+            ))}
+            <Pill onClick={() => void doResolve(null)}>Sorted it myself</Pill>
+          </div>
+        </Sheet>
       )}
     </main>
   );
