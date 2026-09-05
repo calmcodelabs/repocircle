@@ -132,7 +132,12 @@ function friendlyAuthError(e: unknown): string {
       return 'Network hiccup talking to Firebase — check your connection and retry.';
     case 'auth/account-exists-with-different-credential':
       return 'This GitHub email is already linked to another sign-in method.';
+    case 'auth/operation-not-allowed':
+      return 'GitHub sign-in is not enabled in Firebase — console → Authentication → Sign-in method → GitHub → Enable + Save (docs/SETUP.md §B3).';
+    case 'auth/invalid-credential':
+    case 'auth/invalid-oauth-client-id':
+      return 'The GitHub OAuth client ID/secret in Firebase looks wrong — re-paste both and Save (docs/SETUP.md §B3).';
     default:
-      return 'Sign-in failed. Try again, and check #/diag if it persists.';
+      return `Sign-in failed (${codeOf(e) ?? 'unknown error'}). Try again, and check #/diag if it persists.`;
   }
 }
