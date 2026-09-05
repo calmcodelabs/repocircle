@@ -60,10 +60,16 @@ export function setActiveGroup(gid: string | null): void {
     ),
     watchMembers(
       gid,
-      (m) => (activeMembers.value = m),
+      (m) => {
+        clearServerError();
+        activeMembers.value = m;
+      },
       (code) => {
         log('warn', `members watch: ${code}`);
-        activeDenied.value = true;
+        noteServerError(code, 'members');
+        // A blocked or unreachable backend is not the same as being removed from
+        // the circle — never claim that on its behalf.
+        if (code !== 'resource-exhausted' && code !== 'unavailable') activeDenied.value = true;
       },
     ),
   );
