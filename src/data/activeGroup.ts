@@ -5,6 +5,7 @@ import { db } from '../firebase';
 import { sessionUser } from '../auth/session';
 import { log } from '../util/log';
 import { watchMembers } from './members';
+import { resilientWatch } from './resilientWatch';
 import type { Group, Member } from './types';
 
 export const activeGid = signal<string | null>(null);
@@ -37,15 +38,22 @@ export function setActiveGroup(gid: string | null): void {
   }
 
   unsubs.push(
-    onSnapshot(
-      doc(db(), 'groups', gid),
-      (snap) => {
-        activeGroup.value = snap.exists() ? ({ id: snap.id, ...snap.data() } as Group) : null;
-      },
-      (err) => {
-        log('warn', `group watch: ${err.code}`);
-        activeDenied.value = true;
-        activeGroup.value = null;
+    resilientWatch(
+      (onOk, onErr) =>
+        onSnapshot(
+          doc(db(), 'groups', gid),
+          (snap) => {
+            onOk();
+            activeGroup.value = snap.exists() ? ({ id: snap.id, ...snap.data() } as Group) : null;
+          },
+          onErr,
+        ),
+      {
+        onGiveUp: (code) => {
+          log('warn', `group watch: ${code}`);
+          activeDenied.value = true;
+          activeGroup.value = null;
+        },
       },
     ),
     watchMembers(

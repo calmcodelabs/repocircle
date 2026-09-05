@@ -15,6 +15,7 @@ import {
 import { db } from '../firebase';
 import type { GhRepo } from '../github/types';
 import { audit } from './audit';
+import { resilientWatch } from './resilientWatch';
 import type { MyProfile, Repo, RepoStatus } from './types';
 
 /** Map a GitHub API repo onto our doc shape (rules-compatible: clamps + allowlists). */
@@ -45,14 +46,19 @@ export function watchRepos(
   cb: (repos: Repo[]) => void,
   onError: (code: string) => void,
 ): Unsubscribe {
-  return onSnapshot(
-    collection(db(), `groups/${gid}/repos`),
-    (snap) => {
-      const repos = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Repo, 'id'>) }));
-      repos.sort((a, b) => (b.lastEventAt?.toMillis() ?? 0) - (a.lastEventAt?.toMillis() ?? 0));
-      cb(repos);
-    },
-    (err) => onError(err.code),
+  return resilientWatch(
+    (onOk, onErr) =>
+      onSnapshot(
+        collection(db(), `groups/${gid}/repos`),
+        (snap) => {
+          onOk();
+          const repos = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Repo, 'id'>) }));
+          repos.sort((a, b) => (b.lastEventAt?.toMillis() ?? 0) - (a.lastEventAt?.toMillis() ?? 0));
+          cb(repos);
+        },
+        onErr,
+      ),
+    { onGiveUp: onError },
   );
 }
 

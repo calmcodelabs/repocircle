@@ -15,6 +15,7 @@ import { db } from '../firebase';
 import { anonymizeMyContent } from '../util/anonymize';
 import { audit } from './audit';
 import { forgetGroup } from './groups';
+import { resilientWatch } from './resilientWatch';
 import type { Availability, Invite, Member, MyProfile, Role } from './types';
 
 export function watchMembers(
@@ -23,10 +24,17 @@ export function watchMembers(
   onError: (code: string) => void,
 ): Unsubscribe {
   const q = query(collection(db(), `groups/${gid}/members`), orderBy('joinedAt', 'asc'));
-  return onSnapshot(
-    q,
-    (snap) => cb(snap.docs.map((d) => ({ uid: d.id, ...(d.data() as Omit<Member, 'uid'>) }))),
-    (err) => onError(err.code),
+  return resilientWatch(
+    (onOk, onErr) =>
+      onSnapshot(
+        q,
+        (snap) => {
+          onOk();
+          cb(snap.docs.map((d) => ({ uid: d.id, ...(d.data() as Omit<Member, 'uid'>) })));
+        },
+        onErr,
+      ),
+    { onGiveUp: onError },
   );
 }
 
