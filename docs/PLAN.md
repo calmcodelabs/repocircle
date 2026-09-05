@@ -57,21 +57,29 @@ installable ≥ baseline, perf ≥ 85 mobile on the shell.
 
 ## M1 · Groups, invites, membership — *the tenancy core* (~3–4 days)
 
+> **Progress note (2026-09-05):** M1 engineering landed same-day: data layer
+> (groups/invites/members/audit/anonymize), Onboard + Join + GroupShell/Home/
+> Members/Settings views, switcher, last-admin guard. Rules refined: admins may
+> `list` invites; invites carry groupName/createdByLogin; authors may update their
+> own display fields (anonymize path) — 37 emulator tests green. Acceptance still
+> open: two-account join/role/removal pass on real devices (needs a second GitHub
+> account) and the production rules re-paste.
+
 Objective: multi-group tenancy with roles and invite links, fully rules-enforced.
 Everything after this builds inside a group.
 
-- [ ] Create-group flow (S2): batch create group + founder admin membership
+- [x] Create-group flow (S2): batch create group + founder admin membership
       (`joinedVia: "founder"`); groupIds mirror on user
-- [ ] Invite links: generate (role member/guest, expiry 24h/7d/30d, label), list,
+- [x] Invite links: generate (role member/guest, expiry 24h/7d/30d, label), list,
       revoke (S10 §Invites); join screen resolving `#/join/:gid/:token` (S1 variant);
       role from invite enforced by rules
-- [ ] Group switcher (top bar) + multi-group membership; last-active group remembered
-- [ ] Members screen v1 (S9): list, roles, availability status + editor (M-03);
+- [x] Group switcher (top bar) + multi-group membership; last-active group remembered
+- [x] Members screen v1 (S9): list, roles, availability status + editor (M-03);
       admin: change role / remove member → auditLog entries
-- [ ] Leave group (with last-admin client guard); leave-anonymization util
+- [x] Leave group (with last-admin client guard); leave-anonymization util
       (DATA-MODEL §5) + unit tests
-- [ ] Rules tests: full invites/members matrix from SECURITY §10 green
-- [ ] Empty states for all new lists (F-13)
+- [x] Rules tests: full invites/members matrix from SECURITY §10 green
+- [x] Empty states for all new lists (F-13)
 
 Accept: on two real devices with two GitHub accounts — create group on A; invite via
 link; join on B as member; B sees members list; B cannot revoke invites (UI absent

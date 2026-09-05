@@ -61,11 +61,15 @@ describe('invites + join flow', () => {
     );
   });
 
-  it('any signed-in user can get an invite by token, but never list', async () => {
+  it('any signed-in user can get an invite by token; only admins can list', async () => {
     await seedInvite('tok5');
     const newbie = env.authenticatedContext('newbie');
+    const bob = env.authenticatedContext('bob');
+    const alice = env.authenticatedContext('alice');
     await assertSucceeds(getDoc(doc(db(newbie), `groups/${GID}/invites/tok5`)));
     await assertFails(getDocs(collection(db(newbie), `groups/${GID}/invites`)));
+    await assertFails(getDocs(collection(db(bob), `groups/${GID}/invites`)));
+    await assertSucceeds(getDocs(collection(db(alice), `groups/${GID}/invites`)));
   });
 
   it('joining with a live invite works, with the invite role', async () => {

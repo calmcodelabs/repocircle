@@ -10,6 +10,7 @@ export type Route =
   | { name: 'settings'; gid: string }
   | { name: 'ask'; gid: string; askId: string }
   | { name: 'join'; gid: string; token: string }
+  | { name: 'new' }
   | { name: 'diag' }
   | { name: 'notfound' };
 
@@ -22,6 +23,7 @@ export function parseHash(hash: string): Route {
   const [a, b, c, d] = parts;
   if (a === undefined) return { name: 'root' };
   if (a === 'diag') return { name: 'diag' };
+  if (a === 'new') return { name: 'new' };
   if (a === 'join' && b !== undefined && c !== undefined) return { name: 'join', gid: b, token: c };
   if (a === 'g' && b !== undefined) {
     if (c === undefined) return { name: 'home', gid: b };

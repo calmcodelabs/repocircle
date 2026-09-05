@@ -7,7 +7,7 @@ import { Sheet } from '../ui/Sheet';
 
 const REPO_URL = 'https://github.com/calmcodelabs/repocircle';
 
-export function SignIn() {
+export function SignIn({ invited = false }: { invited?: boolean }) {
   const [showAccess, setShowAccess] = useState(false);
 
   return (
@@ -17,9 +17,19 @@ export function SignIn() {
         <Mark size={56} />
         <h1>RepoCircle</h1>
         <p class="dim signin__tag">
-          See what your group is building.
-          <br />
-          Ask to join in.
+          {invited ? (
+            <>
+              You’ve been invited to a group.
+              <br />
+              Sign in with GitHub to see it.
+            </>
+          ) : (
+            <>
+              See what your group is building.
+              <br />
+              Ask to join in.
+            </>
+          )}
         </p>
 
         {isConfigured ? (

@@ -58,3 +58,144 @@
   height: 72px;
   border-radius: var(--r-card);
 }
+
+/* onboarding / join */
+.onboard__panel,
+.join__panel {
+  width: min(460px, 100%);
+  margin: 0 auto;
+  padding-top: 8svh;
+}
+.onboard__head {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+  margin-bottom: 8px;
+}
+.join__panel {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  text-align: center;
+}
+.join__card {
+  width: 100%;
+  justify-items: center;
+  text-align: center;
+}
+.join__card .row {
+  justify-content: center;
+}
+
+/* group shell */
+.switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: var(--r-input);
+}
+.switcher:hover {
+  background: var(--bg-overlay);
+}
+.switcher__chev {
+  font-size: 12px;
+}
+.menu {
+  position: absolute;
+  top: 60px;
+  z-index: 30;
+  width: min(300px, calc(100vw - 32px));
+  box-shadow: var(--shadow-overlay);
+  padding: 10px;
+}
+.menu--left {
+  left: var(--gutter);
+}
+.menu--right {
+  right: var(--gutter);
+}
+.menu__item {
+  text-align: left;
+  padding: 9px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+.menu__item:hover {
+  background: var(--bg-overlay);
+}
+.menu__item--active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.menu__item--dim {
+  color: var(--text-dim);
+}
+.groupnav {
+  display: flex;
+  gap: 4px;
+  margin: 4px 0 16px;
+}
+.groupnav__link {
+  padding: 7px 14px;
+  border-radius: var(--r-pill);
+  font-size: 14px;
+  color: var(--text-dim);
+}
+.groupnav__link:hover {
+  text-decoration: none;
+  background: var(--bg-overlay);
+}
+.groupnav__link--active {
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  color: var(--text);
+}
+
+/* home */
+.home__head {
+  display: grid;
+  gap: 4px;
+}
+.home__avatars {
+  flex-wrap: wrap;
+}
+
+/* members */
+.member {
+  gap: 12px;
+}
+.member__id {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.member__id .row {
+  gap: 8px;
+}
+
+/* invites */
+.invite {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+.invite__meta {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.invite__url {
+  word-break: break-all;
+  background: var(--bg-overlay);
+  border-radius: 8px;
+  padding: 10px;
+}
+.rule {
+  border: none;
+  border-top: 1px solid var(--line);
+  margin: 4px 0;
+}
+.wrap {
+  flex-wrap: wrap;
+}

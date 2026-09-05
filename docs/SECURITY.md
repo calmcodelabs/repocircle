@@ -290,7 +290,7 @@ no trackers, no third-party requests beyond the four hosts in the CSP.
 - Member: CRUD own asks; cannot edit others' asks; can claim once (doc id = own uid);
   cannot claim as someone else; cannot resolve others' asks; state transitions
   open→claimed→resolved enforced; oversize title/detail/tags rejected ✓
-- Invites: get-by-token works signed-in; `list` denied even for admins; join with
+- Invites: get-by-token works signed-in; `list` denied for members/outsiders, allowed for admins (management screen); join with
   expired/revoked invite denied; role escalation via forged membership role denied;
   admin-role invite creation denied ✓
 - Members: self role change denied; admin role change of *other* member allowed;

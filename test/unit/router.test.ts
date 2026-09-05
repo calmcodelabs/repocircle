@@ -6,6 +6,7 @@ describe('parseHash', () => {
     expect(parseHash('')).toEqual({ name: 'root' });
     expect(parseHash('#/')).toEqual({ name: 'root' });
     expect(parseHash('#/diag')).toEqual({ name: 'diag' });
+    expect(parseHash('#/new')).toEqual({ name: 'new' });
     expect(parseHash('#/g/abc')).toEqual({ name: 'home', gid: 'abc' });
     expect(parseHash('#/g/abc/repos')).toEqual({ name: 'repos', gid: 'abc' });
     expect(parseHash('#/g/abc/members')).toEqual({ name: 'members', gid: 'abc' });

@@ -10,6 +10,7 @@ import {
 } from 'firebase/auth';
 import { arrayUnion, doc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import { auth, db, isConfigured } from '../firebase';
+import { startMyUserWatch, stopMyUserWatch } from '../data/users';
 import { clearToken, setToken } from './vault';
 import { log } from '../util/log';
 
@@ -29,7 +30,12 @@ export function initAuth(): void {
   }
   onAuthStateChanged(auth(), (u) => {
     sessionUser.value = u;
-    if (u) void touchLastSeen(u);
+    if (u) {
+      startMyUserWatch(u.uid);
+      void touchLastSeen(u);
+    } else {
+      stopMyUserWatch();
+    }
   });
 }
 

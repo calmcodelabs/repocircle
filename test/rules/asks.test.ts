@@ -94,6 +94,25 @@ describe('asks + claims', () => {
     );
   });
 
+  it('author can anonymize their own display fields (leave-group flow)', async () => {
+    await seedAsk('a12');
+    const bob = env.authenticatedContext('bob');
+    await assertSucceeds(
+      updateDoc(doc(db(bob), `groups/${GID}/asks/a12`), {
+        authorLogin: '(left the group)',
+        authorAvatarUrl: '',
+      }),
+    );
+    const carol = env.authenticatedContext('carol');
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const { memberDoc } = await import('./helpers');
+      await setDoc(doc(db(ctx), `groups/${GID}/members/carol`), memberDoc('carol'));
+    });
+    await assertFails(
+      updateDoc(doc(db(carol), `groups/${GID}/asks/a12`), { authorLogin: 'hijacked' }),
+    );
+  });
+
   it('author can resolve their ask', async () => {
     await seedAsk('a10', { state: 'claimed', claimCount: 1 });
     const bob = env.authenticatedContext('bob');

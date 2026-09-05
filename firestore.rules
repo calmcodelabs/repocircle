@@ -104,13 +104,14 @@ service cloud.firestore {
         allow delete: if me() == uid || isAdmin(gid);
       }
 
-      // ---------- invites (token = doc id; get-only, never list) ----------
+      // ---------- invites (token = doc id; get by token; list = admins only) ----------
       match /invites/{token} {
         allow get: if signedIn();
-        allow list: if false;
+        allow list: if isAdmin(gid);   // invite management screen; members still cannot enumerate
         allow create: if isAdmin(gid)
           && request.resource.data.keys().hasOnly(
-               ['role', 'expiresAt', 'revoked', 'createdBy', 'createdAt', 'label', 'v'])
+               ['role', 'expiresAt', 'revoked', 'createdBy', 'createdByLogin', 'groupName',
+                'createdAt', 'label', 'v'])
           && request.resource.data.role in ['member', 'guest']   // never admin-by-link
           && request.resource.data.revoked == false
           && request.resource.data.expiresAt is timestamp
@@ -206,7 +207,7 @@ service cloud.firestore {
             && request.resource.data.authorUid == resource.data.authorUid
             && request.resource.data.diff(resource.data).affectedKeys()
                  .hasOnly(['title', 'detail', 'tags', 'repoId', 'pairingUrl', 'state',
-                           'resolvedAt', 'claimCount'])
+                           'resolvedAt', 'claimCount', 'authorLogin', 'authorAvatarUrl'])
             && str(request.resource.data.title, 4, 120)
             && optStr(request.resource.data, 'detail', 500)
             && request.resource.data.state in ['open', 'claimed', 'resolved'])
