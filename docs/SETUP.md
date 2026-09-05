@@ -63,3 +63,18 @@ npm run build && npm run preview
   Applications → RepoCircle; all copies die instantly (nothing is stored server-side).
 - **Rules pushed broken**: `firebase deploy --only firestore:rules` from the last
   good commit (rules are versioned in-repo — that's the point).
+
+## G. Deploying Firestore rules & indexes (no more console pasting)
+
+After a one-time `npx -y firebase-tools@14 login` on your machine, ship rule/index
+changes straight from the repo:
+
+```bash
+export PATH="$HOME/.local/node22/bin:$PATH"   # if node lives in ~/.local/node22
+npm run deploy:rules
+```
+
+This targets `repocircle-3e9a6` (pinned in `.firebaserc`). Always deploy rules right
+after any change to `firestore.rules` or `firestore.indexes.json` — the emulator tests
+gate correctness, this makes production match. The login credential lives only on your
+machine; nothing secret is committed.
