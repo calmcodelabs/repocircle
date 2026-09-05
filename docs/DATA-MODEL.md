@@ -184,7 +184,7 @@ Rule of thumb: a Home session ≈ 80–120 document reads cold, ~0 warm (Indexed
   it) but avatar dropped. A `util/anonymize.ts` batch does this client-side at leave time.
 - **Repo deregistration**: doc + subcollections deleted by owner/admin (batched client
   delete; subcollection sweep capped at 500/batch, looped).
-- **Group deletion**: Phase 2 admin tool (requires typed confirmation; audit-logged).
+- **Group deletion**: admin-only ordered sweep (subcollections → other members → group doc → own membership → mirror; see src/data/deleteGroup.ts) behind a typed-name confirmation.
 
 ## 6. Consistency notes
 

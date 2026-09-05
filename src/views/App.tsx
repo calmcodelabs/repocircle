@@ -4,9 +4,8 @@ import { myUserDoc } from '../data/users';
 import { route, type Route } from '../router';
 import { ProfileRecovery } from './ProfileRecovery';
 import { ToastRegion } from '../ui/Toast';
-import { Diag } from './Diag';
+import { lazyView } from '../util/lazy';
 import { GroupHome } from './GroupHome';
-import { GroupSettings } from './GroupSettings';
 import { GroupShell } from './GroupShell';
 import { Join } from './Join';
 import { Members } from './Members';
@@ -17,6 +16,9 @@ import { PersonalHome } from './PersonalHome';
 import { RepoDetail } from './RepoDetail';
 import { Repos } from './Repos';
 import { SignIn } from './SignIn';
+
+const Diag = lazyView<Record<string, never>>(() => import('./Diag'), 'Diag');
+const GroupSettings = lazyView<{ gid: string }>(() => import('./GroupSettings'), 'GroupSettings');
 
 function Splash() {
   return (

@@ -72,7 +72,9 @@ service cloud.firestore {
         && str(request.resource.data.name, 3, 50)
         && optStr(request.resource.data, 'description', 280)
         && request.resource.data.visibility in ['private', 'public_page'];
-      allow delete: if false; // Phase-2 tool with deliberate ceremony
+      // Deletion sweep order keeps the admin's membership doc alive until after
+      // this delete, so isAdmin() still resolves here.
+      allow delete: if isAdmin(gid);
 
       // ---------- members ----------
       match /members/{uid} {
@@ -278,7 +280,7 @@ service cloud.firestore {
             && request.resource.data.state == 'cancelled'
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['state']))
         );
-        allow delete: if false;
+        allow delete: if isAdmin(gid); // group-deletion sweep only; app offers no per-request delete
       }
 
       // ---------- integrations ----------
@@ -305,7 +307,8 @@ service cloud.firestore {
           && request.resource.data.actorUid == me()
           && str(request.resource.data.action, 1, 40)
           && optStr(request.resource.data, 'detail', 200);
-        allow update, delete: if false;
+        allow update: if false;
+        allow delete: if isAdmin(gid); // group-deletion sweep; audit stays append-only otherwise
       }
     }
 

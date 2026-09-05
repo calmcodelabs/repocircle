@@ -162,7 +162,7 @@ role / remove (confirm sheet, audit-logged).
 Sections: **Profile** (name, description) · **Invites** (create with role+expiry
 presets, list with label/expiry/uses, revoke) · **Integrations** (Discord webhook URL
 field admin-only, event toggles, test-post button) · **Tags** (A-07 custom ask tags)
-· **Danger** (leave group; delete group disabled w/ "Phase 2" note).
+· **Danger** (leave group; delete circle with typed-name confirmation, admin only).
 
 ### S11 · Diagnostics `#/diag` (hidden)
 Auth state, granted scopes, rate-limit headroom, last poll per repo, error ring

@@ -260,6 +260,9 @@ Clusters, in likely order — each gets its own mini-plan when scheduled:
    G-11 kudos (never aggregated — rules forbid reads that would count).
 6. **Events v1**: E-01 calendar + downloadable .ics, E-03 sub-teams.
 7. Slack (I-03) via incoming webhook, mirroring M6.
+   *(Group deletion — originally slotted here — shipped early on an owner call,
+   2026-09-05: admin-only ordered sweep + typed-name ceremony; see
+   src/data/deleteGroup.ts and delete-group rules tests.)*
 8. Light theme; notification granularity N-01/N-02.
 
 ## §7 · Phase 3 outline

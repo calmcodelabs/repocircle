@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { sessionUser } from '../auth/session';
 import { invalidateDiscordCache, testDiscord, type DiscordConfig } from '../notify/discord';
 import { activeGroup, activeMembers, myMembership } from '../data/activeGroup';
+import { deleteGroupEverything, deleteGroupProgress } from '../data/deleteGroup';
 import { updateGroupProfile } from '../data/groups';
 import { InviteManager } from './InviteManager';
 import { leaveGroup } from '../data/members';
@@ -31,6 +32,7 @@ export function GroupSettings({ gid }: { gid: string }) {
       )}
       {iAmAdmin && <DiscordCard gid={gid} />}
       <LeaveCard gid={gid} />
+      {iAmAdmin && <DeleteCard gid={gid} />}
       {!iAmAdmin && (
         <p class="small faint">Group profile and invites are managed by admins.</p>
       )}
@@ -217,6 +219,51 @@ async function updateMyChecklist(gid: string, uid: string): Promise<void> {
   await upd(doc(db(), `groups/${gid}/members/${uid}`), { 'checklist.connectedChat': true }).catch(() => undefined);
 }
 
+function DeleteCard({ gid }: { gid: string }) {
+  const groupName = activeGroup.value?.name ?? '';
+  const [typed, setTyped] = useState('');
+  const [busy, setBusy] = useState(false);
+  const progress = deleteGroupProgress.value;
+  const armed = typed.trim() === groupName && groupName.length > 0;
+
+  async function onDelete() {
+    const uid = sessionUser.value?.uid;
+    const profile = uid ? myProfile(uid) : null;
+    if (!profile) return;
+    setBusy(true);
+    try {
+      await deleteGroupEverything(gid, profile);
+      toast(`${groupName} deleted`);
+      navigate('#/');
+    } catch {
+      toast('Deletion didn’t finish — run it again to continue where it stopped.', { error: true });
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section class="card stack deletecard">
+      <h3>Delete circle</h3>
+      <p class="small dim">
+        Permanently deletes {groupName || 'this circle'} for everyone — its repo registry, asks,
+        activity history and invites. The GitHub repositories themselves are untouched. This
+        cannot be undone.
+      </p>
+      <Field
+        label={`Type “${groupName}” to confirm`}
+        value={typed}
+        onInput={setTyped}
+        placeholder={groupName}
+      />
+      <div>
+        <Pill variant="danger" busy={busy} disabled={!armed} onClick={() => void onDelete()}>
+          {progress ?? 'Delete this circle forever'}
+        </Pill>
+      </div>
+    </section>
+  );
+}
+
 function LeaveCard({ gid }: { gid: string }) {
   const me = myMembership.value;
   const members = activeMembers.value ?? [];
@@ -252,7 +299,7 @@ function LeaveCard({ gid }: { gid: string }) {
       ) : (
         <p class="small dim">
           Your posts stay but are anonymized (“left the group”). Rejoining needs a fresh invite.
-          {members.length === 1 && ' You’re the last member — the group becomes unreachable.'}
+          {members.length === 1 && ' You’re the only member — deleting the circle below is the cleaner exit.'}
         </p>
       )}
       {confirming ? (

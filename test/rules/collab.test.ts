@@ -82,11 +82,13 @@ describe('collabRequests', () => {
     await assertSucceeds(updateDoc(doc(db(carol), `groups/${GID}/collabRequests/r7`), { state: 'cancelled' }));
   });
 
-  it('deletes are forbidden', async () => {
+  it('deletes: denied for members, allowed for admins (group-deletion sweep)', async () => {
     await env.withSecurityRulesDisabled(async (ctx) => {
       await setDoc(doc(db(ctx), `groups/${GID}/collabRequests/r8`), reqDoc());
     });
     const bob = env.authenticatedContext('bob');
+    const alice = env.authenticatedContext('alice');
     await assertFails(deleteDoc(doc(db(bob), `groups/${GID}/collabRequests/r8`)));
+    await assertSucceeds(deleteDoc(doc(db(alice), `groups/${GID}/collabRequests/r8`)));
   });
 });
