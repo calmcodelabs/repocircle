@@ -176,10 +176,28 @@ a.card:hover,
   border: 1px solid var(--line-strong);
   background: var(--bg-overlay);
   display: block;
+  object-fit: cover;
+  flex: none;
 }
 .avatar--lg {
   width: 44px;
   height: 44px;
+}
+/* letter fallback: centre the initial optically inside the circle */
+.avatar--initial {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0;
+  color: var(--text-dim);
+  text-indent: 0;
+  padding: 0;
+}
+.avatar--initial.avatar--lg {
+  font-size: 17px;
 }
 
 /* form fields */

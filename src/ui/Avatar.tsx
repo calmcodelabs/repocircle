@@ -6,7 +6,7 @@ export function Avatar({ src, login, large }: { src?: string; login: string; lar
   const cls = large ? 'avatar avatar--lg' : 'avatar';
   if (!src || failed) {
     return (
-      <span class={`${cls} row`} aria-hidden="true">
+      <span class={`${cls} avatar--initial`} aria-hidden="true">
         {login.slice(0, 1).toUpperCase()}
       </span>
     );
