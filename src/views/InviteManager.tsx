@@ -24,7 +24,7 @@ async function copyText(text: string): Promise<void> {
   }
 }
 
-export function InviteManager({ gid }: { gid: string }) {
+export function InviteManager({ gid, intro }: { gid: string; intro?: string }) {
   const [invites, setInvites] = useState<Invite[] | null>(null);
   const [role, setRole] = useState<'member' | 'guest'>('member');
   const [days, setDays] = useState<1 | 7 | 30>(7);
@@ -76,6 +76,7 @@ export function InviteManager({ gid }: { gid: string }) {
 
   return (
     <div class="stack">
+      {intro && <p class="small dim">{intro}</p>}
       <div class="row wrap">
         <div class="segmented" role="group" aria-label="Invite role">
           {(['member', 'guest'] as const).map((r) => (
@@ -149,10 +150,18 @@ export function InviteManager({ gid }: { gid: string }) {
 }
 
 /** The same invite manager surfaced as a modal, for Members and Home. */
-export function InviteSheet({ gid, onClose }: { gid: string; onClose: () => void }) {
+export function InviteSheet({
+  gid,
+  onClose,
+  intro,
+}: {
+  gid: string;
+  onClose: () => void;
+  intro?: string;
+}) {
   return (
     <Sheet title="Invite people to this circle" onClose={onClose}>
-      <InviteManager gid={gid} />
+      <InviteManager gid={gid} intro={intro} />
     </Sheet>
   );
 }

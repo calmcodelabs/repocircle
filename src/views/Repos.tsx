@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { authError, ensureGitHubToken, sessionUser } from '../auth/session';
 import { hasToken } from '../auth/vault';
-import { myMembership } from '../data/activeGroup';
+import { activeMembers, myMembership } from '../data/activeGroup';
 import { canManageRepo, registerRepos, removeRepo, setRepoStatus, watchRepos } from '../data/repos';
 import { myProfile } from '../data/users';
 import { REPO_STATUSES, type Repo, type RepoStatus } from '../data/types';
@@ -19,6 +19,7 @@ import { Pill } from '../ui/Pill';
 import { Sheet } from '../ui/Sheet';
 import { toast } from '../ui/Toast';
 import { CollabSheet } from './CollabSheet';
+import { InviteSheet } from './InviteManager';
 import { langClass } from '../util/lang';
 import { log } from '../util/log';
 import { relMs, relTime } from '../util/time';
@@ -36,6 +37,7 @@ export function Repos({ gid }: { gid: string }) {
   const [addOpen, setAddOpen] = useState(false);
   const [manage, setManage] = useState<Repo | null>(null);
   const [collabFor, setCollabFor] = useState<Repo | null>(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const autoOpened = useRef(false);
 
   const me = myMembership.value;
@@ -69,12 +71,31 @@ export function Repos({ gid }: { gid: string }) {
     setImportOpen(true);
   }
 
+  /**
+   * A freshly created circle has one member, so the step after repos is people.
+   * Fires once per circle, and only for someone who can actually invite.
+   */
+  function maybeNudgeInvite() {
+    const soloAdmin = me?.role === 'admin' && (activeMembers.value?.length ?? 1) === 1;
+    if (!soloAdmin) return;
+    try {
+      if (sessionStorage.getItem(`rc.inviteNudge.${gid}`)) return;
+      sessionStorage.setItem(`rc.inviteNudge.${gid}`, '1');
+    } catch {
+      /* best-effort */
+    }
+    setTimeout(() => setInviteOpen(true), 450);
+  }
+
   return (
     <main class="stack">
       <div class="row">
         <h2>Repos</h2>
         {repos && repos.length > 0 && <span class="dim small">{repos.length}</span>}
         <span class="topbar__spacer" />
+        {iAmAdmin && (
+          <Pill onClick={() => setInviteOpen(true)}>Invite people</Pill>
+        )}
         {canAdd && (
           <>
             <Pill
@@ -114,10 +135,25 @@ export function Repos({ gid }: { gid: string }) {
         ))}
       </div>
 
-      {importOpen && <ImportSheet gid={gid} onClose={() => setImportOpen(false)} />}
+      {importOpen && (
+        <ImportSheet
+          gid={gid}
+          onClose={() => {
+            setImportOpen(false);
+            maybeNudgeInvite();
+          }}
+        />
+      )}
       {addOpen && <AddRepoSheet gid={gid} onClose={() => setAddOpen(false)} />}
       {manage && <ManageRepoSheet gid={gid} repo={manage} onClose={() => setManage(null)} />}
       {collabFor && <CollabSheet gid={gid} repo={collabFor} onClose={() => setCollabFor(null)} />}
+      {inviteOpen && (
+        <InviteSheet
+          gid={gid}
+          onClose={() => setInviteOpen(false)}
+          intro="Repos are in — now bring the people. Create a link and share it wherever your circle already talks."
+        />
+      )}
     </main>
   );
 }
