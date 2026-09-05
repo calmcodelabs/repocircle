@@ -174,9 +174,16 @@ const WRITE_SPACING_MS = 30_000;
  * Mutating call (POST/PUT/PATCH/DELETE). Serialized and spaced ≥30s apart —
  * callers should treat this as potentially slow and show progress.
  */
-export function ghSend<T>(method: 'POST' | 'PUT' | 'PATCH' | 'DELETE', path: string, body?: unknown): Promise<T | null> {
+export function ghSend<T>(
+  method: 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+  path: string,
+  body?: unknown,
+  opts: { immediate?: boolean } = {},
+): Promise<T | null> {
   const run = async (): Promise<T | null> => {
-    const wait = lastWriteAt + WRITE_SPACING_MS - Date.now();
+    // `immediate` is for retrying the *same* action (e.g. re-posting without a
+    // label GitHub refused) — the spacing guard exists for distinct actions.
+    const wait = opts.immediate ? 0 : lastWriteAt + WRITE_SPACING_MS - Date.now();
     if (wait > 0) await new Promise((r) => setTimeout(r, wait));
     lastWriteAt = Date.now();
 

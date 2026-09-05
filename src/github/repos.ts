@@ -1,4 +1,4 @@
-import { ghGet, ghSend } from './client';
+import { GhError, ghGet, ghSend } from './client';
 import type { GhRepo } from './types';
 
 /** The signed-in member's public repos they own, most recently pushed first (F-04). */
@@ -17,8 +17,11 @@ export async function getRepoByFullName(owner: string, name: string): Promise<Gh
 
 export type GhIssue = { number: number; html_url: string };
 
-/** Open the collaboration-request issue (PRD §7.3). Label applies only when the
- * requester happens to have push rights — GitHub silently drops it otherwise. */
+/**
+ * Open the collaboration-request issue (PRD §7.3).
+ * GitHub rejects `labels` from users without push access with a 403 — which is
+ * exactly who sends these — so the label is attempted once and dropped on refusal.
+ */
 export async function createCollabIssue(
   fullName: string,
   requesterLogin: string,
@@ -31,11 +34,18 @@ export async function createCollabIssue(
     '---',
     `_Sent via [RepoCircle](${backlink}) — @${requesterLogin} would like to collaborate on this repo._`,
   ].join('\n');
-  const issue = await ghSend<GhIssue>('POST', `/repos/${fullName}/issues`, {
-    title: `Collaboration request from @${requesterLogin}`,
-    body,
-    labels: ['collab-request'],
-  });
+  const payload = { title: `Collaboration request from @${requesterLogin}`, body };
+
+  let issue: GhIssue | null = null;
+  try {
+    issue = await ghSend<GhIssue>('POST', `/repos/${fullName}/issues`, {
+      ...payload,
+      labels: ['collab-request'],
+    });
+  } catch (e) {
+    if (!(e instanceof GhError) || e.kind !== 'forbidden') throw e;
+    issue = await ghSend<GhIssue>('POST', `/repos/${fullName}/issues`, payload, { immediate: true });
+  }
   if (!issue) throw new Error('unexpected empty issue response');
   return issue;
 }
