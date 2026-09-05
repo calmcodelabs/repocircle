@@ -7,6 +7,8 @@ import { canManageRepo } from '../data/repos';
 import type { Repo } from '../data/types';
 import { doc, onSnapshot as onDoc } from 'firebase/firestore';
 import { sparkSeries } from '../poll/engine';
+import { CollabSheet } from './CollabSheet';
+import { Pill } from '../ui/Pill';
 import { Avatar } from '../ui/Avatar';
 import { Chip } from '../ui/Chip';
 import { EmptyState } from '../ui/EmptyState';
@@ -41,8 +43,11 @@ const TYPE_ICON: Record<string, string> = {
 export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
   const [repo, setRepo] = useState<Repo | null | undefined>(undefined);
   const [events, setEvents] = useState<FeedEvent[] | null>(null);
+  const [collabOpen, setCollabOpen] = useState(false);
   const uid = sessionUser.value?.uid;
-  const iAmAdmin = myMembership.value?.role === 'admin';
+  const me = myMembership.value;
+  const iAmAdmin = me?.role === 'admin';
+  const canWrite = !!me && me.role !== 'guest' && me.role !== 'alumnus';
 
   useEffect(
     () =>
@@ -102,13 +107,19 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
           <span class="mono">@{repo.githubOwnerLogin}</span>
           {contributorsHint && contributorsHint.length > 0 && <Chip tone="accent">in this circle</Chip>}
           <span class="topbar__spacer" />
-          {canManageRepo(repo, uid, iAmAdmin) && (
+          {canManageRepo(repo, uid, iAmAdmin) ? (
             <a class="small" href={`#/g/${gid}/repos`}>
               manage in Repos →
             </a>
+          ) : (
+            canWrite && (
+              <Pill onClick={() => setCollabOpen(true)}>Request to collaborate</Pill>
+            )
           )}
         </div>
       </section>
+
+      {collabOpen && repo && <CollabSheet gid={gid} repo={repo} onClose={() => setCollabOpen(false)} />}
 
       <section class="card stack">
         <div class="label">Recent activity</div>

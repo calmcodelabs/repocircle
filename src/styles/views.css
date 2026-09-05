@@ -383,3 +383,12 @@
 .spark {
   flex: none;
 }
+
+/* collab requests */
+.collab {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+.collab__note {
+  padding-left: 38px;
+}

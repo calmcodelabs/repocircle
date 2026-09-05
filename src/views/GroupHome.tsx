@@ -6,6 +6,7 @@ import { Avatar } from '../ui/Avatar';
 import { Chip } from '../ui/Chip';
 import { EmptyState } from '../ui/EmptyState';
 import { Pill } from '../ui/Pill';
+import { CollabInbox } from './CollabInbox';
 import { sparkSeries } from '../poll/engine';
 import { Spark } from '../ui/Spark';
 import { langClass } from '../util/lang';
@@ -86,6 +87,8 @@ export function GroupHome({ gid }: { gid: string }) {
           </div>
         )}
       </section>
+
+      <CollabInbox gid={gid} />
 
       <section class="card">
         <div class="label">Needs help right now</div>

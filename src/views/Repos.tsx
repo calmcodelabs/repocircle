@@ -17,6 +17,7 @@ import { Field } from '../ui/Field';
 import { Pill } from '../ui/Pill';
 import { Sheet } from '../ui/Sheet';
 import { toast } from '../ui/Toast';
+import { CollabSheet } from './CollabSheet';
 import { langClass } from '../util/lang';
 import { log } from '../util/log';
 import { relMs, relTime } from '../util/time';
@@ -33,6 +34,7 @@ export function Repos({ gid }: { gid: string }) {
   const [importOpen, setImportOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [manage, setManage] = useState<Repo | null>(null);
+  const [collabFor, setCollabFor] = useState<Repo | null>(null);
   const autoOpened = useRef(false);
 
   const me = myMembership.value;
@@ -104,7 +106,9 @@ export function Repos({ gid }: { gid: string }) {
             gid={gid}
             repo={r}
             canManage={canManageRepo(r, uid, iAmAdmin)}
+            canCollab={canAdd && !canManageRepo(r, uid, iAmAdmin)}
             onManage={() => setManage(r)}
+            onCollab={() => setCollabFor(r)}
           />
         ))}
       </div>
@@ -112,11 +116,26 @@ export function Repos({ gid }: { gid: string }) {
       {importOpen && <ImportSheet gid={gid} onClose={() => setImportOpen(false)} />}
       {addOpen && <AddRepoSheet gid={gid} onClose={() => setAddOpen(false)} />}
       {manage && <ManageRepoSheet gid={gid} repo={manage} onClose={() => setManage(null)} />}
+      {collabFor && <CollabSheet gid={gid} repo={collabFor} onClose={() => setCollabFor(null)} />}
     </main>
   );
 }
 
-function RepoCard({ gid, repo, canManage, onManage }: { gid: string; repo: Repo; canManage: boolean; onManage: () => void }) {
+function RepoCard({
+  gid,
+  repo,
+  canManage,
+  canCollab,
+  onManage,
+  onCollab,
+}: {
+  gid: string;
+  repo: Repo;
+  canManage: boolean;
+  canCollab: boolean;
+  onManage: () => void;
+  onCollab: () => void;
+}) {
   const shortName = repo.fullName.split('/')[1] ?? repo.fullName;
   return (
     <div class="card repo">
@@ -126,10 +145,16 @@ function RepoCard({ gid, repo, canManage, onManage }: { gid: string; repo: Repo;
         </a>
         <Chip tone={STATUS_TONE[repo.status]}>{repo.status}</Chip>
         <span class="topbar__spacer" />
-        {canManage && (
+        {canManage ? (
           <button class="repo__more" onClick={onManage} aria-label={`Manage ${shortName}`}>
             ⋯
           </button>
+        ) : (
+          canCollab && (
+            <button class="repo__more" onClick={onCollab} aria-label={`Request to collaborate on ${shortName}`}>
+              🤝
+            </button>
+          )
         )}
       </div>
       {repo.description && <p class="small dim repo__desc">{repo.description}</p>}
