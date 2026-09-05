@@ -22,6 +22,11 @@ The product deliberately avoids the social-network and chat-product traps that h
 
 Primary users: college students and early-career developers working in groups of roughly 5 to 50 people.
 
+> **Superseded 2026-09-06 — see `docs/POSITIONING.md`.** The target is now a bounded
+> community of roughly 100–300 developers with shared context but not friendships (a
+> department, a cohort, a large Discord). At 5–50 close friends ambient awareness already
+> exists and the app is redundant. The rest of this PRD stands.
+
 Primary value: "See what your group is building. Ask to join in."
 
 Phase 1 scope: GitHub sign-in, groups, repo registry, an unranked activity view, asks and stuck-flags, collaborator requests, a GitHub-webhook activity feed, and a Discord/Slack bot. Everything else is layered on after weekly retention has been observed with one or two real groups.

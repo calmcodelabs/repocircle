@@ -116,3 +116,19 @@ server, and rejected writes surface as errors instead of phantom success.
 Cost accepted: no offline reads across reloads. The service worker still serves the
 app shell offline, and Firestore still queues writes within a session. Revisit only
 with a genuine offline requirement — and then re-verify the phantom-state problem.
+
+
+**ADR-017 · The target is a 100–300 person bounded community, not a friend circle
+(supersedes PRD §1/§2 audience).**
+Pitching the built product to a skeptic surfaced a weakness no feature fixes: at
+twenty friends who see each other daily, ambient awareness already exists, so the app
+competes with the group chat and loses. Opening it to the public fails the other way —
+the "looking for a collaborator" gap is real, but strangers' need for *something* to
+build is satisfied by any project, so they sign up and vanish; the failure is
+follow-through, not discovery. The variable that actually matters is **how well the
+group already knows itself**: awareness must be genuinely missing while accountability
+is still real. That band is a department, a cohort, or one large Discord. The
+primitives are unchanged — this is a change of who is in the room, not a rewrite —
+but it promotes filtering, member identity, a durable gated join link, and a
+joined-and-shipped record from optional to core. Recorded as a hypothesis to test;
+rationale and implications in `docs/POSITIONING.md`.
