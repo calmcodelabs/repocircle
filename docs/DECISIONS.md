@@ -1,0 +1,83 @@
+# RepoCircle — Decision Log (ADRs)
+
+Short records of decisions that shape the build. Format: context → decision →
+consequences. Newer entries append at the bottom. PRD §15's open questions are
+answered in ADR-002/004/007/009/010/012.
+
+---
+
+**ADR-001 · Name: RepoCircle.** Working title "Group Repo Hub" was placeholder.
+Chosen for: *repo* (the anchor object) + *circle* (a small trusted group), easy to
+say/spell, professional, unclaimed on github.com/calmcodelabs. Repo slug `repocircle`.
+
+**ADR-002 · Hosting model: GitHub Pages + Firebase Spark, no server (owner constraint).**
+The owner directed "host like Score Keeper." Overrides PRD §12's Next.js/Postgres/
+worker suggestion (PRD grants engineer final say). Consequences: public repo, $0
+cost, no secrets in codebase, security concentrates into Firestore rules, and four
+PRD features change shape (webhooks→polling, bot→outbound webhook, digest email→P3,
+push→P3). Full mapping: ARCHITECTURE §1/§10. Also answers PRD §15-Q1: **OAuth App**
+(via Firebase Auth provider), not GitHub App — no webhook infrastructure exists to
+benefit from a GitHub App, and Firebase has no GitHub-App provider.
+
+**ADR-003 · Frontend: Vite + Preact + TypeScript, hash routing, Preact signals.**
+Alternatives: vanilla TS (Score Keeper style — too little structure for ~10 screens),
+React (3× bundle for zero gain), Svelte (fine, but Preact keeps JSX + tiny runtime).
+Hash routing because Pages serves a subpath with no rewrite rules; `404.html` tricks
+are fragile with PWAs. TypeScript because the data layer + rules contract benefit
+most from types shared end-to-end.
+
+**ADR-004 · Activity ingestion: client-side polling engine, not webhooks (Phase 1).**
+Webhooks require a public receiver we don't have. PRD §7.4/§9.2 already bless polling
+as fallback within a 7-day window. Design (claims via transaction, ETag conditional
+gets, idempotent event IDs): ARCHITECTURE §5. Consequence: freshness tied to an open
+client; fabricated-event risk accepted (SECURITY §4). Also answers PRD §15-Q2: repos
+the registrant can't admin behave identically — polling needs no rights beyond public
+read, so no owner prompt is needed.
+
+**ADR-005 · GitHub tokens live in sessionStorage only, never in Firestore.**
+PRD says "encrypt tokens at rest"; with no server, any at-rest store we can decrypt,
+an XSS can too — while a *stored* token corpus makes Firestore a honeypot. Not
+persisting beats encrypting. Cost: one re-auth popup per new tab that touches GitHub
+APIs. SECURITY §5.
+
+**ADR-006 · All GitHub writes use the acting user's own token, client-side.**
+Issue creation uses the requester's token; the collaborator invite uses the owner's,
+fired from the owner's own accept tap (PRD §7.3 verbatim). No impersonation surface
+exists anywhere in the system.
+
+**ADR-007 · Discord P0 = per-group incoming webhook (outbound only).**
+A bot (slash commands `/active` `/asks` `/whois`) needs an interactions endpoint →
+Phase 3 Worker (ADR-011). Outbound posts cover the P0 loop: asks, stuck flags,
+claims, collab requests, shipped. Webhook URL readable by members (they post);
+blast-radius analysis SECURITY §7. Answers PRD §15-Q4: thread mirroring deferred.
+
+**ADR-008 · No aggregated counters as authority; `count()` queries instead.**
+Stored totals drift and invite ranking creep. Aggregation queries are cheap, and the
+"no leaderboards" principle (PRD §3) is easier to keep when nothing accumulates on a
+profile. Cosmetic mirrors (claimCount) may drift harmlessly.
+
+**ADR-009 · A repo may be registered in multiple groups (PRD §15-Q3: yes).**
+Firestore path `groups/{gid}/repos/{repoId}` scopes everything per group naturally;
+asks/threads/events never leak across groups. Cost: duplicated event rows per group —
+negligible at our scale, TTL-bounded.
+
+**ADR-010 · Invite links: random-token doc IDs, get-not-list, expiry ≤ 30 d, no admin role.**
+Token = capability. Rules forbid `list` so tokens can't be enumerated; admins are
+promoted explicitly post-join. Leaked link ⇒ revoke + rotate. Answers PRD §15-Q5
+implicitly: GHE/self-hosted GitLab out of scope for Phases 1–3.
+
+**ADR-011 · Phase-3 escape hatch: one Cloudflare Worker (free) — deliberately not now.**
+Unlocks webhooks, slash commands, push sending, iCal feeds, digest email, and hides
+the Discord URL. Rejected for Phase 1: second platform, first real secret, always-on
+attack surface, and the PRD's exit criterion for Phase 1 (weekly return without
+prompting) doesn't need any of it.
+
+**ADR-012 · Dark-first design system per owner's reference imagery.**
+Tokens/spec in UI.md. Light theme is a Phase-2 token flip. Fonts self-hosted (CSP
+`'self'`, no CDN). Product name/domain (PRD §15-Q6): RepoCircle on the Pages URL;
+custom domain optional later (needs Firebase auth-domain + CSP updates — noted in
+SETUP).
+
+**ADR-013 · License: undecided on purpose.** Public repo currently "all rights
+reserved." Owner to choose (MIT would match Score Keeper's spirit) before inviting
+outside contributors.

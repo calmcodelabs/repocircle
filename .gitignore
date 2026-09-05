@@ -1,0 +1,21 @@
+# Dependencies / build
+node_modules/
+dist/
+.vite/
+
+# Local env & secrets (none should ever exist, but belt-and-braces)
+.env
+.env.*
+*.local
+
+# Firebase local artifacts
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+emulator-data/
+
+# Editor/OS noise
+.DS_Store
+Thumbs.db
+*.swp
