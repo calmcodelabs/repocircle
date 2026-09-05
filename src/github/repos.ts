@@ -36,7 +36,7 @@ export async function createCollabIssue(
   ].join('\n');
   const payload = { title: `Collaboration request from @${requesterLogin}`, body };
 
-  let issue: GhIssue | null = null;
+  let issue: GhIssue | null;
   try {
     issue = await ghSend<GhIssue>('POST', `/repos/${fullName}/issues`, {
       ...payload,
