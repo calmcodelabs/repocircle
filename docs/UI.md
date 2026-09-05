@@ -98,7 +98,7 @@ Centered card on a subtly glowing canvas: wordmark, one sentence — *"See what 
 group is building. Ask to join in."* — one button: **Continue with GitHub**. Below,
 12px links: privacy note ("reads public repos only") + what-we-access sheet. With an
 invite token in the URL, the card shows the group name + inviter avatar first:
-"Priya invited you to **CS Club Builds**".
+"Mahesh invited you to **CS Club Builds**".
 
 ### S2 · Create / join group (F-02)
 Two stacked cards: "Create a group" (name, description) / "Have an invite link?"

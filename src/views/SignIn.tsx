@@ -38,7 +38,7 @@ export function SignIn({ invited = false }: { invited?: boolean }) {
           <div class="viz__card viz__card--flag">
             <span class="dot dot--warn" />
             <span class="viz__body">
-              <span class="viz__title">Priya is stuck: Docker networking</span>
+              <span class="viz__title">Mahesh is stuck: Docker networking</span>
               <span class="viz__meta">devops · 2m ago</span>
             </span>
             <span class="viz__claim">Claim</span>
