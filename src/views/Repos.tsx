@@ -138,7 +138,7 @@ function RepoCard({
 }) {
   const shortName = repo.fullName.split('/')[1] ?? repo.fullName;
   return (
-    <div class="card repo">
+    <div class="card card--interactive repo">
       <div class="row">
         <a class="mono repo__name" href={`#/g/${gid}/repo/${repo.id}`}>
           {shortName}
@@ -160,14 +160,15 @@ function RepoCard({
       {repo.description && <p class="small dim repo__desc">{repo.description}</p>}
       <div class="row small dim repo__meta">
         {repo.language && (
-          <span class="row repo__lang">
+          <span class="chip">
             <span class={`langdot ${langClass(repo.language)}`} />
             {repo.language}
           </span>
         )}
-        {repo.topics.slice(0, 3).map((t) => (
+        {repo.topics.slice(0, 2).map((t) => (
           <Chip key={t}>{t}</Chip>
         ))}
+        {repo.lastEventAt && <span class="chip">{relTime(repo.lastEventAt)}</span>}
         <span class="topbar__spacer" />
         {repo.demoUrl && (
           <a href={repo.demoUrl} target="_blank" rel="noopener noreferrer nofollow" aria-label="Open demo">
@@ -180,7 +181,6 @@ function RepoCard({
         <span class="mono">@{repo.githubOwnerLogin}</span>
         <span class="topbar__spacer" />
         <Spark series={sparkSeries(repo.daily)} />
-        {repo.lastEventAt && <span>{relTime(repo.lastEventAt)}</span>}
       </div>
     </div>
   );

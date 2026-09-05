@@ -11,7 +11,6 @@ import { Chip } from '../ui/Chip';
 import { EmptyState } from '../ui/EmptyState';
 import { Field } from '../ui/Field';
 import { Pill } from '../ui/Pill';
-import { StatusDot } from '../ui/StatusDot';
 import { toast } from '../ui/Toast';
 import { LIMITS } from '../util/limits';
 import { relTime } from '../util/time';
@@ -75,9 +74,11 @@ export function AskDetail({ gid, askId }: { gid: string; askId: string }) {
 
   return (
     <main class="stack">
-      <section class="card stack">
+      <section class="card stack rise">
         <div class="row">
-          <StatusDot tone={ask.kind === 'stuck' ? 'warn' : ask.state === 'resolved' ? 'accent' : 'accent'} />
+          <span class={ask.kind === 'stuck' ? 'tile tile--warn' : 'tile tile--accent'} aria-hidden="true">
+            {ask.kind === 'stuck' ? '⚑' : '🙋'}
+          </span>
           <Chip tone={ask.kind === 'stuck' ? 'warn' : 'default'}>{ask.kind}</Chip>
           <Chip tone={ask.state === 'resolved' ? 'accent' : ask.state === 'claimed' ? 'default' : 'warn'}>
             {ask.state}
@@ -108,8 +109,12 @@ export function AskDetail({ gid, askId }: { gid: string; askId: string }) {
         </div>
       </section>
 
-      <section class="card stack">
-        <div class="label">Claims</div>
+      <section class="card stack rise-2">
+        <div class="sectionhead">
+          <span class="sectionhead__mark" />
+          <span class="sectionhead__title">Claims</span>
+          {claims.length > 0 && <span class="sectionhead__count">{claims.length}</span>}
+        </div>
         {claims.length === 0 && <EmptyState line={ask.state === 'resolved' ? 'Resolved without a claim.' : 'Nobody yet — be the one.'} />}
         {claims.map((c) => (
           <div key={c.uid} class="row">
@@ -157,7 +162,10 @@ export function AskDetail({ gid, askId }: { gid: string; askId: string }) {
 
       {(isAuthor || isAdmin) && (
         <section class="card stack">
-          <div class="label">{isAuthor ? 'Your ask' : 'Moderation'}</div>
+          <div class="sectionhead">
+            <span class="sectionhead__mark" />
+            <span class="sectionhead__title">{isAuthor ? 'Your ask' : 'Moderation'}</span>
+          </div>
           <div class="row wrap">
             {ask.state !== 'resolved' ? (
               <Pill variant="primary" busy={busy} onClick={() => void doResolve()}>

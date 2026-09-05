@@ -73,7 +73,7 @@ export function Join({ gid, token }: { gid: string; token: string }) {
       <main class="join__panel">
         <Mark size={44} />
         {state === 'valid' && invite ? (
-          <div class="card stack join__card">
+          <div class="hero hero--dim stack join__card rise">
             <div class="row">
               {invite.createdByLogin && <Avatar login={invite.createdByLogin} />}
               <p>

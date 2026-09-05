@@ -19,3 +19,6 @@ emulator-data/
 .DS_Store
 Thumbs.db
 *.swp
+
+# UI inspiration images — third-party design work, local reference only
+design-refs/

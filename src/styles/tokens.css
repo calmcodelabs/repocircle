@@ -23,7 +23,16 @@
 
   /* semantic accents — used sparingly */
   --accent: #3ecf8e;
+  --accent-bright: #6ee7a8;
+  --accent-lime: #b8f24a;
   --accent-soft: rgba(62, 207, 142, 0.12);
+  --accent-line: rgba(62, 207, 142, 0.28);
+
+  /* signature gradient — the one flourish, used on hero surfaces only */
+  --grad-accent: linear-gradient(135deg, #b8f24a 0%, #5ee89b 48%, #34d399 100%);
+  --grad-accent-dim: linear-gradient(135deg, rgba(184, 242, 74, 0.14), rgba(52, 211, 153, 0.06));
+  --grad-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0));
+  --on-accent: #07130c;
   --warn: #f5a524;
   --warn-soft: rgba(245, 165, 36, 0.12);
   --danger: #f0565e;
@@ -39,7 +48,11 @@
   --r-input: 12px;
   --r-pill: 999px;
   --gutter: 16px;
-  --shadow-overlay: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-overlay: 0 24px 60px rgba(0, 0, 0, 0.55);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-lift: 0 12px 32px rgba(0, 0, 0, 0.45);
+  --shadow-glow: 0 10px 40px rgba(62, 207, 142, 0.22);
+  --glass: blur(20px) saturate(140%);
 
   /* motion */
   --ease: cubic-bezier(0.2, 0.7, 0.3, 1);

@@ -12,6 +12,22 @@ here as **the RepoCircle look**:
 Minimalistic, clean, beautiful — and it happens to align perfectly with the PRD's
 "calm, non-competitive" principles: quiet by default, nothing shouting for status.
 
+**Reference DNA (2026-09-05, distilled from the 11 images in `design-refs/`):**
+1. *One luminous object per screen* — a gradient panel, a glass card, a glowing FAB.
+   Everything else stays matte. Glow is rationed, never ambient on buttons.
+2. *Type does the luxury* — huge tight-tracked headlines with a period and exactly one
+   gradient-tinted word; two-tone numerals (value bright, unit/decimal dim) over tiny
+   uppercase labels.
+3. *Every datum is a chip* — language, topics, times, counts each get a small
+   outlined pill, never loose text.
+4. *Depth by layering* — canvas → panel → glass; ONE inverted (near-white on dark)
+   element marks the active thing (nav pill).
+5. *Signature gradient* — lime→mint (Haven), used on: sign-in hero panel, big CTAs,
+   the FAB, section marks, tinted words. Nowhere else.
+6. Landing treatment (sign-in) ≠ product treatment (dense, chips, sectionheads).
+Rejected from refs: photography/3D centerpieces, cinematic backdrops, star ratings
+(anti-principle), light-first.
+
 ## 1. Foundations
 
 ### Color tokens (dark is the default and primary theme)

@@ -121,15 +121,19 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
 
       {collabOpen && repo && <CollabSheet gid={gid} repo={repo} onClose={() => setCollabOpen(false)} />}
 
-      <section class="card stack">
-        <div class="label">Recent activity</div>
+      <section class="card stack rise-2">
+        <div class="sectionhead">
+          <span class="sectionhead__mark" />
+          <span class="sectionhead__title">Recent activity</span>
+          {events && events.length > 0 && <span class="sectionhead__count">{events.length}</span>}
+        </div>
         {events === null && <span class="skeleton" />}
         {events?.length === 0 && (
           <EmptyState line="Nothing captured yet — activity appears within ~15 minutes of happening on GitHub." />
         )}
         {events?.map((ev) => (
           <a key={ev.id} class="row event" href={ev.url} target="_blank" rel="noopener noreferrer nofollow">
-            <span class="event__icon" aria-hidden="true">
+            <span class="tile tile--sm" aria-hidden="true">
               {TYPE_ICON[ev.type] ?? '·'}
             </span>
             <Avatar login={ev.actorLogin} src={ev.actorAvatarUrl} />

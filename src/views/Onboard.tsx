@@ -68,13 +68,18 @@ export function Onboard() {
         )}
       </header>
       <main class="stack onboard__panel">
-        <div class="onboard__head">
-          <h1>Start your circle</h1>
-          <p class="dim small">A group is the private space your circle shares.</p>
+        <div class="onboard__head rise">
+          <h1>
+            Start your <span class="tint">circle</span>.
+          </h1>
+          <p class="lead">A group is the private space your circle shares.</p>
         </div>
 
-        <section class="card stack">
-          <h3>Create a group</h3>
+        <section class="card stack rise-2">
+          <div class="row">
+            <span class="tile tile--accent">＋</span>
+            <h3>Create a group</h3>
+          </div>
           <Field
             label="Group name"
             value={name}
@@ -95,8 +100,11 @@ export function Onboard() {
           </Pill>
         </section>
 
-        <section class="card stack">
-          <h3>Have an invite link?</h3>
+        <section class="card stack rise-3">
+          <div class="row">
+            <span class="tile">⇢</span>
+            <h3>Have an invite link?</h3>
+          </div>
           <Field
             label="Paste it here"
             value={link}

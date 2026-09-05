@@ -26,9 +26,12 @@ export function ChecklistCard({ gid, hasDiscord }: { gid: string; hasDiscord: bo
   if (done.length === ITEMS.length) return null;
 
   return (
-    <section class="card stack checklist">
+    <section class="hero hero--dim stack checklist rise-2">
       <div class="row">
-        <div class="label">Getting started · {done.length}/{ITEMS.length}</div>
+        <span class="hero__label">Getting started</span>
+        <span class="sectionhead__count">
+          {done.length}/{ITEMS.length}
+        </span>
         <span class="topbar__spacer" />
         <Pill
           variant="ghost"
@@ -42,6 +45,9 @@ export function ChecklistCard({ gid, hasDiscord }: { gid: string; hasDiscord: bo
         >
           ×
         </Pill>
+      </div>
+      <div class="checkbar" aria-hidden="true">
+        <span class={`checkbar__fill checkbar__fill--${done.length}`} />
       </div>
       {ITEMS.map((item) => {
         const isDone = item.done(me.checklist ?? {}, extras);

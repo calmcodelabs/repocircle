@@ -79,20 +79,39 @@ export function GroupHome({ gid }: { gid: string }) {
 
   return (
     <main class="stack">
-      <section class="home__head">
+      <section class="home__head rise">
         {g === undefined ? (
           <span class="skeleton" />
         ) : (
           <>
             <h2>{g?.name}</h2>
-            {g?.description && <p class="dim small">{g.description}</p>}
+            {g?.description && <p class="lead">{g.description}</p>}
           </>
         )}
+        <div class="stats stats--divided home__stats">
+          <div class="stat">
+            <span class="stat__value">{members?.length ?? '–'}</span>
+            <span class="stat__label">members</span>
+          </div>
+          <div class="stat">
+            <span class="stat__value">
+              {active.length}
+              {live.length > 0 && <span class="stat__unit">/{live.length}</span>}
+            </span>
+            <span class="stat__label">active this week</span>
+          </div>
+          <div class="stat">
+            <span class={unblocked > 0 ? 'stat__value stat__value--accent' : 'stat__value'}>{unblocked}</span>
+            <span class="stat__label">unblocked · 7d</span>
+          </div>
+        </div>
       </section>
 
-      <section class="card stack">
-        <div class="row">
-          <div class="label">Active this week</div>
+      <section class="card stack rise-2">
+        <div class="sectionhead">
+          <span class="sectionhead__mark" />
+          <span class="sectionhead__title">Active this week</span>
+          {active.length > 0 && <span class="sectionhead__count">{active.length}</span>}
           <span class="topbar__spacer" />
           {repos && repos.length > 0 && (
             <a class="small" href={`#/g/${gid}/repos`}>
@@ -137,14 +156,16 @@ export function GroupHome({ gid }: { gid: string }) {
 
       <CollabInbox gid={gid} />
 
-      <section class="card stack">
-        <div class="row">
-          <div class="label">Needs help right now</div>
-          <span class="topbar__spacer" />
-          {unblocked > 0 && <Chip tone="accent">{unblocked} unblocked this week</Chip>}
+      <section class="card stack rise-3">
+        <div class="sectionhead">
+          <span class={needsHelp?.some((a) => a.kind === 'stuck') ? 'sectionhead__mark sectionhead__mark--warn' : 'sectionhead__mark'} />
+          <span class="sectionhead__title">Needs help right now</span>
+          {needsHelp && needsHelp.length > 0 && <span class="sectionhead__count">{needsHelp.length}</span>}
         </div>
         {needsHelp === null && <span class="skeleton" />}
-        {needsHelp?.length === 0 && <EmptyState line="No asks yet — post the first one with the + button." />}
+        {needsHelp?.length === 0 && (
+          <EmptyState icon="🙋" line="No asks yet — post the first one with the + button." />
+        )}
         {needsHelp?.map((a) => (
           <div key={a.id} class={`row ask ${a.kind === 'stuck' ? 'ask--stuck' : ''}`}>
             <a class="ask__main" href={`#/g/${gid}/ask/${a.id}`}>
@@ -172,8 +193,11 @@ export function GroupHome({ gid }: { gid: string }) {
         ))}
       </section>
 
-      <section class="card stack">
-        <div class="label">Your activity</div>
+      <section class="card stack rise-3">
+        <div class="sectionhead">
+          <span class="sectionhead__mark" />
+          <span class="sectionhead__title">Your activity</span>
+        </div>
         {myAsks.length === 0 && myClaims.length === 0 && (
           <EmptyState line="Asks you post and claims you make show up here." />
         )}
@@ -196,9 +220,11 @@ export function GroupHome({ gid }: { gid: string }) {
           ))}
       </section>
 
-      <section class="card stack">
-        <div class="row">
-          <div class="label">Members</div>
+      <section class="card stack rise-3">
+        <div class="sectionhead">
+          <span class="sectionhead__mark" />
+          <span class="sectionhead__title">Members</span>
+          {members && <span class="sectionhead__count">{members.length}</span>}
           <span class="topbar__spacer" />
           {me && <Chip tone={me.role === 'admin' ? 'accent' : 'default'}>you: {me.role}</Chip>}
         </div>

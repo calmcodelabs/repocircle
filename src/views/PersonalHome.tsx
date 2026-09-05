@@ -76,15 +76,25 @@ export function PersonalHome() {
       )}
 
       <main class="stack">
-        <section class="stack">
-          <div class="row">
-            <div class="label">Your circles</div>
+        <section class="home__head rise">
+          <h2>
+            Your <span class="tint">space</span>.
+          </h2>
+          <p class="lead">Circles, repos and open loops — everything yours, in one place.</p>
+        </section>
+
+        <section class="stack rise-2">
+          <div class="sectionhead">
+            <span class="sectionhead__mark" />
+            <span class="sectionhead__title">Your circles</span>
+            {groups && groups.length > 0 && <span class="sectionhead__count">{groups.length}</span>}
           </div>
           {groups === null && <span class="skeleton" />}
           <div class="phome__groups">
             {groups?.map((g) => (
               <a key={g.id} class="card phome__group" href={`#/g/${g.id}`}>
                 <div class="row">
+                  <span class="tile tile--accent">{(g.name[0] ?? '•').toUpperCase()}</span>
                   <strong>{g.name}</strong>
                 </div>
                 {g.description && <span class="small dim phome__desc">{g.description}</span>}
@@ -96,11 +106,15 @@ export function PersonalHome() {
           </div>
         </section>
 
-        <section class="card stack">
-          <div class="label">Your repos</div>
+        <section class="card stack rise-2">
+          <div class="sectionhead">
+            <span class="sectionhead__mark" />
+            <span class="sectionhead__title">Your repos</span>
+            {repos && repos.length > 0 && <span class="sectionhead__count">{repos.length}</span>}
+          </div>
           {repos === null && <span class="skeleton" />}
           {repos?.length === 0 && (
-            <EmptyState line="Repos you own show up here once they’re registered in a group." />
+            <EmptyState icon="◎" line="Repos you own show up here once they’re registered in a group." />
           )}
           {repos && repos.length > 0 && (
             <div class="home__repos">
@@ -118,11 +132,18 @@ export function PersonalHome() {
           )}
         </section>
 
-        <section class="card stack">
-          <div class="label">Your open loops</div>
+        <section class="card stack rise-3">
+          <div class="sectionhead">
+            <span class="sectionhead__mark" />
+            <span class="sectionhead__title">Your open loops</span>
+            {openItems && openItems.length > 0 && <span class="sectionhead__count">{openItems.length}</span>}
+          </div>
           {openItems === null && <span class="skeleton" />}
           {openItems?.length === 0 && (
-            <EmptyState line="Nothing open — asks you post and claims you make appear here across all your circles." />
+            <EmptyState
+              icon="✓"
+              line="Nothing open — asks you post and claims you make appear here across all your circles."
+            />
           )}
           {openItems?.map((a) => (
             <a key={`${a.gid}:${a.id}`} class="row home__repo" href={`#/g/${a.gid}/ask/${a.id}`}>

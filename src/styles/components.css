@@ -38,10 +38,24 @@
 
 /* card */
 .card {
-  background: var(--bg-raised);
+  background: var(--bg-raised) var(--grad-surface);
   border: 1px solid var(--line);
   border-radius: var(--r-card);
   padding: 16px;
+  box-shadow: var(--shadow-card);
+}
+a.card,
+.card--interactive {
+  transition:
+    border-color var(--t-fast) var(--ease),
+    transform var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease);
+}
+a.card:hover,
+.card--interactive:hover {
+  border-color: var(--line-strong);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lift);
 }
 @media (min-width: 720px) {
   .card {
@@ -79,10 +93,19 @@
 .pill--primary {
   background: var(--accent);
   border-color: transparent;
-  color: #08120d;
+  color: var(--on-accent);
+  font-weight: 600;
 }
 .pill--primary:hover {
-  filter: brightness(1.06);
+  filter: brightness(1.07);
+}
+/* Big CTAs get the signature gradient + the screen's one glow (DNA #1). */
+.pill--primary.pill--big {
+  background: var(--grad-accent);
+  box-shadow: var(--shadow-glow);
+}
+.pill--primary.pill--big:hover {
+  transform: translateY(-1px);
 }
 .pill--ghost {
   background: transparent;
@@ -194,7 +217,8 @@
 .sheet-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(4, 6, 8, 0.62);
+  backdrop-filter: blur(3px);
   z-index: 40;
   animation: fade-in var(--t-med) var(--ease);
 }
@@ -202,8 +226,11 @@
   position: fixed;
   z-index: 41;
   inset: auto 0 0 0;
-  background: var(--bg-raised);
-  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg-overlay) 82%, transparent);
+  backdrop-filter: var(--glass);
+  -webkit-backdrop-filter: var(--glass);
+  box-shadow: var(--shadow-overlay);
+  border: 1px solid var(--line-strong);
   border-bottom: none;
   border-radius: var(--r-card) var(--r-card) 0 0;
   padding: 20px var(--gutter) calc(20px + env(safe-area-inset-bottom));
@@ -252,7 +279,9 @@
   width: min(420px, calc(100vw - 32px));
 }
 .toast {
-  background: var(--bg-overlay);
+  background: color-mix(in srgb, var(--bg-overlay) 88%, transparent);
+  backdrop-filter: var(--glass);
+  -webkit-backdrop-filter: var(--glass);
   border: 1px solid var(--line-strong);
   border-radius: var(--r-input);
   box-shadow: var(--shadow-overlay);
@@ -322,3 +351,205 @@
   color: var(--text);
   border: 1px solid var(--line-strong);
 }
+
+
+/* ---------- hero surface: the one gradient flourish ---------- */
+.hero {
+  position: relative;
+  border-radius: 20px;
+  padding: 22px;
+  background: var(--grad-accent);
+  color: var(--on-accent);
+  overflow: hidden;
+  box-shadow: var(--shadow-glow);
+}
+.hero h2,
+.hero h3 {
+  color: var(--on-accent);
+}
+.hero__label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.62;
+}
+.hero__sub {
+  font-size: 14px;
+  opacity: 0.72;
+}
+/* dim variant: tinted glass instead of full gradient */
+.hero--dim {
+  background: var(--bg-raised) var(--grad-accent-dim);
+  border: 1px solid var(--accent-line);
+  color: var(--text);
+  box-shadow: var(--shadow-card);
+}
+.hero--dim .hero__label {
+  color: var(--accent);
+  opacity: 1;
+}
+.hero--dim .hero__sub {
+  color: var(--text-dim);
+  opacity: 1;
+}
+
+/* ---------- stats: big numeral over a small label ---------- */
+.stats {
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+.stat {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.stat__value {
+  font-size: 30px;
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.stat__value--accent {
+  background: var(--grad-accent);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.stat__label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.stats--divided .stat + .stat {
+  border-left: 1px solid var(--line);
+  padding-left: 28px;
+}
+
+/* ---------- icon tile ---------- */
+.tile {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  background: var(--bg-overlay);
+  border: 1px solid var(--line);
+  flex: none;
+}
+.tile--accent {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+  color: var(--accent);
+}
+.tile--warn {
+  background: var(--warn-soft);
+  border-color: transparent;
+  color: var(--warn);
+}
+.tile--lg {
+  width: 52px;
+  height: 52px;
+  border-radius: 15px;
+  font-size: 22px;
+}
+
+/* ---------- section header with count ---------- */
+.sectionhead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 2px;
+}
+.sectionhead__title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.sectionhead__count {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--bg-overlay);
+  border: 1px solid var(--line);
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.sectionhead__mark {
+  width: 6px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--grad-accent);
+  flex: none;
+}
+.sectionhead__mark--warn {
+  background: var(--warn);
+}
+
+/* richer empty state: tile + line + action */
+.empty {
+  padding: 26px 16px;
+}
+.empty__tile {
+  margin-bottom: 2px;
+}
+
+/* entrance motion */
+@keyframes rise {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+}
+.rise {
+  animation: rise 260ms var(--ease) both;
+}
+.rise-2 {
+  animation: rise 260ms var(--ease) 60ms both;
+}
+.rise-3 {
+  animation: rise 260ms var(--ease) 120ms both;
+}
+
+
+/* two-tone numerals: value bright, unit dim (Traffic Management) */
+.stat__unit {
+  color: var(--text-faint);
+  font-size: 0.62em;
+  font-weight: 400;
+  margin-left: 2px;
+}
+
+/* checklist progress */
+.checkbar {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.09);
+  overflow: hidden;
+}
+.checkbar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--grad-accent);
+  transition: width 300ms var(--ease);
+  width: 0;
+}
+.checkbar__fill--1 { width: 20%; }
+.checkbar__fill--2 { width: 40%; }
+.checkbar__fill--3 { width: 60%; }
+.checkbar__fill--4 { width: 80%; }
+.checkbar__fill--5 { width: 100%; }
