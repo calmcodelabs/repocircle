@@ -133,7 +133,7 @@ service cloud.firestore {
           && request.resource.data.keys().hasOnly(
                ['fullName', 'htmlUrl', 'description', 'language', 'topics', 'githubOwnerLogin',
                 'ownerUid', 'registeredBy', 'status', 'demoUrl', 'archived', 'lastEventAt',
-                'poll', 'stats7d', 'createdAt', 'v'])
+                'poll', 'stats7d', 'daily', 'createdAt', 'v'])
           && request.resource.data.registeredBy == me()
           && str(request.resource.data.fullName, 3, 140)
           && request.resource.data.status in ['idea', 'building', 'paused', 'done']
@@ -147,7 +147,7 @@ service cloud.firestore {
           && request.resource.data.keys().hasOnly(
                ['fullName', 'htmlUrl', 'description', 'language', 'topics', 'githubOwnerLogin',
                 'ownerUid', 'registeredBy', 'status', 'demoUrl', 'archived', 'lastEventAt',
-                'poll', 'stats7d', 'createdAt', 'v'])
+                'poll', 'stats7d', 'daily', 'createdAt', 'v'])
           && request.resource.data.registeredBy == resource.data.registeredBy
           && request.resource.data.status in ['idea', 'building', 'paused', 'done']
           && optHttpsUrl(request.resource.data, 'demoUrl')
@@ -199,8 +199,8 @@ service cloud.firestore {
           && request.resource.data.keys().hasAll(['kind', 'title', 'state', 'authorUid', 'createdAt'])
           && request.resource.data.keys().hasOnly(
                ['kind', 'title', 'detail', 'tags', 'repoId', 'pairingUrl', 'authorUid',
-                'authorLogin', 'authorAvatarUrl', 'state', 'claimCount', 'createdAt',
-                'resolvedAt', 'v'])
+                'authorLogin', 'authorAvatarUrl', 'state', 'claimCount', 'claimerUids',
+                'createdAt', 'resolvedAt', 'v'])
           && request.resource.data.authorUid == me()
           && request.resource.data.state == 'open'
           && request.resource.data.kind in ['ask', 'stuck']
@@ -216,18 +216,21 @@ service cloud.firestore {
             && request.resource.data.authorUid == resource.data.authorUid
             && request.resource.data.diff(resource.data).affectedKeys()
                  .hasOnly(['title', 'detail', 'tags', 'repoId', 'pairingUrl', 'state',
-                           'resolvedAt', 'claimCount', 'authorLogin', 'authorAvatarUrl'])
+                           'resolvedAt', 'claimCount', 'claimerUids', 'authorLogin',
+                           'authorAvatarUrl'])
             && str(request.resource.data.title, 4, 120)
             && optStr(request.resource.data, 'detail', 500)
             && request.resource.data.state in ['open', 'claimed', 'resolved'])
           ||
           // any writer: claim / unclaim transitions only (never to resolved)
           (request.resource.data.diff(resource.data).affectedKeys()
-               .hasOnly(['state', 'claimCount'])
+               .hasOnly(['state', 'claimCount', 'claimerUids'])
             && resource.data.state in ['open', 'claimed']
             && request.resource.data.state in ['open', 'claimed']
             && request.resource.data.claimCount is int
-            && request.resource.data.claimCount >= 0)
+            && request.resource.data.claimCount >= 0
+            && (!('claimerUids' in request.resource.data)
+                || request.resource.data.claimerUids is list))
         );
         allow delete: if resource.data.authorUid == me() || isAdmin(gid);
 
@@ -247,10 +250,13 @@ service cloud.firestore {
         allow create: if canWrite(gid)
           && request.resource.data.keys().hasOnly(
                ['repoId', 'repoFullName', 'requesterUid', 'requesterLogin', 'note',
-                'githubIssueNumber', 'state', 'decidedBy', 'decidedAt', 'createdAt', 'v'])
+                'repoOwnerUid', 'githubIssueNumber', 'state', 'decidedBy', 'decidedAt',
+                'createdAt', 'v'])
           && request.resource.data.requesterUid == me()
           && request.resource.data.state == 'pending'
-          && str(request.resource.data.note, 1, 280);
+          && str(request.resource.data.note, 1, 280)
+          && (!('repoOwnerUid' in request.resource.data)
+              || request.resource.data.repoOwnerUid == repoData(gid, request.resource.data.repoId).ownerUid);
         allow update: if isMember(gid) && (
           // decide: repo owner or admin
           (resource.data.state == 'pending'

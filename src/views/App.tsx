@@ -11,6 +11,7 @@ import { Members } from './Members';
 import { NotFound } from './NotFound';
 import { Onboard } from './Onboard';
 import { PersonalHome } from './PersonalHome';
+import { RepoDetail } from './RepoDetail';
 import { Repos } from './Repos';
 import { SignIn } from './SignIn';
 
@@ -49,6 +50,12 @@ function groupView(r: Route) {
       return (
         <GroupShell gid={r.gid}>
           <Repos gid={r.gid} />
+        </GroupShell>
+      );
+    case 'repodetail':
+      return (
+        <GroupShell gid={r.gid}>
+          <RepoDetail gid={r.gid} repoId={r.repoId} />
         </GroupShell>
       );
     case 'members':

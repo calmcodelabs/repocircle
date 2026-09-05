@@ -7,6 +7,7 @@ import { myUserDoc } from '../data/users';
 import { toast } from '../ui/Toast';
 import { Pill } from '../ui/Pill';
 import type { Group } from '../data/types';
+import { startPolling, stopPolling } from '../poll/engine';
 import { navigate, route } from '../router';
 import { Avatar } from '../ui/Avatar';
 import { EmptyState } from '../ui/EmptyState';
@@ -27,6 +28,10 @@ export function GroupShell({ gid, children }: { gid: string; children: Component
   const [myGroups, setMyGroups] = useState<Group[] | null>(null);
 
   useEffect(() => setActiveGroup(gid), [gid]);
+  useEffect(() => {
+    startPolling(gid);
+    return stopPolling;
+  }, [gid]);
 
   useEffect(() => {
     if (!switcherOpen) return;

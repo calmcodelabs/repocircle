@@ -6,6 +6,8 @@ import { canManageRepo, registerRepos, removeRepo, setRepoStatus, watchRepos } f
 import { myProfile } from '../data/users';
 import { REPO_STATUSES, type Repo, type RepoStatus } from '../data/types';
 import { GhError } from '../github/client';
+import { pollState, refreshNow, sparkSeries } from '../poll/engine';
+import { Spark } from '../ui/Spark';
 import { getRepoByFullName, listMyPublicRepos } from '../github/repos';
 import type { GhRepo } from '../github/types';
 import { Avatar } from '../ui/Avatar';
@@ -72,6 +74,14 @@ export function Repos({ gid }: { gid: string }) {
         <span class="topbar__spacer" />
         {canAdd && (
           <>
+            <Pill
+              variant="ghost"
+              busy={pollState.value.running}
+              onClick={() => void refreshNow(gid)}
+              ariaLabel="Refresh activity from GitHub"
+            >
+              ↻
+            </Pill>
             <Pill onClick={() => setAddOpen(true)}>Add by name</Pill>
             <Pill variant="primary" onClick={() => void openImport()}>
               Import mine
@@ -91,6 +101,7 @@ export function Repos({ gid }: { gid: string }) {
         {repos?.map((r) => (
           <RepoCard
             key={r.id}
+            gid={gid}
             repo={r}
             canManage={canManageRepo(r, uid, iAmAdmin)}
             onManage={() => setManage(r)}
@@ -105,12 +116,12 @@ export function Repos({ gid }: { gid: string }) {
   );
 }
 
-function RepoCard({ repo, canManage, onManage }: { repo: Repo; canManage: boolean; onManage: () => void }) {
+function RepoCard({ gid, repo, canManage, onManage }: { gid: string; repo: Repo; canManage: boolean; onManage: () => void }) {
   const shortName = repo.fullName.split('/')[1] ?? repo.fullName;
   return (
     <div class="card repo">
       <div class="row">
-        <a class="mono repo__name" href={repo.htmlUrl} target="_blank" rel="noopener noreferrer nofollow">
+        <a class="mono repo__name" href={`#/g/${gid}/repo/${repo.id}`}>
           {shortName}
         </a>
         <Chip tone={STATUS_TONE[repo.status]}>{repo.status}</Chip>
@@ -143,7 +154,8 @@ function RepoCard({ repo, canManage, onManage }: { repo: Repo; canManage: boolea
         <Avatar login={repo.githubOwnerLogin} src={`https://avatars.githubusercontent.com/${repo.githubOwnerLogin}`} />
         <span class="mono">@{repo.githubOwnerLogin}</span>
         <span class="topbar__spacer" />
-        {repo.lastEventAt && <span>pushed {relTime(repo.lastEventAt)}</span>}
+        <Spark series={sparkSeries(repo.daily)} />
+        {repo.lastEventAt && <span>{relTime(repo.lastEventAt)}</span>}
       </div>
     </div>
   );

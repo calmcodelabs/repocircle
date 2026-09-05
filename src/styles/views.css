@@ -352,3 +352,34 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* repo detail */
+.repodetail__name {
+  font-size: 18px;
+  overflow-wrap: anywhere;
+}
+.event {
+  padding: 8px 6px;
+  border-radius: 10px;
+  color: var(--text);
+}
+.event:hover {
+  background: var(--bg-overlay);
+  text-decoration: none;
+}
+.event__icon {
+  color: var(--text-faint);
+  width: 16px;
+  text-align: center;
+  flex: none;
+}
+.event__summary {
+  font-size: 14px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.spark {
+  flex: none;
+}

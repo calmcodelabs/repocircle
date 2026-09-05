@@ -88,8 +88,9 @@ export type Repo = {
   demoUrl: string | null;
   archived: boolean;
   lastEventAt: Timestamp | null;
-  poll: { lastPolledAt: Timestamp | null; etag: string | null; failing: boolean };
+  poll: { lastPolledAt: Timestamp | null; etag: string | null; failing: boolean; lastEventId?: string | null };
   stats7d: { commits: number; prsOpened: number; prsMerged: number; issues: number; releases: number };
+  daily?: Record<string, { commits: number; prsOpened: number; prsMerged: number; issuesOpened: number; releases: number }>;
   createdAt: Timestamp | null;
   v: 1;
 };

@@ -3,6 +3,7 @@ import { sessionUser } from '../auth/session';
 import { hasToken } from '../auth/vault';
 import { logBuffer } from '../util/log';
 import { rateRemaining } from '../github/client';
+import { pollState } from '../poll/engine';
 import { route } from '../router';
 
 /** Hidden diagnostics — ARCHITECTURE §8. Never renders secret material. */
@@ -20,6 +21,14 @@ export function Diag() {
           `gh-rate    ${rateRemaining.value === null ? 'no calls yet' : `${rateRemaining.value} left this hour`}`,
           `route      ${route.value.name}`,
           `ua         ${navigator.userAgent}`,
+        ].join('\n')}
+      </pre>
+      <h3>poll</h3>
+      <pre class="card diag__pre">
+        {[
+          `last cycle ${pollState.value.lastCycleAt ? new Date(pollState.value.lastCycleAt).toISOString().slice(11, 19) : 'never'}`,
+          `running    ${pollState.value.running}`,
+          ...pollState.value.results.slice(-10).map((r) => `${new Date(r.at).toISOString().slice(11, 19)} ${r.repo} → ${r.outcome}`),
         ].join('\n')}
       </pre>
       <h3>log</h3>

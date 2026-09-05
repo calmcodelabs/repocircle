@@ -6,6 +6,8 @@ import { Avatar } from '../ui/Avatar';
 import { Chip } from '../ui/Chip';
 import { EmptyState } from '../ui/EmptyState';
 import { Pill } from '../ui/Pill';
+import { sparkSeries } from '../poll/engine';
+import { Spark } from '../ui/Spark';
 import { langClass } from '../util/lang';
 import { log } from '../util/log';
 import { relTime } from '../util/time';
@@ -26,6 +28,8 @@ export function GroupHome({ gid }: { gid: string }) {
   );
 
   const live = repos?.filter((r) => !r.archived && r.status !== 'paused' && r.status !== 'done') ?? [];
+  const weekMs = Date.now() - 7 * 86_400_000;
+  const active = live.filter((r) => (r.lastEventAt?.toMillis() ?? 0) >= weekMs);
 
   return (
     <main class="stack">
@@ -63,23 +67,23 @@ export function GroupHome({ gid }: { gid: string }) {
           />
         ) : live.length === 0 ? (
           <EmptyState line="Every repo here is paused or done — nothing in flight right now." />
+        ) : active.length === 0 ? (
+          <EmptyState line="Quiet week — no repo activity in the last 7 days." />
         ) : (
-          <>
-            <div class="home__repos">
-              {live.slice(0, 6).map((r) => (
-                <a key={r.id} class="home__repo" href={`#/g/${gid}/repos`}>
-                  <span class="row">
-                    <span class={`langdot ${langClass(r.language)}`} />
-                    <span class="mono">{r.fullName.split('/')[1] ?? r.fullName}</span>
-                  </span>
-                  {r.lastEventAt && <span class="small faint">pushed {relTime(r.lastEventAt)}</span>}
-                </a>
-              ))}
-            </div>
-            <p class="small faint">
-              Live activity — commits, PRs and sparklines — starts flowing in M3.
-            </p>
-          </>
+          <div class="home__repos">
+            {active.slice(0, 6).map((r) => (
+              <a key={r.id} class="home__repo" href={`#/g/${gid}/repo/${r.id}`}>
+                <span class="row">
+                  <span class={`langdot ${langClass(r.language)}`} />
+                  <span class="mono">{r.fullName.split('/')[1] ?? r.fullName}</span>
+                </span>
+                <span class="row">
+                  <Spark series={sparkSeries(r.daily)} />
+                  {r.lastEventAt && <span class="small faint">{relTime(r.lastEventAt)}</span>}
+                </span>
+              </a>
+            ))}
+          </div>
         )}
       </section>
 

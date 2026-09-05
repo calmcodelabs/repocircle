@@ -134,6 +134,92 @@ export async function ghGet<T>(path: string, opts: { etag?: boolean } = {}): Pro
   throw new GhError('invalid', friendly('invalid', res.status), res.status);
 }
 
+/** Conditional GET against a caller-stored ETag (polling engine). */
+export type CondResult<T> = { status: 200; body: T; etag: string | null } | { status: 304 };
+
+export async function ghGetConditional<T>(path: string, etag: string | null): Promise<CondResult<T>> {
+  let token = tokens.get();
+  const withEtag = async (tok: string | null): Promise<Response> => {
+    if (!path.startsWith('/')) throw new GhError('invalid', 'Client bug: relative GitHub path required.');
+    const headers: Record<string, string> = {
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+    };
+    if (tok) headers.Authorization = `Bearer ${tok}`;
+    if (etag) headers['If-None-Match'] = etag;
+    try {
+      return await fetch(API + path, { headers });
+    } catch {
+      throw new GhError('network', friendly('network'));
+    }
+  };
+  let res = await withEtag(token);
+  if (res.status === 401) {
+    token = await tokens.refresh();
+    if (!token) throw new GhError('auth', friendly('auth'), 401);
+    res = await withEtag(token);
+  }
+  trackRate(res);
+  if (res.status === 304) return { status: 304 };
+  if (res.ok) return { status: 200, body: (await res.json()) as T, etag: res.headers.get('ETag') };
+  throw mapError(res);
+}
+
+// GitHub asks clients to space out mutating calls (secondary rate limits).
+let writeChain: Promise<unknown> = Promise.resolve();
+let lastWriteAt = 0;
+const WRITE_SPACING_MS = 30_000;
+
+/**
+ * Mutating call (POST/PUT/PATCH/DELETE). Serialized and spaced ≥30s apart —
+ * callers should treat this as potentially slow and show progress.
+ */
+export function ghSend<T>(method: 'POST' | 'PUT' | 'PATCH' | 'DELETE', path: string, body?: unknown): Promise<T | null> {
+  const run = async (): Promise<T | null> => {
+    const wait = lastWriteAt + WRITE_SPACING_MS - Date.now();
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+    lastWriteAt = Date.now();
+
+    let token = tokens.get();
+    const doSend = async (tok: string | null): Promise<Response> => {
+      if (!path.startsWith('/')) throw new GhError('invalid', 'Client bug: relative GitHub path required.');
+      const headers: Record<string, string> = {
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        'Content-Type': 'application/json',
+      };
+      if (tok) headers.Authorization = `Bearer ${tok}`;
+      try {
+        return await fetch(API + path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+      } catch {
+        throw new GhError('network', friendly('network'));
+      }
+    };
+    let res = await doSend(token);
+    if (res.status === 401) {
+      token = await tokens.refresh();
+      if (!token) throw new GhError('auth', friendly('auth'), 401);
+      res = await doSend(token);
+    }
+    trackRate(res);
+    if (res.status === 204) return null;
+    if (res.ok) return (await res.json()) as T;
+    throw mapError(res);
+  };
+  const p = writeChain.then(run, run);
+  writeChain = p.catch(() => undefined);
+  return p;
+}
+
+function mapError(res: Response): GhError {
+  if (res.status === 401) return new GhError('auth', friendly('auth'), 401);
+  if (isRateLimited(res)) return new GhError('rate_limit', friendly('rate_limit'), res.status);
+  if (res.status === 404) return new GhError('not_found', friendly('not_found'), 404);
+  if (res.status === 403) return new GhError('forbidden', friendly('forbidden'), 403);
+  if (res.status >= 500) return new GhError('server', friendly('server', res.status), res.status);
+  return new GhError('invalid', friendly('invalid', res.status), res.status);
+}
+
 export function ghErrorKind(e: unknown): GhErrorKind | null {
   return e instanceof GhError ? e.kind : null;
 }
