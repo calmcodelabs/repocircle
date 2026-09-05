@@ -5,6 +5,26 @@ import { logBuffer } from '../util/log';
 import { rateRemaining } from '../github/client';
 import { pollState } from '../poll/engine';
 import { route } from '../router';
+import { Pill } from '../ui/Pill';
+
+/**
+ * Drop Firestore's IndexedDB copy and reload. Firebase Auth keeps its session in
+ * IndexedDB too, so this signs you out — say so rather than surprising anyone.
+ */
+async function clearLocalCache(): Promise<void> {
+  const dbs = (await indexedDB.databases?.()) ?? [];
+  const targets = dbs.map((d) => d.name).filter((n): n is string => !!n && /firestore|firebase/i.test(n));
+  await Promise.all(
+    targets.map(
+      (name) =>
+        new Promise<void>((resolve) => {
+          const req = indexedDB.deleteDatabase(name);
+          req.onsuccess = req.onerror = req.onblocked = () => resolve();
+        }),
+    ),
+  );
+  location.replace(`${location.pathname}?cleared=${Date.now()}`);
+}
 
 /** Hidden diagnostics — ARCHITECTURE §8. Never renders secret material. */
 export function Diag() {
@@ -40,6 +60,13 @@ export function Diag() {
           </div>
         ))}
       </div>
+      <h3>maintenance</h3>
+      <p class="small dim">
+        Firestore keeps an offline copy in this browser. If the app shows data that no longer
+        exists on the server, clear that copy and reload — nothing on the server is touched.
+      </p>
+      <Pill onClick={() => void clearLocalCache()}>Clear local cache &amp; reload</Pill>
+
       <p>
         <a href="#/">back</a>
       </p>
