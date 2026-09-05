@@ -9,24 +9,35 @@ import { configureTokenProvider } from './github/client';
 import { clearToken, getToken } from './auth/vault';
 import { log } from './util/log';
 import { App } from './views/App';
+import { MAINTENANCE } from './maintenance';
+import { Maintenance } from './views/Maintenance';
 
 // CSP violations otherwise surface as unrelated-looking SDK errors — name them.
 window.addEventListener('securitypolicyviolation', (e) => {
   log('error', `CSP blocked ${e.violatedDirective}: ${e.blockedURI}`);
 });
 
-configureTokenProvider({
-  get: getToken,
-  refresh: async () => {
-    clearToken(); // the old token 401'd — drop it before re-acquiring
-    return ensureGitHubToken();
-  },
-});
+// Short-circuit before anything initialises: no auth listener, no Firestore
+// connection, no reads. The app is genuinely inert while paused.
+if (MAINTENANCE.on) {
+  render(<Maintenance />, document.getElementById('app')!);
+} else {
+  boot();
+}
 
-initRouter();
-initAuth();
+function boot(): void {
+  configureTokenProvider({
+    get: getToken,
+    refresh: async () => {
+      clearToken(); // the old token 401'd — drop it before re-acquiring
+      return ensureGitHubToken();
+    },
+  });
 
-render(<App />, document.getElementById('app')!);
+  initRouter();
+  initAuth();
+  render(<App />, document.getElementById('app')!);
+}
 
 // PWA: service worker (prod only) + connectivity + install prompt capture.
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
