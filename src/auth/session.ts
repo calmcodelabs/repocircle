@@ -8,7 +8,7 @@ import {
   signOut,
   type User,
 } from 'firebase/auth';
-import { arrayUnion, doc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
+import { arrayUnion, doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import { auth, db, isConfigured } from '../firebase';
 import { startMyUserWatch, stopMyUserWatch } from '../data/users';
 import { clearToken, getToken, setToken } from './vault';
@@ -53,7 +53,7 @@ export async function signInWithGitHub(): Promise<void> {
     const cred = GithubAuthProvider.credentialFromResult(res);
     if (cred?.accessToken) setToken(cred.accessToken);
     const info = getAdditionalUserInfo(res);
-    await upsertUser(res.user, (info?.profile ?? undefined) as GhProfile | undefined, info?.isNewUser === true);
+    await upsertUser(res.user, (info?.profile ?? undefined) as GhProfile | undefined);
     log('info', 'signed in');
   } catch (e) {
     authError.value = friendlyAuthError(e);
@@ -117,7 +117,7 @@ export async function signOutApp(): Promise<void> {
   log('info', 'signed out');
 }
 
-async function upsertUser(u: User, profile: GhProfile | undefined, isNew: boolean): Promise<void> {
+async function upsertUser(u: User, profile: GhProfile | undefined): Promise<void> {
   const login = profile?.login ?? u.displayName ?? 'unknown';
   const base = {
     login,
@@ -125,19 +125,24 @@ async function upsertUser(u: User, profile: GhProfile | undefined, isNew: boolea
     avatarUrl: profile?.avatar_url ?? u.photoURL ?? '',
     lastSeenAt: serverTimestamp(),
   };
-  if (isNew) {
-    await setDoc(doc(db(), 'users', u.uid), {
-      ...base,
-      githubId: profile?.id ?? 0,
-      scopesGranted: [...BASE_SCOPES],
-      groupIds: [],
-      checklist: {},
-      createdAt: serverTimestamp(),
-      v: 1,
-    });
-  } else {
-    await setDoc(doc(db(), 'users', u.uid), base, { merge: true });
+  // Key off the *document*, not GitHub's isNewUser: a returning Firebase account
+  // whose profile doc is missing (deleted, or a create that failed) must still get
+  // a complete record, otherwise it silently lacks groupIds/scopes/checklist.
+  const ref = doc(db(), 'users', u.uid);
+  const existing = await getDoc(ref);
+  if (existing.exists()) {
+    await setDoc(ref, base, { merge: true });
+    return;
   }
+  await setDoc(ref, {
+    ...base,
+    githubId: profile?.id ?? 0,
+    scopesGranted: [...BASE_SCOPES],
+    groupIds: [],
+    checklist: {},
+    createdAt: serverTimestamp(),
+    v: 1,
+  });
 }
 
 async function touchLastSeen(u: User): Promise<void> {
