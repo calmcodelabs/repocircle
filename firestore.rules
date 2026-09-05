@@ -141,6 +141,8 @@ service cloud.firestore {
           && optHttpsUrl(request.resource.data, 'demoUrl')
           && optHttpsUrl(request.resource.data, 'htmlUrl')
           && optStr(request.resource.data, 'description', 500);
+        // Any writer may refresh metadata/poll state (shared polling engine, M3);
+        // product fields (status, demoUrl, archived) are owner/registrant/admin only.
         allow update: if canWrite(gid)
           && request.resource.data.keys().hasOnly(
                ['fullName', 'htmlUrl', 'description', 'language', 'topics', 'githubOwnerLogin',
@@ -149,7 +151,14 @@ service cloud.firestore {
           && request.resource.data.registeredBy == resource.data.registeredBy
           && request.resource.data.status in ['idea', 'building', 'paused', 'done']
           && optHttpsUrl(request.resource.data, 'demoUrl')
-          && optStr(request.resource.data, 'description', 500);
+          && optStr(request.resource.data, 'description', 500)
+          && (
+            !request.resource.data.diff(resource.data).affectedKeys()
+               .hasAny(['status', 'demoUrl', 'archived'])
+            || isAdmin(gid)
+            || resource.data.ownerUid == me()
+            || resource.data.registeredBy == me()
+          );
         allow delete: if isMember(gid) && canManageRepo(gid, repoId);
 
         // events: append-only (TTL reaps); deletes only via deregistration sweep

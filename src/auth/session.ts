@@ -11,7 +11,7 @@ import {
 import { arrayUnion, doc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import { auth, db, isConfigured } from '../firebase';
 import { startMyUserWatch, stopMyUserWatch } from '../data/users';
-import { clearToken, setToken } from './vault';
+import { clearToken, getToken, setToken } from './vault';
 import { log } from '../util/log';
 
 export const BASE_SCOPES = ['read:user', 'user:email'] as const;
@@ -81,6 +81,29 @@ export async function escalateToPublicRepo(): Promise<boolean> {
     authError.value = friendlyAuthError(e);
     log('warn', `scope escalation failed: ${codeOf(e) ?? 'unknown'}`);
     return false;
+  }
+}
+
+/**
+ * Get a GitHub token for API calls, re-authenticating via popup if the vault is
+ * empty (fresh tab). Returns null when the user declines / popup blocked.
+ */
+export async function ensureGitHubToken(): Promise<string | null> {
+  const existing = getToken();
+  if (existing) return existing;
+  const u = sessionUser.value;
+  if (!u) return null;
+  try {
+    const res = await reauthenticateWithPopup(u, provider(BASE_SCOPES));
+    const cred = GithubAuthProvider.credentialFromResult(res);
+    if (cred?.accessToken) {
+      setToken(cred.accessToken);
+      return cred.accessToken;
+    }
+    return null;
+  } catch (e) {
+    log('warn', `token refresh failed: ${codeOf(e) ?? 'unknown'}`);
+    return null;
   }
 }
 

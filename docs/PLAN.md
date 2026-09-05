@@ -88,19 +88,27 @@ error; A removes B; audit log shows both role events to A only.
 
 ## M2 · Repo registry & import (~2–3 days)
 
+> **Progress note (2026-09-05):** M2 engineering landed: github/client.ts chokepoint
+> (api.github.com-only, injected token provider, ETag cache, rate tracking, GhError
+> taxonomy, 401→refresh-once), import picker with dedupe + first-run auto-open,
+> add-by-name with preview, repo cards (status chips, language dots — class-based for
+> CSP, topics, demo links), owner/registrant/admin-guarded status+remove (rules
+> hardened + deployed; 47 rules tests), subcollection sweep on deregister.
+> 20 unit tests. Pending: Opus browser-testing pass + two-account acceptance.
+
 Objective: repos in, cards rendering, statuses — the nouns of the product (F-04,
 R-01, F-10).
 
-- [ ] `github/client.ts`: typed fetch, ETag cache table, rate-limit guard, error
+- [x] `github/client.ts`: typed fetch, ETag cache table, rate-limit guard, error
       taxonomy (401 → re-auth prompt, 403-limit → backoff banner, 404 → gone)
-- [ ] Import picker (S3) post-create/join: `GET /user/repos?type=owner&sort=pushed`,
+- [x] Import picker (S3) post-create/join: `GET /user/repos?type=owner&sort=pushed`,
       preselected, opt-out; batch register
-- [ ] Manual add (by URL/owner-name search) for repos you contribute to (F-04)
-- [ ] Repo docs written per DATA-MODEL (id = GitHub numeric id); dedupe on re-register
-- [ ] Repo cards (S7) grid on `#/g/:gid/repos`: description, language dot, topics,
+- [x] Manual add (by URL/owner-name search) for repos you contribute to (F-04)
+- [x] Repo docs written per DATA-MODEL (id = GitHub numeric id); dedupe on re-register
+- [x] Repo cards (S7) grid on `#/g/:gid/repos`: description, language dot, topics,
       status chip inline-editable by owner/admin (F-10), demo link (allowlisted URL)
-- [ ] Deregister/archive (owner or admin) with confirm sheet + subcollection sweep
-- [ ] Rules tests: repos matrix (numeric-id enforcement, guest denial, owner delete)
+- [x] Deregister/archive (owner or admin) with confirm sheet + subcollection sweep
+- [x] Rules tests: repos matrix (numeric-id enforcement, guest denial, owner delete)
 
 Accept: import 10 of your repos in one flow; second device registers a repo by URL;
 paused status hides it from (future) active block queries — verified by query in

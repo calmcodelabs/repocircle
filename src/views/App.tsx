@@ -12,6 +12,7 @@ import { Join } from './Join';
 import { Members } from './Members';
 import { NotFound } from './NotFound';
 import { Onboard } from './Onboard';
+import { Repos } from './Repos';
 import { SignIn } from './SignIn';
 
 function Splash() {
@@ -51,6 +52,12 @@ function groupView(r: Route) {
       return (
         <GroupShell gid={r.gid}>
           <GroupHome gid={r.gid} />
+        </GroupShell>
+      );
+    case 'repos':
+      return (
+        <GroupShell gid={r.gid}>
+          <Repos gid={r.gid} />
         </GroupShell>
       );
     case 'members':

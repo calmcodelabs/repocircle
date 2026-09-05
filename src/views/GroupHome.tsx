@@ -26,11 +26,11 @@ export function GroupHome({ gid }: { gid: string }) {
       <section class="card">
         <div class="label">Active this week</div>
         <EmptyState
-          line="Repos land in M2 — you’ll register yours and this fills itself from GitHub."
+          line="Register the group’s repos — activity sparklines light this up in M3."
           action={
-            <Pill disabled ariaLabel="Add repo (arrives with M2)">
-              Add repo · M2
-            </Pill>
+            <a class="pill" href={`#/g/${gid}/repos`}>
+              Add repos →
+            </a>
           }
         />
       </section>

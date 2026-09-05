@@ -29,7 +29,7 @@ export function Onboard() {
     try {
       const gid = await createGroup(profile, name.trim(), desc.trim());
       toast(`${name.trim()} created`);
-      navigate(`#/g/${gid}`);
+      navigate(`#/g/${gid}/repos`);
     } catch {
       toast('Could not create the group — check #/diag.', { error: true });
     } finally {

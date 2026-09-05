@@ -71,3 +71,27 @@ export const AVAILABILITY_LABEL: Record<AvailabilityStatus, string> = {
   away: 'away',
   custom: 'custom',
 };
+
+export type RepoStatus = 'idea' | 'building' | 'paused' | 'done';
+
+export type Repo = {
+  id: string; // GitHub numeric repo id as string (doc id)
+  fullName: string;
+  htmlUrl: string;
+  description: string | null;
+  language: string | null;
+  topics: string[];
+  githubOwnerLogin: string;
+  ownerUid: string | null;
+  registeredBy: string;
+  status: RepoStatus;
+  demoUrl: string | null;
+  archived: boolean;
+  lastEventAt: Timestamp | null;
+  poll: { lastPolledAt: Timestamp | null; etag: string | null; failing: boolean };
+  stats7d: { commits: number; prsOpened: number; prsMerged: number; issues: number; releases: number };
+  createdAt: Timestamp | null;
+  v: 1;
+};
+
+export const REPO_STATUSES: RepoStatus[] = ['idea', 'building', 'paused', 'done'];

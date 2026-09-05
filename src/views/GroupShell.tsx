@@ -14,6 +14,7 @@ import { Mark } from '../ui/Mark';
 
 const NAV: Array<{ seg: string; label: string }> = [
   { seg: '', label: 'Home' },
+  { seg: 'repos', label: 'Repos' },
   { seg: 'members', label: 'Members' },
   { seg: 'settings', label: 'Settings' },
 ];
@@ -40,7 +41,8 @@ export function GroupShell({ gid, children }: { gid: string; children: Component
 
   const g = activeGroup.value;
   const r = route.value;
-  const activeSeg = r.name === 'members' ? 'members' : r.name === 'settings' ? 'settings' : '';
+  const activeSeg =
+    r.name === 'repos' ? 'repos' : r.name === 'members' ? 'members' : r.name === 'settings' ? 'settings' : '';
 
   if (activeDenied.value) {
     const inMyList = myUserDoc.value?.groupIds.includes(gid) ?? false;
