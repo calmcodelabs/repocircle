@@ -28,7 +28,8 @@ export function SignIn({ invited = false }: { invited?: boolean }) {
               See what your circle is <span class="tint">building</span>.
             </h1>
             <p class="lead signin__tag">
-              Repos, asks and momentum from your group — one calm window. Ask to join in.
+              A private space for your dev circle — share your repos, see who’s stuck, and help
+              each other ship.
             </p>
           </>
         )}
