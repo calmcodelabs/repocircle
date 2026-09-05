@@ -53,8 +53,13 @@ export function Join({ gid, token }: { gid: string; token: string }) {
       await joinViaInvite(gid, invite, profile);
       toast(`Welcome to ${invite.groupName ?? 'the group'}`);
       navigate(`#/g/${gid}`);
-    } catch {
-      toast('Joining failed — the invite may have just expired. Check #/diag.', { error: true });
+    } catch (e) {
+      toast(
+        (e as Error)?.message === 'join-not-persisted'
+          ? 'That didn’t save — check your connection and tap Join again.'
+          : 'Joining failed — the invite may have just expired.',
+        { error: true },
+      );
       setBusy(false);
     }
   }

@@ -3,6 +3,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDocFromServer,
   onSnapshot,
   orderBy,
   query,
@@ -56,6 +57,12 @@ export async function joinViaInvite(gid: string, invite: Invite, profile: MyProf
   });
   batch.update(doc(db(), 'users', profile.uid), { groupIds: arrayUnion(gid) });
   await batch.commit();
+  // Firestore applies writes locally first, so a batch the server later rejects
+  // still looks like a successful join. Confirm the membership actually landed.
+  const check = await getDocFromServer(doc(db(), `groups/${gid}/members/${profile.uid}`)).catch(
+    () => null,
+  );
+  if (!check?.exists()) throw new Error('join-not-persisted');
 }
 
 export async function setAvailability(gid: string, uid: string, availability: Availability): Promise<void> {
