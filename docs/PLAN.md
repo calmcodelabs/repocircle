@@ -159,7 +159,7 @@ kill network mid-cycle → no partial corruption (idempotent re-run heals).
 - [ ] Owner inbox: accept → `PUT collaborators` + close issue with templated comment;
       decline → polite comment + close; both update doc + audit trail on the issue
 - [ ] Honest failure surfaces: scope missing, no push rights, GitHub 4xx/secondary
-      rate limits (client throttle: ≥ 30 s between GitHub writes)
+      rate limits (serialized writes, ≥1.5 s apart)
 - [ ] Requester notification of decision (in-app badge; Discord post lands in M6)
 - [ ] Rules tests: collabRequests matrix (random member can't decide, etc.)
 

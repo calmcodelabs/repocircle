@@ -165,14 +165,17 @@ export async function ghGetConditional<T>(path: string, etag: string | null): Pr
   throw mapError(res);
 }
 
-// GitHub asks clients to space out mutating calls (secondary rate limits).
+// GitHub asks clients to space out mutating calls (secondary rate limits). Its
+// documented guidance is ~1s between mutations, not the 30s this used to enforce:
+// a single accept fires 3 writes (invite, comment, close), which took over a minute
+// and looked like a hang.
 let writeChain: Promise<unknown> = Promise.resolve();
 let lastWriteAt = 0;
-const WRITE_SPACING_MS = 30_000;
+const WRITE_SPACING_MS = 1_500;
 
 /**
- * Mutating call (POST/PUT/PATCH/DELETE). Serialized and spaced ≥30s apart —
- * callers should treat this as potentially slow and show progress.
+ * Mutating call (POST/PUT/PATCH/DELETE). Serialized and spaced ≥1.5s apart so a
+ * burst from one user action stays inside GitHub's secondary-limit guidance.
  */
 export function ghSend<T>(
   method: 'POST' | 'PUT' | 'PATCH' | 'DELETE',
