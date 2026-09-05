@@ -164,9 +164,9 @@ week" fills within seconds.
 
 - **Installable**: manifest (standalone, theme `#0E0F12`), maskable icons, iOS meta tags.
 - **Service worker**: precache the built shell (hashed assets); network-first for
-  `index.html`; cache-first for avatars. Firestore data is *not* SW-cached — the SDK's
-  IndexedDB persistence (`persistentLocalCache`) already gives offline reads and queued
-  writes.
+  `index.html`; cache-first for avatars. Firestore data is *not* SW-cached, and as of
+  ADR-016 the SDK uses `memoryLocalCache()` rather than IndexedDB persistence — the app
+  shell opens offline, but data always reflects the server rather than a local guess.
 - **Performance budget** (PRD §11 wants Home < 1.5 s on mid-range Android/4G):
   JS ≤ 220 KB gzipped total (Preact ~4, Firebase auth+firestore ~110, app ≤ 80,
   fonts 2 × ~45 KB woff2 self-hosted, swap). Warm loads render Home from IndexedDB

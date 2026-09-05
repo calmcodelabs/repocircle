@@ -102,3 +102,17 @@ stay out of the showcase trap: no counters, no streaks, no aggregated stats, not
 public — it is navigation plus your own open loops, nothing more. The logo links here;
 `lastGid` remains only as switcher state. Cost accepted: one extra tap to reach group
 content for single-group daily use.
+
+
+**ADR-016 · Firestore memory cache, not IndexedDB persistence (reverses part of ADR-002/ARCH §7).**
+Persistent offline caching cost far more than it gave. It renders writes the server
+has not accepted and keeps serving documents the server no longer has, so the UI
+states things that are not true: a circle that "saved" and then vanished, a join that
+looked successful while the admin never saw the member, members appearing and
+disappearing as queries silently fell back to cache. A collaboration app's screen
+should show what the server confirmed, not what this device hopes. Switched to
+`memoryLocalCache()`: reads are fast within a session, every reload reflects the
+server, and rejected writes surface as errors instead of phantom success.
+Cost accepted: no offline reads across reloads. The service worker still serves the
+app shell offline, and Firestore still queues writes within a session. Revisit only
+with a genuine offline requirement — and then re-verify the phantom-state problem.
