@@ -4,6 +4,8 @@ import {
   collection,
   doc,
   getDocs,
+  limit,
+  orderBy,
   query,
   runTransaction,
   serverTimestamp,
@@ -32,6 +34,14 @@ const POLL_INTERVAL_MS = 15 * 60_000;
 const FORCED_MIN_STALE_MS = 30_000; // "refresh now" still dedupes across clients
 const FIRST_POLL_WINDOW_MS = 30 * 86_400_000; // backfill cap on a repo's first poll
 const DAILY_KEEP_DAYS = 21;
+/**
+ * How many repos one cycle may even look at. Without this the engine read the
+ * whole repo collection every fifteen minutes in every open tab — six hundred
+ * repos meant 2,400 reads an hour per tab, which is a larger bill than the one
+ * M16 set out to fix. Ordering by staleness means a bounded bite still covers
+ * everything: the least recently polled always come first.
+ */
+const CYCLE_MAX = 20;
 
 export type CycleEntry = { repo: string; outcome: string; at: number };
 export const pollState = signal<{
@@ -79,7 +89,12 @@ async function runCycle(gid: string, minStaleMs = POLL_INTERVAL_MS): Promise<voi
   pollState.value = { ...pollState.value, running: true };
   try {
     const snap = await getDocs(
-      query(collection(db(), `groups/${gid}/repos`), where('archived', '==', false)),
+      query(
+        collection(db(), `groups/${gid}/repos`),
+        where('archived', '==', false),
+        orderBy('poll.lastPolledAt', 'asc'),
+        limit(CYCLE_MAX),
+      ),
     );
     const repos = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Repo, 'id'>) }));
     for (const repo of repos) {

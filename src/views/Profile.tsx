@@ -43,7 +43,14 @@ export function Profile({ gid, uid }: { gid: string; uid: string }) {
   const myUid = sessionUser.value?.uid;
   const isMe = myUid === uid;
 
-  useEffect(() => watchMember(gid, uid, setM), [gid, uid]);
+  useEffect(
+    () =>
+      watchMember(gid, uid, setM, (code) => {
+        log('warn', `profile member watch: ${code}`);
+        noteServerError(code, 'member');
+      }),
+    [gid, uid],
+  );
   // Their repos, not the circle's: two queries because ownership has two
   // spellings, and the profile is about exactly one person.
   useEffect(() => {

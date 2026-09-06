@@ -4,6 +4,8 @@ import {
   doc,
   getDoc,
   getDocs,
+  limit,
+  query,
   serverTimestamp,
   setDoc,
   type Timestamp,
@@ -54,7 +56,7 @@ export async function isWatching(uid: string, gid: string, repoId: string): Prom
 }
 
 export async function fetchWatches(uid: string): Promise<Watch[]> {
-  const snap = await getDocs(collection(db(), `users/${uid}/watches`));
+  const snap = await getDocs(query(collection(db(), `users/${uid}/watches`), limit(50)));
   return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Watch, 'id'>) }));
 }
 

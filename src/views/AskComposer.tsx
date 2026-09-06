@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
 import { db } from '../firebase';
 import { sessionUser } from '../auth/session';
 import { activeGroup } from '../data/activeGroup';
@@ -19,7 +19,9 @@ import { LIMITS } from '../util/limits';
 export function AskComposer({ gid, onClose }: { gid: string; onClose: () => void }) {
   const [repos, setRepos] = useState<Repo[]>([]);
   useEffect(() => {
-    void getDocs(collection(db(), `groups/${gid}/repos`)).then((snap) =>
+    void getDocs(
+      query(collection(db(), `groups/${gid}/repos`), orderBy('lastEventAt', 'desc'), limit(50)),
+    ).then((snap) =>
       setRepos(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Repo, 'id'>) }))),
     );
   }, [gid]);

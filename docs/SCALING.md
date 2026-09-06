@@ -35,33 +35,45 @@ the service worker serves cached, content-hashed assets.
 There is no scale argument for leaving GitHub Pages. Reasons to move are all
 about capability, not capacity — see §5.
 
-### Database: the read amplification
+### Database: the read amplification — measured before and after
 
-`GroupHome` mounts **seven live listeners**, three of which read entire
-collections with no limit (`repos`, `members`, `ideas`).
+`GroupHome` used to mount **seven live listeners, three of which read entire
+collections** (`repos`, `members`, `ideas`), and every group-scoped page paid
+for the member list a second time to find one membership document.
 
-| Circle | Docs read per home visit | Visits/day before the 50K free tier is gone |
+| Circle | Reads per home visit — **before M16** | **after M16** |
 |---|---|---|
-| 20 members, ~30 repos | ~130 | ~380 across everyone |
-| 100 members, ~300 repos | ~450 | ~110 |
-| **200 members, ~600 repos** | **~900** | **~55 — dead before lunch** |
+| 20 members, ~30 repos | ~130 | ~125 |
+| 100 members, ~300 repos | ~450 | ~130 |
+| **200 members, ~600 repos** | **~900** | **~130** |
+| 1,000 members, ~3,000 repos | ~4,000 | ~130 |
 
-POSITIONING §1 targets 100–300 people. The app as written cannot serve that
-audience on the free tier, and on Blaze the same pattern costs real money:
-200 members × 5 visits/day × 900 reads ≈ 27M reads/month ≈ **$16/month**, rising
-faster than membership does.
+The number after M16 is the point, and it is not the size of the number: **the
+cost stopped scaling with the circle.** Every read is now either one document
+or a bounded query, so a circle can grow without the bill following it. That
+also means the remaining ~130 is a fixed budget to spend down, rather than a
+slope to outrun.
 
-Unbounded reads currently in the data layer, worst first:
+Where it goes for a fully-unlocked member: open asks 25, recent discussion 12,
+your activity 12, accepted collaborations 12, the five repo blocks 34, recent
+members 8, ideas 10, the unblocked count up to 50 (throttled to once a minute
+per tab), and 3 for the group, membership and summary documents.
 
-- `repos.ts` — whole `repos` collection, on Home, Repos, Profile and IdeaDetail
-- `members.ts` — whole `members` collection, on every group-scoped page
-- `ideas.ts` — whole `ideas` collection, on Home, Repos and Profile
-- `collabs.ts` — whole `collabRequests` collection (four call sites)
-- `invites.ts`, `audit.ts` — admin-only screens, low traffic, low priority
+**M16.5 is what spends it down.** Most of those blocks do not render for most
+members; gating them at the listener rather than the markup takes a day-one
+member to roughly 45 and a typical member well below the ~130 ceiling. The
+under-30 target belongs to M16.5, not here — see PLAN §5c.
+
+Found during the M16 review sweep and worth stating separately, because it was
+larger than the problem this milestone set out to fix: **the polling engine
+read every non-archived repo every fifteen minutes, in every open tab.** At 600
+repos that is 2,400 reads an hour per tab. It now takes the twenty stalest
+repos per cycle, ordered by `poll.lastPolledAt`, which still covers everything
+over successive cycles because least-recently-polled always sorts first.
 
 ---
 
-## 2. The fix (do this first — days, not weeks)
+## 2. The fix — **done in M16**
 
 Platform-independent. Every one of these helps just as much on Postgres.
 
@@ -75,8 +87,16 @@ Platform-independent. Every one of these helps just as much on Postgres.
 4. **Scope members to what's shown.** The avatar strip needs eight members, not
    two hundred; the full list belongs on the Members page behind pagination.
 
-Target: **a home visit under ~30 reads at any circle size.** That puts 300
-members inside the free tier and makes Blaze a rounding error if ever needed.
+Delivered, with one change of approach: the summary document holds **counts
+only**, not mirrored lists. Firestore bills documents *returned* rather than
+scanned, so an ordered `limit(6)` costs six reads against six hundred repos —
+a bounded query is the same cost order as a mirror while returning whole,
+current documents, where a mirror duplicates display fields that drift
+(ADR-021). Counts survive because no bounded query can produce one.
+
+Constant-cost is achieved; **under ~30 is M16.5's job** (progressive
+disclosure), since the remaining budget is dominated by blocks that most
+members should not be rendering at all.
 
 Not yet worth doing: caching aggregates in a scheduled job (needs a server),
 or Firestore bundles served from the CDN (real, but only after the above).

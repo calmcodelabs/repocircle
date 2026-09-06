@@ -77,12 +77,25 @@ export function watchRecentMembers(
   );
 }
 
-/** A single member — a profile is about one person, so it reads one document. */
-export function watchMember(gid: string, uid: string, cb: (m: Member | null) => void): Unsubscribe {
+/**
+ * A single member — a profile is about one person, so it reads one document.
+ * `null` means the document provably does not exist; an unreadable one stays
+ * `undefined` (Class A/B): "they left the circle" must never be how an outage
+ * looks.
+ */
+export function watchMember(
+  gid: string,
+  uid: string,
+  cb: (m: Member | null | undefined) => void,
+  onError?: (code: string) => void,
+): Unsubscribe {
   return onSnapshot(
     doc(db(), `groups/${gid}/members/${uid}`),
     (snap) => cb(snap.exists() ? ({ uid: snap.id, ...snap.data() } as Member) : null),
-    () => cb(null),
+    (e) => {
+      onError?.(e.code);
+      cb(undefined);
+    },
   );
 }
 

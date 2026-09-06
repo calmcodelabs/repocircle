@@ -76,7 +76,7 @@ export function watchMyAsks(gid: string, uid: string, cb: (asks: Ask[]) => void)
     collection(db(), `groups/${gid}/asks`),
     where('authorUid', '==', uid),
     orderBy('createdAt', 'desc'),
-    limit(10),
+    limit(6),
   );
   return onSnapshot(q, (snap) => cb(askDocs(snap)));
 }
@@ -86,7 +86,7 @@ export function watchMyClaims(gid: string, uid: string, cb: (asks: Ask[]) => voi
     collection(db(), `groups/${gid}/asks`),
     where('claimerUids', 'array-contains', uid),
     orderBy('createdAt', 'desc'),
-    limit(10),
+    limit(6),
   );
   return onSnapshot(q, (snap) => cb(askDocs(snap)));
 }
@@ -202,13 +202,15 @@ export async function deleteAsk(gid: string, ask: Pick<Ask, 'id' | 'state'>): Pr
  * and cannot fall back to cache, which made this the first thing to break whenever
  * the backend was unhappy. A circle resolves nowhere near 200 asks a week.
  */
+export const UNBLOCKED_CAP = 50;
+
 export async function unblockedThisWeek(gid: string): Promise<number> {
   const weekAgo = Timestamp.fromMillis(Date.now() - 7 * 86_400_000);
   const q = query(
     collection(db(), `groups/${gid}/asks`),
     where('state', '==', 'resolved'),
     where('resolvedAt', '>=', weekAgo),
-    limit(200),
+    limit(UNBLOCKED_CAP),
   );
   try {
     const snap = await getDocs(q);

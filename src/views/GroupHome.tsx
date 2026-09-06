@@ -3,6 +3,7 @@ import { sessionUser } from '../auth/session';
 import { activeGroup, activeSummary, myMembership } from '../data/activeGroup';
 import {
   claimAsk,
+  UNBLOCKED_CAP,
   unblockedThisWeek,
   watchMyAsks,
   watchMyClaims,
@@ -39,6 +40,7 @@ import { InviteSheet } from './InviteManager';
 import { CollabInbox } from './CollabInbox';
 import { sparkSeries } from '../poll/engine';
 import { Spark } from '../ui/Spark';
+import { ownsRepo } from '../util/skills';
 import { langClass } from '../util/lang';
 import { log, noteServerError } from '../util/log';
 import { relTime } from '../util/time';
@@ -210,8 +212,8 @@ export function GroupHome({ gid }: { gid: string }) {
     [newRepos, weekMs],
   );
   const forYou = useMemo(
-    () => forYouRepos.filter((r) => r.ownerUid !== uid && r.registeredBy !== uid).slice(0, 5),
-    [forYouRepos, uid],
+    () => forYouRepos.filter((r) => !(me && ownsRepo(r, me))).slice(0, 5),
+    [forYouRepos, me],
   );
   const forYouIds = useMemo(() => new Set(forYou.map((r) => r.id)), [forYou]);
   const mineFilteredIdeas = useMemo(
@@ -302,7 +304,7 @@ export function GroupHome({ gid }: { gid: string }) {
           </div>
           <div class="stat">
             <span class={unblocked > 0 ? 'stat__value stat__value--accent' : 'stat__value'}>
-              {unblocked}
+              {unblocked >= UNBLOCKED_CAP ? `${UNBLOCKED_CAP}+` : unblocked}
             </span>
             <span class="stat__label">unblocked · 7d</span>
           </div>
@@ -710,9 +712,7 @@ export function GroupHome({ gid }: { gid: string }) {
         <SkillsSheet
           gid={gid}
           me={me}
-          myRepos={[...(activeRepos ?? []), ...newRepos].filter(
-            (r) => r.ownerUid === uid || r.registeredBy === uid,
-          )}
+          myRepos={[...(activeRepos ?? []), ...newRepos].filter((r) => ownsRepo(r, me))}
           onClose={() => setSkillsOpen(false)}
         />
       )}

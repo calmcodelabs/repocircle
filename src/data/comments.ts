@@ -146,7 +146,7 @@ export function watchRecentComments(
     collectionGroup(db(), 'comments'),
     where('gid', '==', gid),
     orderBy('createdAt', 'desc'),
-    limit(30),
+    limit(12),
   );
   return onSnapshot(
     q,

@@ -95,7 +95,7 @@ export function watchAcceptedCollabs(
     collection(db(), `groups/${gid}/collabRequests`),
     where('state', '==', 'accepted'),
     orderBy('createdAt', 'desc'),
-    limit(15),
+    limit(12),
   );
   return onSnapshot(
     q,

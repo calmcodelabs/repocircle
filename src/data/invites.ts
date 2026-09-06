@@ -1,13 +1,14 @@
 import {
-  Timestamp,
   collection,
   doc,
   getDoc,
+  limit,
   onSnapshot,
   orderBy,
   query,
   serverTimestamp,
   setDoc,
+  Timestamp,
   updateDoc,
   type Unsubscribe,
 } from 'firebase/firestore';
@@ -66,7 +67,11 @@ export async function getInvite(gid: string, token: string): Promise<Invite | nu
 
 /** Admin-only by rule; UI must not mount this for non-admins. */
 export function watchInvites(gid: string, cb: (list: Invite[]) => void): Unsubscribe {
-  const q = query(collection(db(), `groups/${gid}/invites`), orderBy('createdAt', 'desc'));
+  const q = query(
+    collection(db(), `groups/${gid}/invites`),
+    orderBy('createdAt', 'desc'),
+    limit(50),
+  );
   return onSnapshot(q, (snap) => {
     cb(snap.docs.map((d) => ({ token: d.id, ...(d.data() as Omit<Invite, 'token'>) })));
   });
