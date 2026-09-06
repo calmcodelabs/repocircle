@@ -31,8 +31,18 @@ echo "Playwright $VERSION -> $IMAGE ($MODE)"
 # boots the Firestore emulator — and that is a JVM. The Playwright image does
 # not ship a JRE, so install one inside the container if it is missing. Doing it
 # here rather than in a Dockerfile keeps this to one file and one command.
+# The container runs as root — installing the JRE requires it — but everything
+# it writes into the mounted tree would then be root-owned, and the next local
+# run cannot even delete its own build output. So hand ownership back on the way
+# out, including when the tests fail, which is exactly when the artifacts matter.
+HOST_UID="$(id -u)"
+HOST_GID="$(id -g)"
+
 RUN_SCRIPT='
 set -e
+give_back() { chown -R '"$HOST_UID:$HOST_GID"' /work/test/e2e /work/reports /work/dist-emulator 2>/dev/null || true; }
+trap give_back EXIT
+
 if ! command -v java >/dev/null 2>&1; then
   echo "[visual] installing a headless JRE for the Firestore emulator"
   apt-get update -qq
