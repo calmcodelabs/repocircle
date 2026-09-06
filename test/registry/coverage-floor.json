@@ -3,12 +3,13 @@
   "recordedAt": "2026-09-06",
   "layers": [
     "component",
+    "e2e",
     "integration",
     "unit"
   ],
   "overall": {
-    "statements": 22.09,
-    "functions": 14.93,
-    "branches": 18.5
+    "statements": 57.62,
+    "functions": 51.32,
+    "branches": 50.21
   }
 }

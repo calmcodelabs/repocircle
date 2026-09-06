@@ -681,6 +681,81 @@ coverage. The pause screen's content is asserted in the component layer instead.
 Verified to actually catch a regression: a one-word copy change in `NotFound`
 produced 709 differing pixels on that screen and left the other two green.
 
+## 9f. The coverage push (2026-09-07)
+
+Merged statement coverage went from **22.09% to 57.62%**; the suite from 467 to
+**586 tests**. Layers: 54 static · 144 unit · 202 rules · 110 integration ·
+29 component · 47 E2E. 106 passing feature/layer cells, 112 still planned.
+
+### The structural change that mattered most
+
+**E2E was contributing nothing.** Playwright drives a built bundle, so every
+line the journeys executed counted as uncovered — the number said the views were
+untested while a run was stepping straight through them. Instrumenting the
+emulator build with `vite-plugin-istanbul` and pulling `window.__coverage__` out
+of each page lifted the figure from 22.09% to 37.27% on its own, without a
+single new test. That is coverage that always existed and was never counted.
+
+The instrumentation is emulator-only and `scripts/verify-build-delta.mjs` now
+asserts production carries neither the counters nor a source map. Source maps
+are excluded from the chunk-set comparison, because the instrumented build
+legitimately emits them and the check is about shipped code.
+
+### Where the rest came from
+
+- **Integration**, 47 → 110 tests: comments, ideas, announcements, invites,
+  circle creation and deletion, the circle wall, watches, the away-inbox,
+  availability and skills, and full lifecycles for repos, asks, sessions, polls
+  and collaboration requests.
+- **Unit**, 115 → 144: the formatting helpers, the diagnostics buffer, and the
+  token generator — including a distribution test, because rejection sampling
+  is the whole reason `randomToken` is not `b % 36`.
+- **E2E**, 20 → 47: every reachable screen against seeded data, plus the write
+  paths — RSVP, voting, claiming, picking skills, widening Home, sharing a repo,
+  founding a circle and creating an invite.
+
+### What this turned up
+
+**`deleteGroupEverything` orphans four collections.** It sweeps repos, asks,
+invites, collabRequests, integrations, auditLog and meta — it predates M15
+(ideas), M17 (announcements) and M19 (sessions, polls), and nobody extended it
+when those shipped. Deleting a circle leaves them behind: unreachable, but
+present and still costing storage. `circle.test.ts` documents the gap with a
+test that goes red when it is fixed, so closing it forces the comment to be read.
+
+**Two fixture gaps that looked like app bugs.** The scenario seeded no
+`users/{uid}` documents, so `forgetGroup` updated a missing document and
+returned permission-denied — which reads exactly like a rules failure. And
+`setPinnedRepo` to the value already pinned changes no keys, so the admin-key
+guard correctly does not fire; the test was wrong, not the rule.
+
+**A CSP gap in the emulator build.** `frame-src` did not allow the Auth
+emulator's relay iframe. Production is unaffected (it frames
+`*.firebaseapp.com`), and the app's own violation listener is what surfaced it.
+
+### Two habits worth keeping
+
+Both cost real time here. First: **the app writes typographic apostrophes**, and
+a Playwright regex containing `'` silently matches nothing — which presents as a
+*skipped* test rather than a failing one. That is how a suite stops testing
+things without anyone noticing. Second: **an accessible name is computed, not
+`textContent`**; `{ exact: true }` against a name read off the DOM matched
+nothing, and `locator('button', { hasText })` was the reliable form.
+
+### Where it stops, and why
+
+The remaining uncovered code is mostly deep interaction branches inside the
+largest views — `Repos.tsx`, `GroupSettings.tsx`, `Members.tsx`. Reaching them
+means many fine-grained journeys, each asserting less than the last, and the
+component layer cannot help because `vi.mock` does not work under this browser
+mode (§9c). 57.62% with `src/data`, `src/util` and `src/poll` well covered is a
+better place to stop than a higher number built out of assertions on markup.
+
+One test was written and then deleted rather than kept: the delete-circle
+confirmation could not be located deterministically, and a test that passes for
+reasons it cannot state is worse than none. That path is covered at the
+integration layer instead.
+
 ## 10. Dependencies and scripts
 
 New devDependencies (all dev-side; the app's 3 runtime deps are untouched):

@@ -56,10 +56,21 @@ function collect() {
   const merged = {};
   const layers = [];
   for (const layer of readdirSync(COV_DIR)) {
-    const file = join(COV_DIR, layer, 'coverage-final.json');
-    if (!existsSync(file)) continue;
+    const dir = join(COV_DIR, layer);
+    const final = join(dir, 'coverage-final.json');
+    if (existsSync(final)) {
+      layers.push(layer);
+      mergeInto(merged, JSON.parse(readFileSync(final, 'utf8')));
+      continue;
+    }
+    // The E2E layer writes one file per test rather than a single report —
+    // istanbul's counters come out of the browser, once per page.
+    const parts = readdirSync(dir).filter((f) => f.endsWith('.json'));
+    if (parts.length === 0) continue;
     layers.push(layer);
-    mergeInto(merged, JSON.parse(readFileSync(file, 'utf8')));
+    for (const part of parts) {
+      mergeInto(merged, JSON.parse(readFileSync(join(dir, part), 'utf8')));
+    }
   }
   return { merged, layers };
 }
@@ -142,11 +153,18 @@ const summary = {
   features,
 };
 mkdirSync(join(ROOT, 'reports', 'raw'), { recursive: true });
-writeFileSync(join(ROOT, 'reports', 'raw', 'coverage-summary.json'), JSON.stringify(summary, null, 2));
+writeFileSync(
+  join(ROOT, 'reports', 'raw', 'coverage-summary.json'),
+  JSON.stringify(summary, null, 2),
+);
 
 console.log(`Coverage merged from: ${layers.join(', ')}`);
-console.log(`  statements ${overall.statements}%  functions ${overall.functions}%  branches ${overall.branches}%`);
-console.log(`  ${Object.keys(perFile).length} source files, ${Object.keys(features).length} features attributed`);
+console.log(
+  `  statements ${overall.statements}%  functions ${overall.functions}%  branches ${overall.branches}%`,
+);
+console.log(
+  `  ${Object.keys(perFile).length} source files, ${Object.keys(features).length} features attributed`,
+);
 
 // ------------------------------------------------------------------ ratchet
 

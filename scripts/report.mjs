@@ -73,20 +73,22 @@ const tagsOf = (titles) => {
 
 function readRaw() {
   if (!existsSync(RAW)) return [];
-  return readdirSync(RAW)
-    .filter((f) => f.endsWith('.json'))
-    // Written by scripts/coverage.mjs, read separately below — it describes the
-    // source, not a run of tests.
-    .filter((f) => f !== 'coverage-summary.json')
-    .map((f) => {
-      try {
-        return { file: f, json: JSON.parse(readFileSync(join(RAW, f), 'utf8')) };
-      } catch {
-        console.warn(`  skipping unreadable ${f}`);
-        return null;
-      }
-    })
-    .filter(Boolean);
+  return (
+    readdirSync(RAW)
+      .filter((f) => f.endsWith('.json'))
+      // Written by scripts/coverage.mjs, read separately below — it describes the
+      // source, not a run of tests.
+      .filter((f) => f !== 'coverage-summary.json')
+      .map((f) => {
+        try {
+          return { file: f, json: JSON.parse(readFileSync(join(RAW, f), 'utf8')) };
+        } catch {
+          console.warn(`  skipping unreadable ${f}`);
+          return null;
+        }
+      })
+      .filter(Boolean)
+  );
 }
 
 /**
@@ -285,9 +287,7 @@ function main() {
   };
 
   const coveragePath = join(RAW, 'coverage-summary.json');
-  const coverage = existsSync(coveragePath)
-    ? JSON.parse(readFileSync(coveragePath, 'utf8'))
-    : null;
+  const coverage = existsSync(coveragePath) ? JSON.parse(readFileSync(coveragePath, 'utf8')) : null;
 
   const runDir = join(REPORTS, 'runs', runId);
   mkdirSync(join(runDir, 'layers'), { recursive: true });

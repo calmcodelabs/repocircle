@@ -1,4 +1,7 @@
 import { test as base, expect, type Page } from '@playwright/test';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { ghRoute } from '../fixtures/github.ts';
 
 /**
@@ -63,11 +66,32 @@ export async function resetData(page: Page): Promise<void> {
   if (!res.ok()) throw new Error(`reset failed: ${res.status()} ${await res.text()}`);
 }
 
+const COVERAGE_DIR = fileURLToPath(new URL('../../reports/raw/coverage/e2e', import.meta.url));
+
+/**
+ * Pull istanbul's counters out of the page before it closes.
+ *
+ * The emulator build is instrumented (vite.config.ts), so every journey leaves
+ * `window.__coverage__` behind. Without this the entire E2E layer contributes
+ * nothing to the merged figure, and the views the journeys walk read as
+ * untested — which is what the number said before this existed.
+ */
+async function collectCoverage(page: Page, id: string): Promise<void> {
+  const data = await page
+    .evaluate(() => (window as unknown as { __coverage__?: unknown }).__coverage__)
+    .catch(() => null);
+  if (!data) return;
+  mkdirSync(COVERAGE_DIR, { recursive: true });
+  writeFileSync(join(COVERAGE_DIR, `${id}.json`), JSON.stringify(data));
+}
+
 export const test = base.extend<{ app: Page }>({
-  app: async ({ page }, use) => {
+  app: async ({ page }, use, testInfo) => {
     await stubGitHub(page);
     await resetData(page);
     await use(page);
+    // After the test body, before the page is torn down.
+    await collectCoverage(page, `${testInfo.testId}-${testInfo.retry}`);
   },
 });
 

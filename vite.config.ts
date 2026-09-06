@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import preact from '@preact/preset-vite';
+import istanbul from 'vite-plugin-istanbul';
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as {
@@ -16,6 +17,10 @@ const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 
 // and the loopback connect-src below; scripts/verify-build-delta.mjs asserts
 // exactly that, so the artifact E2E runs against cannot quietly diverge from
 // the one users get.
+// The Auth emulator is framed, not just fetched — Firebase Auth relays through
+// an iframe, and production satisfies that with *.firebaseapp.com. The emulator
+// build needs the loopback equivalent or auth is blocked, which surfaces as an
+// unrelated-looking SDK error rather than as a policy violation.
 const EMULATOR_CONNECT = [
   'http://127.0.0.1:8080',
   'http://127.0.0.1:9099',
@@ -33,7 +38,7 @@ const cspFor = (emulator: boolean): string =>
     "font-src 'self'",
     "img-src 'self' https://avatars.githubusercontent.com https://opengraph.githubassets.com data:",
     `connect-src 'self' https://api.github.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://discord.com${emulator ? ' ' + EMULATOR_CONNECT.join(' ') : ''}`,
-    'frame-src https://*.firebaseapp.com',
+    `frame-src https://*.firebaseapp.com${emulator ? ' http://127.0.0.1:9099 http://localhost:9099' : ''}`,
     "base-uri 'none'",
     "form-action 'none'",
     "manifest-src 'self'",
@@ -48,6 +53,27 @@ export default defineConfig(({ mode }) => {
     base: '/repocircle/',
     plugins: [
       preact(),
+      // Coverage instrumentation, emulator builds only.
+      //
+      // The journeys walk most of src/views, and without this every line they
+      // execute counts as uncovered — the merged figure said the views were
+      // untested while an E2E run was stepping through them. Instrumenting the
+      // build the journeys actually run against is the only way to credit it.
+      //
+      // Never in production: the transform rewrites every function, and the
+      // emitted counters would ship. scripts/verify-build-delta.mjs asserts the
+      // two bundles still emit the same chunk set, so a leak here is caught.
+      ...(emulator
+        ? [
+            istanbul({
+              include: 'src/*',
+              exclude: ['node_modules', 'test/*'],
+              extension: ['.ts', '.tsx'],
+              requireEnv: false,
+              forceBuildInstrument: true,
+            }),
+          ]
+        : []),
       {
         // A service worker only updates when its bytes change. Ours was identical
         // across every deploy, so browsers kept the original — no cache cleanup,

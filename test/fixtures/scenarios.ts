@@ -239,6 +239,26 @@ export function buildScenario(size: Size, opts: ScenarioOpts = {}): Scenario {
     });
   });
 
+  // Every signed-in member has a users/{uid} document — ensureUserDoc writes one
+  // at sign-in, and several flows update it (joining appends the gid, leaving
+  // removes it). A scenario without them makes those writes fail against a
+  // missing document, which surfaces as permission-denied and looks like a
+  // rules bug rather than a fixture gap.
+  people.forEach((p) => {
+    docs.push({
+      path: `users/${p.login}`,
+      data: {
+        login: p.login,
+        name: p.name,
+        avatarUrl: avatar(p.login),
+        groupIds: [gid],
+        checklist: {},
+        createdAt: ago(90),
+        v: 1,
+      },
+    });
+  });
+
   const inviteToken = 'devtoken';
   docs.push({
     path: `groups/${gid}/invites/${inviteToken}`,

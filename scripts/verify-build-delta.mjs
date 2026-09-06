@@ -49,9 +49,17 @@ const appJs = (dir) =>
     .map((f) => readFileSync(join(dir, 'assets', f), 'utf8'))
     .join('\n');
 
-/** Chunk names with content hashes removed, so the two builds are comparable. */
+/**
+ * Chunk names with content hashes removed, so the two builds are comparable.
+ *
+ * Source maps are excluded: the emulator build is instrumented for coverage and
+ * that turns them on, which is a debugging aid rather than a difference in the
+ * code either build runs. Production carrying no maps is asserted separately —
+ * a map is a full copy of the source, and shipping one is its own problem.
+ */
 const chunkShape = (dir) =>
   readdirSync(join(dir, 'assets'))
+    .filter((f) => !f.endsWith('.map'))
     .map((f) => f.replace(/-[A-Za-z0-9_-]{6,}\./, '.'))
     .sort()
     .join(',');
@@ -75,6 +83,13 @@ for (const marker of EMULATOR_MARKERS) {
   check(!prodJs.includes(marker), `dist/ is free of "${marker}"`);
 }
 check(!cspOf(PROD).includes('127.0.0.1'), 'dist/ CSP has no loopback origin');
+check(
+  readdirSync(join(PROD, 'assets')).every((f) => !f.endsWith('.map')),
+  'dist/ ships no source maps',
+);
+// The coverage instrumentation must never reach production: it rewrites every
+// function and its counters would ship with them.
+check(!prodJs.includes('__coverage__'), 'dist/ carries no coverage instrumentation');
 
 console.log('\nEmulator bundle actually reaches the emulators');
 const emuJs = appJs(EMU);
@@ -94,9 +109,13 @@ const changed = prodCsp
   .map((d) => d.split(' ')[0])
   .concat(emuCsp.filter((d) => !prodCsp.includes(d)).map((d) => d.split(' ')[0]));
 const uniqueChanged = [...new Set(changed)];
+// Two directives may differ, and only these two: connect-src for the emulator
+// endpoints, frame-src for the Auth emulator's relay iframe. Anything else
+// means the artifact E2E validates has drifted from the one users receive.
+const ALLOWED_CSP_DELTA = ['connect-src', 'frame-src'];
 check(
-  uniqueChanged.length === 0 || uniqueChanged.every((d) => d === 'connect-src'),
-  `CSP differs only in connect-src (differs in: ${uniqueChanged.join(', ') || 'nothing'})`,
+  uniqueChanged.every((d) => ALLOWED_CSP_DELTA.includes(d)),
+  `CSP differs only in ${ALLOWED_CSP_DELTA.join('/')} (differs in: ${uniqueChanged.join(', ') || 'nothing'})`,
 );
 
 console.log('\nBoth builds stamp a service worker that can update');
