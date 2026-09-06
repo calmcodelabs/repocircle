@@ -54,6 +54,20 @@ the user's long-lived tabs are the real environment.
 Bit us: six same-day deploys; open tabs kept pre-M12 code; "so many things not
 working" was mostly one thing.
 
+**Root cause, found the hard way (2026-09-06):** the first attempt at this class
+(update check + reload bar) was unreachable code. A browser only updates a
+service worker when *sw.js's bytes* change, and ours had been byte-identical
+since M7 — so the worker never updated, activate() never re-ran, the shell cache
+was never cleaned, and controllerchange never fired. Its shell fetch also used
+the default HTTP cache, happily storing HTML up to max-age stale and pinning old
+asset hashes. Now: vite stamps the entry chunk hash into sw.js (build fails if
+the placeholder is missing), caches are per-build so activate() drops the last
+shell, and the shell is fetched with `cache: 'no-store'`.
+
+**Rule: any mechanism that only fires on change must itself be verified to
+change.** Version stamps, cache keys, ETags, poll cursors — assert it in the
+build or a test, never assume.
+
 ## Class E — On a live page, data is live; one-shot fetches go stale
 
 Pages built on onSnapshot must not mix in getDocs for sibling data that can

@@ -1,6 +1,6 @@
 import { defineConfig } from 'vitest/config';
 import preact from '@preact/preset-vite';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as {
   version: string;
@@ -24,10 +24,37 @@ const CSP = [
   "worker-src 'self'",
 ].join('; ');
 
+let buildId = 'dev';
+
 export default defineConfig({
   base: '/repocircle/',
   plugins: [
     preact(),
+    {
+      // A service worker only updates when its bytes change. Ours was identical
+      // across every deploy, so browsers kept the original — no cache cleanup,
+      // no controllerchange, and the update prompt could never fire. Stamp the
+      // main chunk's hash in so each build ships a genuinely different worker.
+      name: 'stamp-sw-build-id',
+      apply: 'build',
+      generateBundle(_options, bundle) {
+        const entry = Object.keys(bundle).find(
+          (f) => f.startsWith('assets/index-') && f.endsWith('.js'),
+        );
+        buildId = entry?.match(/index-([A-Za-z0-9_-]+)\.js/)?.[1] ?? 'dev';
+      },
+      writeBundle(options) {
+        const dir = options.dir ?? 'dist';
+        const swPath = `${dir}/sw.js`;
+        const sw = readFileSync(swPath, 'utf8');
+        // Fail the build rather than ship a worker that can never update — the
+        // failure mode is silent and costs days of "why is it still broken".
+        if (!sw.includes('__BUILD_ID__')) {
+          throw new Error('sw.js has no __BUILD_ID__ placeholder — updates would stop working');
+        }
+        writeFileSync(swPath, sw.replace(/__BUILD_ID__/g, buildId));
+      },
+    },
     {
       name: 'inject-csp',
       apply: 'build',
