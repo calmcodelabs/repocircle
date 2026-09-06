@@ -5,7 +5,9 @@ import globals from 'globals';
 export default tseslint.config(
   // docs/ holds build tooling (Node scripts) and generated assets, not app
   // source — linting it with the browser config fails on Node globals.
-  { ignores: ['dist/', 'node_modules/', 'docs/'] },
+  // dist-emulator/ is the E2E build (TESTING.md §3) and reports/ is generated —
+  // both are output, neither is source.
+  { ignores: ['dist/', 'dist-emulator/', 'reports/', 'node_modules/', 'docs/'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

@@ -1,7 +1,9 @@
 # Dependencies / build
 node_modules/
 dist/
+dist-emulator/
 .vite/
+.vitest/
 
 # Local env & secrets (none should ever exist, but belt-and-braces)
 .env
@@ -29,3 +31,7 @@ design-refs/
 # demo video build artifacts (regenerate with docs/slides/build-video.sh)
 docs/slides/repocircle-demo.mp4
 docs/slides/.parts/
+
+# Generated test reports (TESTING.md §5) — regenerate with `npm run report`.
+# Local-first for now; a cloud store later syncs this same tree.
+reports/
