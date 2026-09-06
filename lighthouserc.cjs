@@ -2,17 +2,20 @@
  * Lighthouse budgets (TESTING.md §2, L6; ARCHITECTURE §7).
  *
  * STATUS (2026-09-07): this config is correct but Lighthouse aborts with NO_FCP
- * on this machine — "the page did not paint any content" — and the cause is not
- * yet found. Ruled out with evidence, so nobody repeats the search: the base
+ * — "the page did not paint any content" — on this machine AND on GitHub's
+ * Ubuntu runners. The cause is not known. Ruled out with evidence, so nobody repeats the search: the base
  * path (assets 404'd until the bundle was staged under /repocircle/), the
  * static server's MIME types (LHCI's own server does not set text/javascript,
  * hence scripts/serve-static.mjs), the entrance animation and reduced motion,
  * screen emulation, CPU throttling, the Content-Security-Policy, the Chrome
- * binary (Playwright's chromium fails identically), and public/recover.js. A
+ * binary (Playwright's chromium fails identically), public/recover.js, and the
+ * machine itself. A
  * trivial static page on the same server, at the same subpath, audits fine —
  * and the real bundle renders correctly and quickly in headless Chromium when
- * driven by Playwright. So it is something about this page under Lighthouse
- * specifically, and it may simply work on a clean CI runner.
+ * driven by Playwright, and a clean Ubuntu runner fails identically (full suite
+ * run 1, 2026-09-07) — so this is the app under Lighthouse, not one machine's
+ * quirk. The next thing worth trying is Lighthouse's own trace artifacts
+ * (`--save-assets`), which were never captured.
  *
  * Consequently the perf job in full.yml is non-blocking, and the *enforced*
  * weight budget remains the gzip check in scripts/verify-artifact.mjs, which

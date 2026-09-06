@@ -604,12 +604,12 @@ That per-feature table is the useful artifact — `poll-engine` is at 73.6% whil
 `invites`, `group-delete` and `circle-wall` are at 0%, which is a far better
 backlog than a single global percentage.
 
-### Lighthouse — wired, but not running here
+### Lighthouse — wired, and not working anywhere
 
 The config, the staging script and the CI job are all in place and correct, and
-the job is in `full.yml` as **non-blocking**. It does not run on this machine:
-Lighthouse aborts every attempt with `NO_FCP` — "the page did not paint any
-content".
+the job is in `full.yml` as **non-blocking**. It does not run on the author's
+machine, and it does not run on GitHub's runners either: Lighthouse aborts every
+attempt with `NO_FCP` — "the page did not paint any content".
 
 Ruled out, with evidence, so nobody repeats the search:
 
@@ -622,12 +622,17 @@ Ruled out, with evidence, so nobody repeats the search:
 | `Content-Security-Policy` blocking instrumentation | Stripped from a staged copy; unchanged |
 | Chrome binary | Playwright's chromium fails identically |
 | `public/recover.js` navigating away after 3s | Removed from a staged copy; unchanged |
+| The machine | A clean Ubuntu CI runner fails identically |
 
 Meanwhile a trivial static page **on the same server at the same subpath**
 audits fine (FCP 0.6s), and the real bundle renders correctly and quickly in
 headless Chromium when driven by Playwright — measured, with zero console
-errors. So it is specific to this page under Lighthouse, and it may simply work
-on a clean runner.
+errors.
+
+**A clean Ubuntu runner fails identically** (full suite run 1, 2026-09-07), so
+the "it may work elsewhere" hypothesis is gone as well. This is the app under
+Lighthouse, and the cause is unknown. The next thing worth trying is
+Lighthouse's own trace artifacts (`--save-assets`), which were never captured.
 
 The **enforced** weight budget is unaffected: it is the gzip check in
 `scripts/verify-artifact.mjs`, it runs in the fast gate, and it is the number
