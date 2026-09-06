@@ -23,13 +23,13 @@ An invite-only space where a group of engineers can see each other's work in pro
 
 <br>
 
-## The problem
+## Why a circle
 
-Half your circle would help with what you're building. None of them know you're building it.
+Now is the best time to build. Tooling stopped being the bottleneck — an idea can be running by the weekend.
 
-Work stays invisible until it happens to come up in conversation. Ideas stay in one head because pitching them feels like an interruption. And a request for help, posted to a busy channel, is gone within the hour.
+What's scarce is everything around that. Which idea is worth the weekend. Whether anyone else finds it interesting. Whether the person who'd make it good ever hears about it.
 
-RepoCircle is the shared window: your circle's repositories, the ideas that aren't repositories yet, and a short path from *"that looks interesting"* to *"I'm building it with you."*
+A circle is where those get answered. Ideas are argued over before they become code, work stays visible while it's still rough, and the path from *"that looks interesting"* to *"I'm building it with you"* is one tap long.
 
 **No leaderboards, no streaks, no contribution counts.** That's a rule, not an omission — nothing here ranks one member against another.
 
