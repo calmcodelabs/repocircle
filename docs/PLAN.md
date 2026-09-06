@@ -376,27 +376,24 @@ and each block states its read cost against the M16 target (<30/visit).
   loaded does not hide the repo blocks. Measured: a new member's Home costs
   ~70 reads against a settled member's ~130, both constant at any circle size.
 
-- **M17 · Arrival.** Three small features shaping the first ten minutes.
-  (1) *Join questions* (Discord Community Onboarding): Join.tsx collects two
-  chip-only answers before the join commits — "what can you help with"
-  (HELP_AREAS, closed vocabulary, already validated by validSkills()) and "what
-  do you want to build" (DOMAIN_TAGS, new member.domainTags key: allowlist +
-  hasOnly + ≤4 — the arc's one member-doc rules change). Answers ride the
-  member-doc create that joinViaInvite already performs: one write, zero new
-  reads, and the first Home render is personalised because the M11 matcher has
-  skills to join on. Both questions skippable ("choose later" = today's exact
-  behaviour); a rejoin with helpWith already set skips the questions; SkillsSheet
-  remains the edit path. Clickable options only, never free text — the closed
-  vocabulary is what makes the matcher work.
-  (2) *Announcements* (Viva Engage post types): groups/{gid}/announcements/{id},
-  admin-only create (body ≤280), latest rendered above the Home stats via a
-  limit-1 query, history in a sheet that queries the last 10 only when opened,
-  audit line on post, per-user dismissal via localStorage seen-stamp. FAB
-  chooser gains an admin-only third row.
-  (3) *Bookmarks + pinned repo* (Slack channel bookmarks): links[] ≤6 (https-
-  validated) and pinnedRepoId on the summary doc, admin-only keys, edited from
-  Settings; the pinned repo renders first in the repos block under a "this
-  month" label — position, never score. Read cost: +1 (announcements query).
+- **M17 · Arrival (shipped 2026-09-06).** Three features shaping the first ten
+  minutes. *Join questions* (Discord Community Onboarding): Join.tsx asks two
+  chip-only questions before the join commits — what can you help with
+  (HELP_AREAS) and what do you want to build (`member.domainTags`, a new closed
+  vocabulary in the rules). Both ride the member document joinViaInvite already
+  writes, so it is one write and no extra reads, and answering the first also
+  ticks `saidHelpWith`. Chips rather than text is the whole point: a closed
+  vocabulary is what the M11 matcher can join on, and it means the matcher —
+  built and tested since M11 — finally has something to work with before Home
+  first renders instead of waiting for someone to find the skills sheet.
+  *Announcements* (Viva Engage post types): `groups/{gid}/announcements/{id}`,
+  admin-only and **append-only** — an announcement is a statement made at a
+  moment, so correcting it means posting again, not rewriting history. Home
+  reads exactly one (limit-1 query), dismissal is per-member in localStorage,
+  and the M15 FAB chooser gains an admin-only third row. *Circle wall* (Slack
+  channel bookmarks): up to six https links and one pinned repo, both on the
+  summary document Home already reads, so they cost nothing to show; the pin is
+  a position an admin states, never a score (ADR-019). Rules 134 → 152.
 
 - **M18 · Triage.** The personal layer; no new collections, two rules touches.
   (1) *Actionable inbox* (Slack Activity 2.0 — "recall is finding the message

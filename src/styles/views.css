@@ -1020,3 +1020,33 @@
   border: 1px dashed var(--line-strong);
   border-radius: var(--r-input);
 }
+
+/* M17 — the two questions the join screen asks at the door. */
+.join__ask {
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+}
+
+/* M17 — circle-level notices: announcement, wall links, the pinned repo. */
+.announce {
+  border-color: var(--accent-line);
+  background: var(--grad-accent-dim);
+}
+.announce__body {
+  margin: 0;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+.circlelinks {
+  gap: 6px;
+}
+.pinned {
+  align-items: center;
+  gap: 10px;
+}
+.pinned__pitch {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

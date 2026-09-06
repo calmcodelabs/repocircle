@@ -6,6 +6,7 @@ import { invalidateDiscordCache, testDiscord, type DiscordConfig } from '../noti
 import { activeGroup, activeMembers, myMembership, useCircleMembers } from '../data/activeGroup';
 import { deleteGroupEverything, deleteGroupProgress } from '../data/deleteGroup';
 import { updateGroupProfile } from '../data/groups';
+import { CircleWallCard } from './CircleWallCard';
 import { InviteManager } from './InviteManager';
 import { leaveGroup } from '../data/members';
 import { myProfile } from '../data/users';
@@ -30,6 +31,7 @@ export function GroupSettings({ gid }: { gid: string }) {
           <InviteManager gid={gid} />
         </section>
       )}
+      {iAmAdmin && <CircleWallCard gid={gid} />}
       {iAmAdmin && <DiscordCard gid={gid} />}
       <LeaveCard gid={gid} />
       {iAmAdmin && <DeleteCard gid={gid} />}

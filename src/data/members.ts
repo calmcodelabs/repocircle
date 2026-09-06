@@ -99,10 +99,19 @@ export function watchMember(
   );
 }
 
+/**
+ * M17 — what the join screen asked at the door. Both optional, both from closed
+ * vocabularies (chips, never a text field), and both written into the member
+ * document this function was already creating: one write, no extra reads, and
+ * the M11 matcher has something to join on before Home first renders.
+ */
+export type JoinAnswers = { helpWith: HelpArea[]; domainTags: string[] };
+
 export async function joinViaInvite(
   gid: string,
   invite: Invite,
   profile: MyProfile,
+  answers?: JoinAnswers,
 ): Promise<void> {
   await ensureUserDoc(profile);
   const batch = writeBatch(db());
@@ -112,9 +121,10 @@ export async function joinViaInvite(
     name: profile.name,
     avatarUrl: profile.avatarUrl,
     availability: { status: 'free' },
-    helpWith: [],
+    helpWith: answers?.helpWith ?? [],
     learning: [],
-    checklist: {},
+    ...(answers?.domainTags?.length ? { domainTags: answers.domainTags } : {}),
+    checklist: answers?.helpWith?.length ? { saidHelpWith: true } : {},
     joinedAt: serverTimestamp(),
     joinedVia: invite.token,
     v: 1,

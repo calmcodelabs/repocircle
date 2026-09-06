@@ -41,6 +41,7 @@ import { doc as fsDoc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { watchRecentComments, type RecentComment } from '../data/comments';
 import { CommentBody } from './CommentBody';
+import { AnnouncementBar, CircleLinks, PinnedRepo } from './CircleNotices';
 import { ChecklistCard } from './ChecklistCard';
 import { InviteSheet } from './InviteManager';
 import { CollabInbox } from './CollabInbox';
@@ -738,6 +739,8 @@ export function GroupHome({ gid }: { gid: string }) {
 
   return (
     <main class="stack">
+      <AnnouncementBar gid={gid} />
+      {summary?.pinnedRepoId && <PinnedRepo gid={gid} repoId={summary.pinnedRepoId} />}
       <section class="home__head rise">
         {g === undefined ? (
           <span class="skeleton" />
@@ -745,6 +748,7 @@ export function GroupHome({ gid }: { gid: string }) {
           <>
             <h2>{g?.name}</h2>
             {g?.description && <p class="lead">{g.description}</p>}
+            <CircleLinks summary={summary} />
           </>
         )}
         <div class="stats stats--divided home__stats">

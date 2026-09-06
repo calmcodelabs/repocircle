@@ -16,6 +16,7 @@ import { canWriteRole } from '../data/types';
 import { Pill } from '../ui/Pill';
 import { AskComposer } from './AskComposer';
 import { IdeaComposer } from './IdeaComposer';
+import { AnnouncementComposer } from './AnnouncementComposer';
 import { Sheet } from '../ui/Sheet';
 import { Icon } from '../ui/Icon';
 import { startPolling, stopPolling } from '../poll/engine';
@@ -38,6 +39,7 @@ export function GroupShell({ gid, children }: { gid: string; children: Component
   const [askOpen, setAskOpen] = useState(false);
   const [ideaOpen, setIdeaOpen] = useState(false);
   const [chooserOpen, setChooserOpen] = useState(false);
+  const [announceOpen, setAnnounceOpen] = useState(false);
 
   useEffect(() => setActiveGroup(gid), [gid]);
   useEffect(() => {
@@ -210,11 +212,31 @@ export function GroupShell({ gid, children }: { gid: string; children: Component
                 <span class="small dim">You need a hand with something you're building.</span>
               </span>
             </button>
+            {myMembership.value?.role === 'admin' && (
+              <button
+                class="row share__opt"
+                onClick={() => {
+                  setChooserOpen(false);
+                  setAnnounceOpen(true);
+                }}
+              >
+                <span class="tile">
+                  <Icon name="users" size={19} />
+                </span>
+                <span class="share__text">
+                  <b>An announcement</b>
+                  <span class="small dim">
+                    Something the whole circle needs to know. Admins only.
+                  </span>
+                </span>
+              </button>
+            )}
           </div>
         </Sheet>
       )}
       {askOpen && <AskComposer gid={gid} onClose={() => setAskOpen(false)} />}
       {ideaOpen && <IdeaComposer gid={gid} onClose={() => setIdeaOpen(false)} />}
+      {announceOpen && <AnnouncementComposer gid={gid} onClose={() => setAnnounceOpen(false)} />}
     </div>
   );
 }

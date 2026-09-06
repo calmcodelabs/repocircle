@@ -12,7 +12,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { resilientWatch } from './resilientWatch';
-import type { CircleSummary } from './types';
+import type { CircleSummary, SummaryLink } from './types';
 
 /**
  * M16 — the circle summary doc (ADR-021). Home used to answer "how many
@@ -119,6 +119,20 @@ export async function rebuildSummary(gid: string): Promise<void> {
     },
     { merge: true },
   );
+}
+
+/**
+ * M17 — the admin surface. These are the only summary keys the rules restrict
+ * to admins, which is why they go through their own writer rather than bump():
+ * a failure here is a failed action the admin should hear about, not a mirror
+ * update worth swallowing.
+ */
+export async function setCircleLinks(gid: string, links: SummaryLink[]): Promise<void> {
+  await setDoc(summaryRef(gid), { links: links.slice(0, 6), v: 1 }, { merge: true });
+}
+
+export async function setPinnedRepo(gid: string, repoId: string | null): Promise<void> {
+  await setDoc(summaryRef(gid), { pinnedRepoId: repoId, v: 1 }, { merge: true });
 }
 
 export async function summaryExists(gid: string): Promise<boolean> {

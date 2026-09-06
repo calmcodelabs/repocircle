@@ -42,6 +42,8 @@ export type Member = {
   availability: Availability;
   helpWith: HelpArea[];
   learning: string[];
+  /** What they want to build — asked at the door (M17), same closed vocabulary. */
+  domainTags?: string[];
   checklist: Record<string, boolean>;
   repoSync?: RepoSync;
   joinedAt: Timestamp | null;

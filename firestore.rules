@@ -31,13 +31,22 @@ service cloud.firestore {
     // free text but bounded. Rules can't loop, so with size capped at 6 the item
     // checks are spelled out per index (an index past the end passes vacuously).
     function learningItem(l, i) { return l.size() <= i || (l[i] is string && l[i].size() <= 24); }
+    // M17: what a member wants to build. Closed vocabulary for the same reason
+    // helpWith is closed — the join screen offers chips, never a text field, so
+    // the values stay joinable rather than becoming prose.
+    function validDomainTags(d) {
+      return !('domainTags' in d) || (d.domainTags is list && d.domainTags.size() <= 4
+        && d.domainTags.hasOnly(['web', 'mobile', 'ML', 'tooling', 'game', 'hardware',
+                                 'data', 'other']));
+    }
     function validSkills(d) {
       return d.helpWith is list && d.helpWith.size() <= 5
         && d.helpWith.hasOnly(['feedback', 'frontend', 'backend', 'ml', 'design'])
         && d.learning is list && d.learning.size() <= 6
         && learningItem(d.learning, 0) && learningItem(d.learning, 1)
         && learningItem(d.learning, 2) && learningItem(d.learning, 3)
-        && learningItem(d.learning, 4) && learningItem(d.learning, 5);
+        && learningItem(d.learning, 4) && learningItem(d.learning, 5)
+        && validDomainTags(d);
     }
     function inviteValid(gid, token) {
       let inv = get(/databases/$(database)/documents/groups/$(gid)/invites/$(token)).data;
@@ -136,7 +145,7 @@ service cloud.firestore {
         allow create: if signedIn() && me() == uid
           && request.resource.data.keys().hasOnly(
                ['role', 'login', 'name', 'avatarUrl', 'availability', 'helpWith', 'learning',
-                'checklist', 'repoSync', 'joinedAt', 'joinedVia', 'v'])
+                'domainTags', 'checklist', 'repoSync', 'joinedAt', 'joinedVia', 'v'])
           && str(request.resource.data.login, 1, 60)
           && validSkills(request.resource.data)
           && (
@@ -152,8 +161,8 @@ service cloud.firestore {
         allow update: if
           (me() == uid && isMember(gid)
             && request.resource.data.diff(resource.data).affectedKeys()
-                 .hasOnly(['availability', 'helpWith', 'learning', 'checklist', 'repoSync',
-                           'login', 'name', 'avatarUrl'])
+                 .hasOnly(['availability', 'helpWith', 'learning', 'domainTags', 'checklist',
+                           'repoSync', 'login', 'name', 'avatarUrl'])
             && validSkills(request.resource.data))
           ||
           (isAdmin(gid) && me() != uid
@@ -543,6 +552,20 @@ service cloud.firestore {
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['state']))
         );
         allow delete: if isAdmin(gid); // group-deletion sweep only; app offers no per-request delete
+      }
+
+      // ---------- announcements — the circle's voice (M17) ----------
+      // Admin-only, append-only. An announcement is a statement made at a
+      // moment; correcting it means posting again, not rewriting history.
+      match /announcements/{annId} {
+        allow read: if isMember(gid);
+        allow create: if isAdmin(gid)
+          && request.resource.data.keys().hasOnly(
+               ['body', 'authorUid', 'authorLogin', 'authorAvatarUrl', 'createdAt', 'v'])
+          && request.resource.data.authorUid == me()
+          && str(request.resource.data.body, 1, 280);
+        allow update: if false;
+        allow delete: if isAdmin(gid);
       }
 
       // ---------- meta/summary — Home's one read (M16, ADR-021) ----------

@@ -13,7 +13,7 @@ import { EmptyState } from '../ui/EmptyState';
 import { Mark } from '../ui/Mark';
 import { Pill } from '../ui/Pill';
 import { toast } from '../ui/Toast';
-import type { Invite } from '../data/types';
+import { DOMAIN_TAGS, HELP_AREAS, type HelpArea, type Invite } from '../data/types';
 
 const STATE_LINE: Record<Exclude<InviteState, 'valid'>, string> = {
   missing: 'This invite link doesn’t exist — ask for a fresh one.',
@@ -25,6 +25,15 @@ const STATE_LINE: Record<Exclude<InviteState, 'valid'>, string> = {
 export function Join({ gid, token }: { gid: string; token: string }) {
   const [invite, setInvite] = useState<Invite | null | undefined>(undefined);
   const [busy, setBusy] = useState(false);
+  // Asked at the door (M17). Chips only — a closed vocabulary is what lets the
+  // matcher join on these instead of storing prose nobody can query.
+  const [helpWith, setHelpWith] = useState<HelpArea[]>([]);
+  const [domains, setDomains] = useState<string[]>([]);
+
+  function toggle<T>(list: T[], set: (v: T[]) => void, value: T, max: number) {
+    if (list.includes(value)) set(list.filter((x) => x !== value));
+    else if (list.length < max) set([...list, value]);
+  }
   const uid = sessionUser.value?.uid;
 
   useEffect(() => {
@@ -64,7 +73,7 @@ export function Join({ gid, token }: { gid: string; token: string }) {
     }
     setBusy(true);
     try {
-      await joinViaInvite(gid, invite, profile);
+      await joinViaInvite(gid, invite, profile, { helpWith, domainTags: domains });
       toast(`Welcome to ${invite.groupName ?? 'the group'}`);
       navigate(`#/g/${gid}`);
     } catch (e) {
@@ -121,6 +130,40 @@ export function Join({ gid, token }: { gid: string; token: string }) {
                   </div>
                 </div>
               )}
+              <div class="join__ask stack">
+                <span class="small dim">What can you help with?</span>
+                <div class="row wrap">
+                  {HELP_AREAS.map((a) => (
+                    <button
+                      key={a.key}
+                      type="button"
+                      class={`chip ${helpWith.includes(a.key) ? 'chip--accent' : ''}`}
+                      aria-pressed={helpWith.includes(a.key)}
+                      onClick={() => toggle(helpWith, setHelpWith, a.key, 5)}
+                    >
+                      {a.label}
+                    </button>
+                  ))}
+                </div>
+                <span class="small dim">What do you want to build?</span>
+                <div class="row wrap">
+                  {DOMAIN_TAGS.map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      class={`chip ${domains.includes(t) ? 'chip--accent' : ''}`}
+                      aria-pressed={domains.includes(t)}
+                      onClick={() => toggle(domains, setDomains, t, 4)}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+                <span class="small faint">
+                  Both optional, and you can change them any time. They are how the circle’s repos
+                  find you.
+                </span>
+              </div>
               <div class="row join__role">
                 <span class="small dim">You’ll join as</span>
                 <Chip tone={invite.role === 'guest' ? 'default' : 'accent'}>{invite.role}</Chip>
