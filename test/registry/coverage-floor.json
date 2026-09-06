@@ -1,0 +1,14 @@
+{
+  "note": "No-regression floor for merged coverage. Raise it when coverage rises; it must never be lowered to make a run pass. Regenerate with `node scripts/coverage.mjs --update-floor`.",
+  "recordedAt": "2026-09-06",
+  "layers": [
+    "component",
+    "integration",
+    "unit"
+  ],
+  "overall": {
+    "statements": 22.38,
+    "functions": 15,
+    "branches": 18.51
+  }
+}
