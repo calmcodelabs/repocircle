@@ -48,6 +48,7 @@ function toCandidate(
   return {
     key: d.ref.path,
     kind,
+    subject: s.kind,
     gid: s.gid,
     actorUid,
     actorLogin,

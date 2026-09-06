@@ -187,6 +187,7 @@ service cloud.firestore {
                 'ownerUid', 'registeredBy', 'status', 'demoUrl', 'archived', 'lastEventAt',
                 'poll', 'stats7d', 'daily', 'pitch', 'needs', 'domainTags', 'seekingOwner',
                 'adoptedByUid', 'adoptedByLogin', 'adoptedFromLogin', 'adoptedAt', 'ownerLeft',
+                'ideaId', 'ideaByLogin',
                 'interestCount', 'commentCount', 'createdAt', 'v'])
           && request.resource.data.registeredBy == resource.data.registeredBy
           && request.resource.data.status in ['idea', 'building', 'paused', 'done']
@@ -202,7 +203,7 @@ service cloud.firestore {
             !request.resource.data.diff(resource.data).affectedKeys()
                .hasAny(['status', 'demoUrl', 'archived', 'pitch', 'needs', 'domainTags',
                         'seekingOwner', 'ownerUid', 'adoptedByUid', 'adoptedByLogin',
-                        'adoptedFromLogin', 'adoptedAt', 'ownerLeft'])
+                        'adoptedFromLogin', 'adoptedAt', 'ownerLeft', 'ideaId', 'ideaByLogin'])
             || isAdmin(gid)
             || resource.data.ownerUid == me()
             || resource.data.registeredBy == me()
@@ -295,6 +296,113 @@ service cloud.firestore {
             && request.resource.data.issuesOpened is int && request.resource.data.issuesOpened >= 0
             && request.resource.data.releases is int && request.resource.data.releases >= 0;
           allow delete: if isMember(gid) && canManageRepo(gid, repoId);
+        }
+      }
+
+      // ---------- ideas — repos minus the code (M15) ----------
+      // Same vocabulary and mechanics as repos (pitch/needs/tags, comments,
+      // interests); one lifecycle: open → germinated (linked to a real repo) or
+      // parked. Facts never move — germination links both ways and leaves the
+      // idea doc as the historical record.
+      match /ideas/{ideaId} {
+        allow read: if isMember(gid);
+        allow create: if canWrite(gid)
+          && request.resource.data.keys().hasOnly(
+               ['title', 'pitch', 'detail', 'domainTags', 'needs', 'authorUid', 'authorLogin',
+                'authorAvatarUrl', 'state', 'interestCount', 'commentCount', 'createdAt', 'v'])
+          && request.resource.data.authorUid == me()
+          && request.resource.data.state == 'open'
+          && str(request.resource.data.title, 4, 80)
+          && str(request.resource.data.pitch, 4, 200)
+          && optStr(request.resource.data, 'detail', 1000)
+          && (!('domainTags' in request.resource.data)
+              || (request.resource.data.domainTags is list
+                  && request.resource.data.domainTags.size() <= 4))
+          && (!('needs' in request.resource.data) || request.resource.data.needs == null
+              || request.resource.data.needs in ['feedback', 'frontend', 'backend', 'ml', 'design', 'anything'])
+          && request.resource.data.interestCount == 0
+          && request.resource.data.commentCount == 0;
+        allow update: if canWrite(gid) && (
+          // author (or admin): edit the pitch, park/reopen — never fake a germination
+          ((resource.data.authorUid == me() || isAdmin(gid))
+            && request.resource.data.authorUid == resource.data.authorUid
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['title', 'pitch', 'detail', 'domainTags', 'needs', 'state',
+                           'interestCount', 'commentCount'])
+            && str(request.resource.data.title, 4, 80)
+            && str(request.resource.data.pitch, 4, 200)
+            && optStr(request.resource.data, 'detail', 1000)
+            && request.resource.data.state in ['open', 'parked'])
+          ||
+          // germination: author, admin, or the owner/registrant of the repo it
+          // became — someone ELSE building your idea is the point. The repo must
+          // really exist here; the doc stays as the record.
+          (resource.data.state in ['open', 'parked']
+            && request.resource.data.state == 'germinated'
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['state', 'repoId', 'repoFullName', 'germinatedAt',
+                           'germinatedByUid', 'germinatedByLogin'])
+            && request.resource.data.germinatedByUid == me()
+            && str(request.resource.data.repoFullName, 3, 140)
+            && exists(/databases/$(database)/documents/groups/$(gid)/repos/$(request.resource.data.repoId))
+            && (resource.data.authorUid == me() || isAdmin(gid)
+                || repoData(gid, request.resource.data.repoId).ownerUid == me()
+                || repoData(gid, request.resource.data.repoId).registeredBy == me()))
+          ||
+          // mirrors: anyone writing may bump the counters
+          (request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['interestCount', 'commentCount'])
+            && request.resource.data.interestCount is int
+            && request.resource.data.commentCount is int)
+        );
+        allow delete: if resource.data.authorUid == me() || isAdmin(gid);
+
+        // Discussion — identical shape to repo/ask comments so collection-group
+        // reads, mentions and the away-inbox cover ideas for free.
+        match /comments/{commentId} {
+          allow read: if isMember(gid);
+          allow create: if canWrite(gid)
+            && request.resource.data.keys().hasOnly(
+                 ['authorUid', 'authorLogin', 'authorAvatarUrl', 'body', 'parentId',
+                  'mentions', 'repoRefs', 'pinned', 'gid', 'replyToUid', 'createdAt',
+                  'editedAt', 'v'])
+            && request.resource.data.authorUid == me()
+            && str(request.resource.data.body, 1, 1000)
+            && request.resource.data.pinned == false
+            && (!('gid' in request.resource.data) || request.resource.data.gid == gid)
+            && optStr(request.resource.data, 'replyToUid', 128)
+            && (!('mentions' in request.resource.data)
+                || (request.resource.data.mentions is list
+                    && request.resource.data.mentions.size() <= 10));
+          allow update: if isMember(gid) && (
+            (resource.data.authorUid == me() && canWrite(gid)
+              && request.resource.data.diff(resource.data).affectedKeys()
+                   .hasOnly(['body', 'mentions', 'repoRefs', 'editedAt'])
+              && str(request.resource.data.body, 1, 1000))
+            || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pinned'])
+                && (isAdmin(gid)
+                    || get(/databases/$(database)/documents/groups/$(gid)/ideas/$(ideaId)).data.authorUid == me()))
+          );
+          allow delete: if resource.data.authorUid == me() || isAdmin(gid)
+            || get(/databases/$(database)/documents/groups/$(gid)/ideas/$(ideaId)).data.authorUid == me();
+        }
+
+        // "I'd build this" — one doc per member; routes the author's away-inbox,
+        // so repoOwnerUid must be the idea author (spoof-checked like repos').
+        match /interests/{uid} {
+          allow read: if isMember(gid);
+          allow create: if canWrite(gid) && me() == uid
+            && request.resource.data.keys().hasOnly(
+                 ['login', 'avatarUrl', 'note', 'gid', 'repoOwnerUid', 'createdAt', 'v'])
+            && str(request.resource.data.login, 1, 60)
+            && optStr(request.resource.data, 'note', 140)
+            && (!('gid' in request.resource.data) || request.resource.data.gid == gid)
+            && (!('repoOwnerUid' in request.resource.data)
+                || request.resource.data.repoOwnerUid ==
+                     get(/databases/$(database)/documents/groups/$(gid)/ideas/$(ideaId)).data.authorUid);
+          allow update: if false;
+          allow delete: if me() == uid || isAdmin(gid)
+            || get(/databases/$(database)/documents/groups/$(gid)/ideas/$(ideaId)).data.authorUid == me();
         }
       }
 

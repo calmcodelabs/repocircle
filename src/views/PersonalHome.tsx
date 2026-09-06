@@ -86,11 +86,14 @@ export function PersonalHome() {
     };
   }, [u?.uid, me?.login, groupIds.join(',')]);
 
-  const KIND_LINE: Record<InboxItem['kind'], string> = {
-    reply: 'replied to you',
-    mention: 'mentioned you',
-    interest: 'raised a hand for your repo',
-  };
+  const kindLine = (i: InboxItem): string =>
+    i.kind === 'reply'
+      ? 'replied to you'
+      : i.kind === 'mention'
+        ? 'mentioned you'
+        : i.subject === 'idea'
+          ? 'would build your idea'
+          : 'raised a hand for your repo';
 
   return (
     <div class="app">
@@ -148,7 +151,7 @@ export function PersonalHome() {
                   {item.isNew && <span class="dot dot--accent" aria-label="new" />}
                   <Avatar login={item.actorLogin} src={item.actorAvatarUrl} />
                   <b>@{item.actorLogin}</b>
-                  <span>{KIND_LINE[item.kind]}</span>
+                  <span>{kindLine(item)}</span>
                   <span>{relTime(item.at)}</span>
                 </span>
                 {item.body && (

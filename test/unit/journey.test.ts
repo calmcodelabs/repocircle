@@ -103,3 +103,19 @@ describe('buildJourney', () => {
     expect(j.at(-1)?.text).toBe('released v0.1');
   });
 });
+
+describe('idea origin (M15)', () => {
+  it('opens the story with the idea chapter, chronological', () => {
+    const j = buildJourney(repo({ createdAt: t(300) }), [], [], [], 4, {
+      authorLogin: 'dana',
+      createdAt: t(100),
+      germinatedAt: t(200),
+    });
+    expect(j.map((m) => m.kind)).toEqual(['idea', 'germinated', 'started']);
+    expect(j[0]?.text).toBe('born as an idea by @dana');
+  });
+  it('no idea → unchanged story', () => {
+    const j = buildJourney(repo(), [], [], []);
+    expect(j[0]?.kind).toBe('started');
+  });
+});

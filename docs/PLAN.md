@@ -322,6 +322,23 @@ the serverless redesign; ingestion complexity moved client-side rather than remo
   spellings of write-permission and ownership. Founders no longer appear as
   "New in the circle". 76 unit + 106 rules tests.
 
+- **M15 · Ideas (2026-09-06).** The chapter before the code: a member pitches an
+  idea (title, one-line pitch, detail, needs from the same closed vocabulary,
+  tags), the circle discusses it (same comment primitive), raises hands (same
+  interests, routed to the author's away-inbox), and when it becomes real it
+  **germinates**: a two-way link idea↔repo writable by the author, an admin, or
+  the linked repo's owner (someone else building your idea is the point) with
+  the repo's existence validated in rules. The repo gains "from an idea by @x"
+  and its journey opens with the idea chapter; the idea doc stays as the record
+  (facts never move, ADR-019). Zero new indexes — subcollections reuse the
+  comments/interests names, so collection-group reads and the inbox cover ideas
+  automatically. Surfaces: FAB → "+ Share" two-row chooser (ask/idea), Home
+  "Ideas brewing" + matcher includes matching ideas, Repos strip, Profile
+  "Ideas on the table", IdeaDetail route. Lifecycle: open → germinated | parked.
+  Class sweep done at build time (increment counters, live watches, canWriteRole
+  reuse, per-reason empty states, display-hint credit with the idea doc as
+  truth). 117 rules + 79 unit tests.
+
 ---
 
 ## §6 · Phase 2 outline (after retention signal, PRD §13)

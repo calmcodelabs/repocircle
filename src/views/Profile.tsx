@@ -2,12 +2,14 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import { sessionUser } from '../auth/session';
 import { activeMembers } from '../data/activeGroup';
 import { setSkills } from '../data/members';
+import { watchIdeas } from '../data/ideas';
 import { watchRepos } from '../data/repos';
 import {
   HELP_AREAS,
   REPO_NEEDS,
   ROLE_LABEL,
   type HelpArea,
+  type Idea,
   type Member,
   type Repo,
 } from '../data/types';
@@ -37,6 +39,7 @@ export function Profile({ gid, uid }: { gid: string; uid: string }) {
   const members = activeMembers.value;
   const m = members?.find((x) => x.uid === uid);
   const [repos, setRepos] = useState<Repo[] | null>(null);
+  const [ideas, setIdeas] = useState<Idea[] | null>(null);
   const [editSkills, setEditSkills] = useState(false);
   const [editAvail, setEditAvail] = useState(false);
   const myUid = sessionUser.value?.uid;
@@ -47,6 +50,14 @@ export function Profile({ gid, uid }: { gid: string; uid: string }) {
       watchRepos(gid, setRepos, (code) => {
         log('warn', `profile repos watch: ${code}`);
         noteServerError(code, 'repos'); // Class B
+      }),
+    [gid],
+  );
+  useEffect(
+    () =>
+      watchIdeas(gid, setIdeas, (code) => {
+        log('warn', `profile ideas watch: ${code}`);
+        noteServerError(code, 'ideas');
       }),
     [gid],
   );
@@ -184,6 +195,35 @@ export function Profile({ gid, uid }: { gid: string; uid: string }) {
           </a>
         ))}
       </section>
+
+      {(() => {
+        const theirIdeas = (ideas ?? []).filter(
+          (i) => i.authorUid === uid && i.state !== 'germinated',
+        );
+        if (theirIdeas.length === 0) return null;
+        return (
+          <section class="card stack rise-2">
+            <div class="sectionhead">
+              <span class="sectionhead__mark" />
+              <span class="sectionhead__title">Ideas on the table</span>
+              <span class="sectionhead__count">{theirIdeas.length}</span>
+            </div>
+            {theirIdeas.map((i) => (
+              <a key={i.id} class="idea" href={`#/g/${gid}/idea/${i.id}`}>
+                <span class="row">
+                  <span class="idea__name">{i.title}</span>
+                  {i.state === 'parked' && <Chip>parked</Chip>}
+                  <span class="topbar__spacer" />
+                  {(i.interestCount ?? 0) > 0 && (
+                    <span class="small faint">{i.interestCount} would build it</span>
+                  )}
+                </span>
+                <span class="idea__pitch">{i.pitch}</span>
+              </a>
+            ))}
+          </section>
+        );
+      })()}
 
       {editSkills && (
         <SkillsSheet gid={gid} me={m} myRepos={theirs} onClose={() => setEditSkills(false)} />

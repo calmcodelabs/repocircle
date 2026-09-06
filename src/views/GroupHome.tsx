@@ -13,6 +13,8 @@ import { myProfile } from '../data/users';
 import { canWriteRole, HELP_AREAS, REPO_NEEDS, type Ask, type Repo } from '../data/types';
 import { circleOwner, ownsRepo } from '../util/skills';
 import { watchAcceptedCollabs, type CollabRequest } from '../data/collabs';
+import { watchIdeas } from '../data/ideas';
+import type { Idea } from '../data/types';
 import { SkillsSheet } from './Profile';
 import { toast } from '../ui/Toast';
 import { notifyDiscord } from '../notify/discord';
@@ -47,6 +49,7 @@ export function GroupHome({ gid }: { gid: string }) {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [skillsOpen, setSkillsOpen] = useState(false);
   const [collabs, setCollabs] = useState<CollabRequest[]>([]);
+  const [ideas, setIdeas] = useState<Idea[] | null>(null);
   const [recent, setRecent] = useState<RecentComment[]>([]);
   const iAmAdmin = me?.role === 'admin';
   const uid = sessionUser.value?.uid;
@@ -118,6 +121,14 @@ export function GroupHome({ gid }: { gid: string }) {
     [gid],
   );
   useEffect(() => watchAcceptedCollabs(gid, setCollabs), [gid]);
+  useEffect(
+    () =>
+      watchIdeas(gid, setIdeas, (code) => {
+        log('warn', `home ideas watch: ${code}`);
+        noteServerError(code, 'ideas');
+      }),
+    [gid],
+  );
 
   const live =
     repos?.filter((r) => !r.archived && r.status !== 'paused' && r.status !== 'done') ?? [];
@@ -151,6 +162,18 @@ export function GroupHome({ gid }: { gid: string }) {
           )
           .slice(0, 5);
   const forYouIds = new Set(forYou.map((r) => r.id));
+  const ideasForMe =
+    mySkills.length === 0
+      ? []
+      : (ideas ?? []).filter(
+          (i) =>
+            i.state === 'open' &&
+            i.authorUid !== uid &&
+            i.needs &&
+            (mySkills.includes(i.needs as (typeof mySkills)[number]) || i.needs === 'anything'),
+        );
+  const brewing = (ideas ?? []).filter((i) => i.state === 'open').slice(0, 5);
+  const germinatedCount = (ideas ?? []).filter((i) => i.state === 'germinated').length;
   const needing = (repos ?? [])
     .filter((r) => !r.archived && (r.needs || r.seekingOwner) && !forYouIds.has(r.id))
     .slice(0, 5);
@@ -217,12 +240,12 @@ export function GroupHome({ gid }: { gid: string }) {
         </div>
       </section>
 
-      {forYou.length > 0 && (
+      {(forYou.length > 0 || ideasForMe.length > 0) && (
         <section class="card stack rise-2">
           <div class="sectionhead">
             <span class="sectionhead__mark" />
             <span class="sectionhead__title">Wants what you’re good at</span>
-            <span class="sectionhead__count">{forYou.length}</span>
+            <span class="sectionhead__count">{forYou.length + Math.min(ideasForMe.length, 3)}</span>
             <span class="topbar__spacer" />
             {uid && (
               <a class="small" href={`#/g/${gid}/m/${uid}`}>
@@ -242,6 +265,18 @@ export function GroupHome({ gid }: { gid: string }) {
               {(r.pitch || r.description) && (
                 <span class="idea__pitch">{r.pitch || r.description}</span>
               )}
+            </a>
+          ))}
+          {ideasForMe.slice(0, 3).map((i) => (
+            <a key={i.id} class="idea" href={`#/g/${gid}/idea/${i.id}`}>
+              <span class="row">
+                <Chip tone="warn">idea</Chip>
+                <span class="idea__name">{i.title}</span>
+                <Chip tone="accent">{REPO_NEEDS.find((n) => n.key === i.needs)?.label}</Chip>
+                <span class="topbar__spacer" />
+                <span class="small faint">@{i.authorLogin}</span>
+              </span>
+              <span class="idea__pitch">{i.pitch}</span>
             </a>
           ))}
         </section>
@@ -290,6 +325,35 @@ export function GroupHome({ gid }: { gid: string }) {
               </a>
             );
           })}
+        </section>
+      )}
+
+      {(brewing.length > 0 || germinatedCount > 0) && (
+        <section class="card stack rise-2">
+          <div class="sectionhead">
+            <span class="sectionhead__mark" />
+            <span class="sectionhead__title">Ideas brewing</span>
+            {brewing.length > 0 && <span class="sectionhead__count">{brewing.length}</span>}
+          </div>
+          {brewing.map((i) => (
+            <a key={i.id} class="idea" href={`#/g/${gid}/idea/${i.id}`}>
+              <span class="row">
+                <span class="idea__name">{i.title}</span>
+                {i.needs && (
+                  <Chip tone="accent">{REPO_NEEDS.find((n) => n.key === i.needs)?.label}</Chip>
+                )}
+                <span class="topbar__spacer" />
+                {(i.interestCount ?? 0) > 0 && (
+                  <span class="small faint">{i.interestCount} would build it</span>
+                )}
+                <span class="small faint">@{i.authorLogin}</span>
+              </span>
+              <span class="idea__pitch">{i.pitch}</span>
+            </a>
+          ))}
+          {brewing.length === 0 && germinatedCount > 0 && (
+            <EmptyState line="Nothing brewing right now — every idea here became a repo. Pitch the next one with + Share." />
+          )}
         </section>
       )}
 

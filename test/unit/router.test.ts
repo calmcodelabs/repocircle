@@ -13,6 +13,7 @@ describe('parseHash', () => {
     expect(parseHash('#/g/abc/settings')).toEqual({ name: 'settings', gid: 'abc' });
     expect(parseHash('#/g/abc/ask/a1')).toEqual({ name: 'ask', gid: 'abc', askId: 'a1' });
     expect(parseHash('#/g/abc/m/u1')).toEqual({ name: 'profile', gid: 'abc', uid: 'u1' });
+    expect(parseHash('#/g/abc/idea/i1')).toEqual({ name: 'idea', gid: 'abc', ideaId: 'i1' });
     expect(parseHash('#/join/g1/tok')).toEqual({ name: 'join', gid: 'g1', token: 'tok' });
   });
 

@@ -15,6 +15,9 @@ import { serverUnavailable } from '../util/log';
 import { canWriteRole } from '../data/types';
 import { Pill } from '../ui/Pill';
 import { AskComposer } from './AskComposer';
+import { IdeaComposer } from './IdeaComposer';
+import { Sheet } from '../ui/Sheet';
+import { Icon } from '../ui/Icon';
 import { startPolling, stopPolling } from '../poll/engine';
 import { navigate, route } from '../router';
 import { Avatar } from '../ui/Avatar';
@@ -33,6 +36,8 @@ export function GroupShell({ gid, children }: { gid: string; children: Component
   const u = sessionUser.value;
   const [accountOpen, setAccountOpen] = useState(false);
   const [askOpen, setAskOpen] = useState(false);
+  const [ideaOpen, setIdeaOpen] = useState(false);
+  const [chooserOpen, setChooserOpen] = useState(false);
 
   useEffect(() => setActiveGroup(gid), [gid]);
   useEffect(() => {
@@ -166,11 +171,50 @@ export function GroupShell({ gid, children }: { gid: string; children: Component
       {children}
 
       {canWriteRole(myMembership.value) && (
-        <button class="fab" onClick={() => setAskOpen(true)} aria-label="Post an ask">
-          + Ask
+        <button class="fab" onClick={() => setChooserOpen(true)} aria-label="Share something">
+          + Share
         </button>
       )}
+      {chooserOpen && (
+        <Sheet title="What have you got?" onClose={() => setChooserOpen(false)}>
+          <div class="stack">
+            <button
+              class="row share__opt"
+              onClick={() => {
+                setChooserOpen(false);
+                setIdeaOpen(true);
+              }}
+            >
+              <span class="tile tile--accent">
+                <Icon name="repo" size={19} />
+              </span>
+              <span class="share__text">
+                <b>An idea</b>
+                <span class="small dim">
+                  No repo yet — pitch it and see who'd build it with you.
+                </span>
+              </span>
+            </button>
+            <button
+              class="row share__opt"
+              onClick={() => {
+                setChooserOpen(false);
+                setAskOpen(true);
+              }}
+            >
+              <span class="tile">
+                <Icon name="ask" size={19} />
+              </span>
+              <span class="share__text">
+                <b>An ask</b>
+                <span class="small dim">You need a hand with something you're building.</span>
+              </span>
+            </button>
+          </div>
+        </Sheet>
+      )}
       {askOpen && <AskComposer gid={gid} onClose={() => setAskOpen(false)} />}
+      {ideaOpen && <IdeaComposer gid={gid} onClose={() => setIdeaOpen(false)} />}
     </div>
   );
 }

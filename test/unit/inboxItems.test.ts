@@ -15,6 +15,7 @@ function item(over: Partial<InboxItem & { actorUid: string }>): InboxItem & { ac
   return {
     key: 'groups/g1/repos/1/comments/c1',
     kind: 'mention',
+    subject: 'repo',
     gid: 'g1',
     actorUid: 'u2',
     actorLogin: 'arjun',
@@ -39,6 +40,14 @@ describe('parseSubjectPath', () => {
       kind: 'ask',
       subjectId: 'a7',
     });
+  });
+  it('parses idea paths', () => {
+    expect(parseSubjectPath('groups/g1/ideas/i3/interests/u9')).toEqual({
+      gid: 'g1',
+      kind: 'idea',
+      subjectId: 'i3',
+    });
+    expect(subjectHref({ gid: 'g1', kind: 'idea', subjectId: 'i3' })).toBe('#/g/g1/idea/i3');
   });
   it('rejects foreign shapes', () => {
     expect(parseSubjectPath('users/u1/watches/w1')).toBeNull();
@@ -93,6 +102,7 @@ describe('applyLocalWatermark', () => {
   const base = {
     key: 'k',
     kind: 'reply' as const,
+    subject: 'repo' as const,
     gid: 'g',
     actorLogin: 'a',
     href: '#/g/g/repo/1',

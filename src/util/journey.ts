@@ -1,6 +1,6 @@
 import type { Timestamp } from 'firebase/firestore';
 import type { CollabRequest } from '../data/collabs';
-import type { Repo, RepoInterest } from '../data/types';
+import type { Idea, Repo, RepoInterest } from '../data/types';
 
 /**
  * M12 — a repo's journey: the human line under the machine history. Built
@@ -9,7 +9,7 @@ import type { Repo, RepoInterest } from '../data/types';
  */
 export type Moment = {
   at: Timestamp | null;
-  kind: 'started' | 'interest' | 'joined' | 'adopted' | 'release';
+  kind: 'idea' | 'germinated' | 'started' | 'interest' | 'joined' | 'adopted' | 'release';
   text: string;
   login?: string;
 };
@@ -22,8 +22,24 @@ export function buildJourney(
   collabs: CollabRequest[],
   events: ReleaseEvent[],
   maxInterests = 4,
+  idea?: Pick<Idea, 'authorLogin' | 'createdAt' | 'germinatedAt'> | null,
 ): Moment[] {
   const moments: Moment[] = [];
+
+  // Born before the code: the idea's chapter opens the story (M15).
+  if (idea) {
+    moments.push({
+      at: idea.createdAt ?? null,
+      kind: 'idea',
+      text: `born as an idea by @${idea.authorLogin}`,
+      login: idea.authorLogin,
+    });
+    moments.push({
+      at: idea.germinatedAt ?? null,
+      kind: 'germinated',
+      text: 'the idea became this repo',
+    });
+  }
 
   moments.push({
     at: repo.createdAt ?? null,

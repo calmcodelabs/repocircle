@@ -9,6 +9,8 @@ export type InboxKind = 'mention' | 'reply' | 'interest';
 export type InboxItem = {
   key: string; // doc path — stable dedupe key
   kind: InboxKind;
+  /** What the item is about — copy differs ("your repo" vs "your idea"). */
+  subject: SubjectKind;
   gid: string;
   actorLogin: string;
   actorAvatarUrl?: string;
@@ -20,19 +22,22 @@ export type InboxItem = {
   isNew: boolean;
 };
 
-export type ParsedSubject = { gid: string; kind: 'repo' | 'ask'; subjectId: string } | null;
+export type SubjectKind = 'repo' | 'ask' | 'idea';
+export type ParsedSubject = { gid: string; kind: SubjectKind; subjectId: string } | null;
 
-/** groups/G/(repos|asks)/ID/(comments|interests)/X → where that lives in the app. */
+/** groups/G/(repos|asks|ideas)/ID/(comments|interests)/X → where that lives in the app. */
 export function parseSubjectPath(path: string): ParsedSubject {
   const p = path.split('/');
   if (p[0] !== 'groups' || !p[1] || !p[3]) return null;
   if (p[2] === 'repos') return { gid: p[1], kind: 'repo', subjectId: p[3] };
   if (p[2] === 'asks') return { gid: p[1], kind: 'ask', subjectId: p[3] };
+  if (p[2] === 'ideas') return { gid: p[1], kind: 'idea', subjectId: p[3] };
   return null;
 }
 
 export function subjectHref(s: Exclude<ParsedSubject, null>): string {
-  return s.kind === 'repo' ? `#/g/${s.gid}/repo/${s.subjectId}` : `#/g/${s.gid}/ask/${s.subjectId}`;
+  const seg = s.kind === 'repo' ? 'repo' : s.kind === 'ask' ? 'ask' : 'idea';
+  return `#/g/${s.gid}/${seg}/${s.subjectId}`;
 }
 
 /**

@@ -8,6 +8,9 @@ import { myProfile } from '../data/users';
 import { canWriteRole, REPO_NEEDS, REPO_STATUSES, type Repo, type RepoStatus } from '../data/types';
 import { IdeaSheet } from './IdeaSheet';
 import { InterestButton } from './InterestButton';
+import { watchIdeas } from '../data/ideas';
+import type { Idea } from '../data/types';
+import { noteServerError } from '../util/log';
 import { socialPreviewUrl } from '../github/repos';
 import { GhError } from '../github/client';
 import { pollState, refreshNow, sparkSeries } from '../poll/engine';
@@ -50,6 +53,14 @@ export function Repos({ gid }: { gid: string }) {
   const uid = sessionUser.value?.uid;
   const iAmAdmin = me?.role === 'admin';
   const canAdd = canWriteRole(me);
+  const [ideas, setIdeas] = useState<Idea[] | null>(null);
+  useEffect(
+    () =>
+      watchIdeas(gid, setIdeas, (code) => {
+        noteServerError(code, 'ideas');
+      }),
+    [gid],
+  );
 
   useEffect(
     () =>
@@ -150,6 +161,32 @@ export function Repos({ gid }: { gid: string }) {
             </button>
           ))}
         </div>
+      )}
+
+      {ideas !== null && ideas.filter((i) => i.state === 'open').length > 0 && (
+        <section class="card stack">
+          <div class="sectionhead">
+            <span class="sectionhead__mark" />
+            <span class="sectionhead__title">Ideas — no code yet</span>
+            <span class="sectionhead__count">{ideas.filter((i) => i.state === 'open').length}</span>
+          </div>
+          {ideas
+            .filter((i) => i.state === 'open')
+            .slice(0, 6)
+            .map((i) => (
+              <a key={i.id} class="idea" href={`#/g/${gid}/idea/${i.id}`}>
+                <span class="row">
+                  <span class="idea__name">{i.title}</span>
+                  <span class="topbar__spacer" />
+                  {(i.interestCount ?? 0) > 0 && (
+                    <span class="small faint">{i.interestCount} would build it</span>
+                  )}
+                  <span class="small faint">@{i.authorLogin}</span>
+                </span>
+                <span class="idea__pitch">{i.pitch}</span>
+              </a>
+            ))}
+        </section>
       )}
 
       {repos === null && <span class="skeleton" />}

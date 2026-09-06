@@ -94,6 +94,31 @@ export const AVAILABILITY_LABEL: Record<AvailabilityStatus, string> = {
 
 export type RepoStatus = 'idea' | 'building' | 'paused' | 'done';
 
+/** M15 — an idea is a repo minus the code. One lifecycle, same vocabulary. */
+export type IdeaState = 'open' | 'germinated' | 'parked';
+
+export type Idea = {
+  id: string;
+  title: string;
+  pitch: string;
+  detail?: string;
+  domainTags?: string[];
+  needs?: RepoNeed | null;
+  authorUid: string;
+  authorLogin: string;
+  authorAvatarUrl?: string;
+  state: IdeaState;
+  repoId?: string;
+  repoFullName?: string;
+  germinatedAt?: Timestamp | null;
+  germinatedByUid?: string;
+  germinatedByLogin?: string;
+  interestCount?: number;
+  commentCount?: number;
+  createdAt: Timestamp | null;
+  v: 1;
+};
+
 /** What the owner wants from the circle — turns a repo into a request. */
 export type RepoNeed = 'feedback' | 'frontend' | 'backend' | 'ml' | 'design' | 'anything';
 
@@ -176,6 +201,9 @@ export type Repo = {
   seekingOwner?: boolean;
   /** The owner left the circle; the repo stays and waits for adoption. */
   ownerLeft?: boolean;
+  /** Born as an idea in this circle (M15) — display hint; the idea doc is the truth. */
+  ideaId?: string;
+  ideaByLogin?: string;
   /** Set on handover: ownership moved in-app; the credit line reads from these. */
   adoptedByUid?: string;
   adoptedByLogin?: string;

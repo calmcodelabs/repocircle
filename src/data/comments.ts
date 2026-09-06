@@ -18,7 +18,7 @@ import { randomToken } from './ids';
 import type { MyProfile } from './types';
 import type { Timestamp } from 'firebase/firestore';
 
-export type CommentSubject = { kind: 'repo' | 'ask'; id: string };
+export type CommentSubject = { kind: 'repo' | 'ask' | 'idea'; id: string };
 
 export type Comment = {
   id: string;
@@ -35,9 +35,8 @@ export type Comment = {
 };
 
 function basePath(gid: string, subject: CommentSubject): string {
-  return subject.kind === 'repo'
-    ? `groups/${gid}/repos/${subject.id}`
-    : `groups/${gid}/asks/${subject.id}`;
+  const coll = subject.kind === 'repo' ? 'repos' : subject.kind === 'ask' ? 'asks' : 'ideas';
+  return `groups/${gid}/${coll}/${subject.id}`;
 }
 
 export function watchComments(
@@ -130,7 +129,7 @@ export async function setPinned(
   await updateDoc(doc(db(), `${basePath(gid, subject)}/comments/${commentId}`), { pinned });
 }
 
-export type RecentComment = Comment & { repoId?: string; subjectLabel?: string };
+export type RecentComment = Comment & { repoId?: string; ideaId?: string; subjectLabel?: string };
 
 /**
  * Latest discussion anywhere in the circle — the closest thing to a reason to
@@ -156,13 +155,14 @@ export function watchRecentComments(
       cb(
         mine.slice(0, 8).map((d) => {
           const parts = d.ref.path.split('/');
-          const kind = parts[2]; // repos | asks
+          const kind = parts[2]; // repos | asks | ideas
           const parentId = parts[3];
           return {
             id: d.id,
             ...(d.data() as Omit<Comment, 'id'>),
             repoId: kind === 'repos' ? parentId : undefined,
-            subjectLabel: kind === 'repos' ? 'repo' : 'ask',
+            ideaId: kind === 'ideas' ? parentId : undefined,
+            subjectLabel: kind === 'repos' ? 'repo' : kind === 'ideas' ? 'idea' : 'ask',
           };
         }),
       );

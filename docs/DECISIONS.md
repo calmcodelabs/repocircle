@@ -162,3 +162,17 @@ Corollaries: the away-inbox is a visit-time digest (getDocs + lastSeenAt
 watermark), not a notification system; watches are private to the watcher;
 inbox routing fields (gid, replyToUid, repoOwnerUid) are denormalized onto docs
 and rules-verified against their parents so nobody can pollute anyone's inbox.
+
+
+**ADR-020 · Ideas are repos minus the code; germination links, never migrates.**
+The value moment (ADR-017) starts before any repository exists, so the idea
+gets a first-class doc — but NOT a new subsystem. It reuses the repo vocabulary
+(pitch/needs/tags), the comment primitive, the interests mechanic, the matcher
+and the away-inbox; its subcollections keep the same collection names so every
+existing collection-group rule and index covers them. One new lifecycle:
+open → germinated | parked. Germination is a two-way link (idea.repoId,
+repo.ideaId + ideaByLogin) writable by the idea's author, an admin, or the
+linked repo's owner — rules validate the repo exists in the circle. Nothing is
+migrated or deleted: comments and hands raised stay on the idea, the repo's
+journey opens with the idea chapter, and the credit line is a single fact
+(never aggregated). Parked is an honest shelf, not a soft delete.

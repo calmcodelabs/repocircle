@@ -14,6 +14,7 @@ import { REPO_NEEDS } from '../data/types';
 import { sparkSeries } from '../poll/engine';
 import { CollabSheet } from './CollabSheet';
 import { watchRepoCollabs, type CollabRequest } from '../data/collabs';
+import type { Idea } from '../data/types';
 import { adoptRepo, markRepoOwnerLeft, watchInterests } from '../data/repos';
 import { addWatch, isWatching, removeWatch } from '../data/watches';
 import { myProfile } from '../data/users';
@@ -62,6 +63,7 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
   const [interests, setInterests] = useState<RepoInterest[]>([]);
   const [repoCollabs, setRepoCollabs] = useState<CollabRequest[]>([]);
   const [watching, setWatching] = useState<boolean | null>(null);
+  const [originIdea, setOriginIdea] = useState<Idea | null>(null);
   const [handOver, setHandOver] = useState(false);
   const uid = sessionUser.value?.uid;
   const me = myMembership.value;
@@ -98,6 +100,19 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
 
   useEffect(() => watchInterests(gid, repoId, setInterests), [gid, repoId]);
   useEffect(() => watchRepoCollabs(gid, repoId, setRepoCollabs), [gid, repoId]);
+  // The origin idea (M15): live like everything else on this page (Class E).
+  const ideaId = repo && repo !== null ? repo.ideaId : undefined;
+  useEffect(() => {
+    if (!ideaId) {
+      setOriginIdea(null);
+      return;
+    }
+    return onDoc(
+      doc(db(), `groups/${gid}/ideas/${ideaId}`),
+      (snap) => setOriginIdea(snap.exists() ? ({ id: snap.id, ...snap.data() } as Idea) : null),
+      () => setOriginIdea(null),
+    );
+  }, [gid, ideaId]);
   useEffect(() => {
     let alive = true;
     if (!uid) return;
@@ -147,6 +162,8 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
         (events ?? [])
           .filter((e) => e.type === 'release')
           .map((e) => ({ occurredAt: e.occurredAt, summary: e.summary })),
+        4,
+        originIdea,
       )
     : [];
   const isMine = !!repo && !!me && ownsRepo(repo, me);
@@ -175,6 +192,11 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
         <div class="row wrap">
           {repo.needs && (
             <Chip tone="accent">{REPO_NEEDS.find((n) => n.key === repo.needs)?.label}</Chip>
+          )}
+          {repo.ideaByLogin && (
+            <a href={repo.ideaId ? `#/g/${gid}/idea/${repo.ideaId}` : undefined}>
+              <Chip tone="accent">from an idea by @{repo.ideaByLogin}</Chip>
+            </a>
           )}
           {repo.ownerLeft && !liveOwner && (
             <Chip tone="warn">owner left the circle — up for adoption</Chip>

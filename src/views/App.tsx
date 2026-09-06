@@ -14,6 +14,7 @@ import { NotFound } from './NotFound';
 import { Onboard } from './Onboard';
 import { AskDetail } from './AskDetail';
 import { PersonalHome } from './PersonalHome';
+import { IdeaDetail } from './IdeaDetail';
 import { Profile } from './Profile';
 import { RepoDetail } from './RepoDetail';
 import { Repos } from './Repos';
@@ -100,6 +101,12 @@ function groupView(r: Route) {
       return (
         <GroupShell gid={r.gid}>
           <Profile gid={r.gid} uid={r.uid} />
+        </GroupShell>
+      );
+    case 'idea':
+      return (
+        <GroupShell gid={r.gid}>
+          <IdeaDetail gid={r.gid} ideaId={r.ideaId} />
         </GroupShell>
       );
     case 'settings':
