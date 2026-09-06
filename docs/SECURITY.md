@@ -11,24 +11,24 @@ budget concentrates in five places, each covered below:
 
 ## 1. Assets and adversaries
 
-| Asset | Impact if compromised |
-|---|---|
-| Members' GitHub OAuth tokens (`public_repo`) | Write access to victims' public repos — the crown jewels |
-| Group private data (asks, availability, notes) | Privacy breach of a semi-private social space |
-| Discord webhook URL | Channel spam/phishing until regenerated |
-| Firestore quota / GitHub rate limits | Denial of service, surprise lockout |
-| The deployed site itself (Pages + Actions) | Full XSS-equivalent compromise of all users |
+| Asset                                          | Impact if compromised                                    |
+| ---------------------------------------------- | -------------------------------------------------------- |
+| Members' GitHub OAuth tokens (`public_repo`)   | Write access to victims' public repos — the crown jewels |
+| Group private data (asks, availability, notes) | Privacy breach of a semi-private social space            |
+| Discord webhook URL                            | Channel spam/phishing until regenerated                  |
+| Firestore quota / GitHub rate limits           | Denial of service, surprise lockout                      |
+| The deployed site itself (Pages + Actions)     | Full XSS-equivalent compromise of all users              |
 
-| Adversary | Capabilities assumed |
-|---|---|
-| **Outsider** | Knows all URLs and the public Firebase config (it *is* public); can call Firestore/Auth APIs directly with arbitrary payloads — **rules are the only wall** |
-| **Invite-link leaker** | Got a link shared beyond the group |
-| **Malicious / compromised member** | Valid auth; can run arbitrary requests against Firestore within what rules allow, and post garbage data |
-| **XSS attacker** | Tries to smuggle scripts through user-controlled strings (titles, notes, repo descriptions *from GitHub*, ...) |
-| **Supply-chain attacker** | Typosquatted/compromised npm package or GitHub Action |
+| Adversary                          | Capabilities assumed                                                                                                                                        |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Outsider**                       | Knows all URLs and the public Firebase config (it _is_ public); can call Firestore/Auth APIs directly with arbitrary payloads — **rules are the only wall** |
+| **Invite-link leaker**             | Got a link shared beyond the group                                                                                                                          |
+| **Malicious / compromised member** | Valid auth; can run arbitrary requests against Firestore within what rules allow, and post garbage data                                                     |
+| **XSS attacker**                   | Tries to smuggle scripts through user-controlled strings (titles, notes, repo descriptions _from GitHub_, ...)                                              |
+| **Supply-chain attacker**          | Typosquatted/compromised npm package or GitHub Action                                                                                                       |
 
-Non-goals for Phase 1 (documented, not hidden): protection against a malicious *group
-admin* (they govern the group by design), and cryptographic truth of activity data
+Non-goals for Phase 1 (documented, not hidden): protection against a malicious _group
+admin_ (they govern the group by design), and cryptographic truth of activity data
 (see §4 "fabricated events").
 
 ## 2. Trust boundaries
@@ -43,6 +43,12 @@ OAuth client secret lives only inside Firebase's provider config console.
 Principles: **default deny**; membership gate on every group path; role checks for
 privileged writes; shape validation (types, lengths, enums) on every create/update;
 state machines enforced server-side; no `list` on secrets-by-URL (invites).
+
+> **`firestore.rules` is the truth; the listing below is the original draft.**
+> Keeping a second copy of a 600-line policy in prose guarantees the copy is wrong,
+> so this section deliberately stops short of reproducing it. What follows the
+> listing is a record of every match block added since the draft and the reasoning
+> that is _not_ recoverable from reading the rules themselves.
 
 ```rules
 rules_version = '2';
@@ -202,14 +208,42 @@ Known refinements queued for M8 hardening (tracked in PLAN): per-field validatio
 `getAfter` founder-batch verification on group create, and a `duration`-based cap on
 `availability.until`.
 
+### 3b. Added since the draft — and why
+
+| Path                                               | Who may write                                                                              | The decision worth recording                                                                                                                                                                                                       |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `groups/{gid}/ideas/{ideaId}` (M15)                | any writing member; germination also by an admin or the linked repo's owner                | Someone else building your idea is the value moment, not an edge case, so the link is not author-only                                                                                                                              |
+| `.../{repos,ideas,asks}/{id}/comments/{id}` (M10)  | author edits and deletes own; subject owner and admins moderate                            | Stored raw, rendered as text nodes only (§6)                                                                                                                                                                                       |
+| `.../{repos,ideas}/{id}/interests/{uid}` (M9/M15)  | self only, doc id = uid                                                                    | `gid` and `repoOwnerUid` are **spoof-checked against the parent** — they route someone's away-inbox, so a forgeable value would be an inbox-injection primitive                                                                    |
+| `users/{uid}/watches/{watchId}` (M12, widened M18) | self only                                                                                  | Pre-M18 key set stays allowed so old saves keep resolving; `kind` is a closed enum                                                                                                                                                 |
+| `groups/{gid}/meta/summary` (M16)                  | any member for the counts, **admins only** for `links`/`pinnedRepoId`                      | Split by `affectedKeys()`. Guests may move the counts: a member count left wrong by one after a guest joins is a visible lie, and that costs more than the blast radius of a shape-capped display document that authorizes nothing |
+| `groups/{gid}/announcements/{annId}` (M17)         | admins create; **nobody updates**                                                          | Append-only by design — an announcement is a statement made at a moment, so correcting it means posting again rather than rewriting what people already read                                                                       |
+| `groups/{gid}/sessions/{sessionId}` (M19)          | any writing member creates; host or admin edits and cancels; anyone may move `rsvpCount`   | Calling a session is a circle ritual, not an admin function. `hostUid` is immutable — rules refuse reassignment, the same hole that was closed for repo `ownerUid` in M12                                                          |
+| `.../sessions/{sessionId}/interests/{uid}` (M19)   | self only                                                                                  | Same shape as the other interests **on purpose**, so the existing collection-group read rule and index cover RSVPs; `repoOwnerUid` spoof-checked against the session                                                               |
+| `groups/{gid}/polls/{pollId}` (M19)                | any writing member creates; voting moves `options` only while open; author or admin closes | Question and author are immutable across an update, so a voter cannot rewrite what was asked                                                                                                                                       |
+| `.../polls/{pollId}/votes/{uid}` (M19)             | self only, doc id = uid, only while the poll is open                                       | **One vote per member is structural, not enforced** — there is no rule to get wrong                                                                                                                                                |
+| `member.helpWith` / `member.domainTags` (M11/M17)  | self only                                                                                  | Closed vocabularies. The join screen offers chips rather than a text field, which is what keeps the values joinable — and rules can enforce a vocabulary where they could never enforce prose                                      |
+| `users/{uid}.circlePrefs` (M18)                    | self only                                                                                  | Map-shaped; a bad value degrades to `all`                                                                                                                                                                                          |
+
+Two limits the rules genuinely cannot reach, held elsewhere instead:
+
+- **A poll decides a question; it never rates people or their work** (ADR-024).
+  Rules cannot read semantics, so this is held by the ADR and by what the composer
+  asks for — the same mechanism ADR-014 uses for availability tone.
+- **Cross-circle repo surfacing requires mutual membership** (ADR-025). There is no
+  rule for this because there is no shared index to guard: a `publicRepos/{id}`
+  registry would leak the existence of private circles to anyone holding a repo id,
+  so the feature resolves by reading one document per circle the viewer already
+  belongs to, and shows nothing to anyone else.
+
 ## 4. Residual risks accepted for Phase 1 — stated, not silent
 
-| Risk | Why accepted | Compensating control / future fix |
-|---|---|---|
-| Member fabricates activity events | Rules validate shape, not truth vs GitHub | Events carry `actorLogin` + deep `url` (fakes are conspicuous); trust-bounded groups; Phase-3 Worker webhooks make ingestion trustworthy |
-| Member reads Discord webhook URL and spams | Members are in that Discord server anyway; regeneration is one click | §7 mitigations; Worker relay in Phase 3 hides the URL entirely |
-| Last-admin lockout (admin leaves) | Rules can't count admins cheaply | Client blocks leaving as last admin; recovery = Firebase console (documented in SETUP) |
-| Denormalized display names drift | Cosmetic only | Opportunistic refresh on author activity |
+| Risk                                       | Why accepted                                                         | Compensating control / future fix                                                                                                        |
+| ------------------------------------------ | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Member fabricates activity events          | Rules validate shape, not truth vs GitHub                            | Events carry `actorLogin` + deep `url` (fakes are conspicuous); trust-bounded groups; Phase-3 Worker webhooks make ingestion trustworthy |
+| Member reads Discord webhook URL and spams | Members are in that Discord server anyway; regeneration is one click | §7 mitigations; Worker relay in Phase 3 hides the URL entirely                                                                           |
+| Last-admin lockout (admin leaves)          | Rules can't count admins cheaply                                     | Client blocks leaving as last admin; recovery = Firebase console (documented in SETUP)                                                   |
+| Denormalized display names drift           | Cosmetic only                                                        | Opportunistic refresh on author activity                                                                                                 |
 
 ## 5. GitHub token policy
 
@@ -220,7 +254,7 @@ Known refinements queued for M8 hardening (tracked in PLAN): per-field validatio
 - Every GitHub call goes through one `github/client.ts` chokepoint which: injects the
   token from the vault, strips it from any thrown error, enforces the rate-limit
   guard, and refuses non-`api.github.com` URLs (no token exfiltration via
-  attacker-supplied URL fields — `demoUrl`/`pairingUrl` are *never* fetched, only
+  attacker-supplied URL fields — `demoUrl`/`pairingUrl` are _never_ fetched, only
   rendered as links).
 - Sign-out wipes the vault; "Disconnect GitHub" instructions (revoke at
   github.com/settings/applications) in the app's security page.
@@ -241,11 +275,11 @@ Known refinements queued for M8 hardening (tracked in PLAN): per-field validatio
 - **CSP** served via `<meta http-equiv="Content-Security-Policy">` (Pages can't set
   headers):
   `default-src 'none'; script-src 'self' https://apis.google.com (Firebase Auth popup relay); style-src 'self'; font-src 'self';
-  img-src 'self' https://avatars.githubusercontent.com https://opengraph.githubassets.com data:;
-  connect-src 'self' https://api.github.com https://*.googleapis.com
-  https://securetoken.googleapis.com https://identitytoolkit.googleapis.com
-  https://discord.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none';
-  manifest-src 'self'; worker-src 'self'`.
+img-src 'self' https://avatars.githubusercontent.com https://opengraph.githubassets.com data:;
+connect-src 'self' https://api.github.com https://*.googleapis.com
+https://securetoken.googleapis.com https://identitytoolkit.googleapis.com
+https://discord.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none';
+manifest-src 'self'; worker-src 'self'`.
   All JS/CSS/fonts are bundled locally (no CDNs) precisely so `'self'` works.
 - No inline scripts, no inline styles, no `eval` (Vite configured accordingly).
 
@@ -283,7 +317,8 @@ no trackers, no third-party requests beyond the four hosts in the CSP.
 
 ## 10. Rules test plan (runs in CI against the emulator — M1 onward, hardened M8)
 
-`@firebase/rules-unit-testing` suites, one file per collection. The matrix (≈ 40 cases):
+`@firebase/rules-unit-testing` suites, one file per collection, run in CI against the
+emulator on every push. **202 cases as of M20** (117 at M15). The matrix:
 
 - Outsider (unauthenticated / non-member): denied every read & write on every group path ✓
 - Guest & alumnus: can read everything group-scoped, denied every write surface ✓
@@ -293,7 +328,7 @@ no trackers, no third-party requests beyond the four hosts in the CSP.
 - Invites: get-by-token works signed-in; `list` denied for members/outsiders, allowed for admins (management screen); join with
   expired/revoked invite denied; role escalation via forged membership role denied;
   admin-role invite creation denied ✓
-- Members: self role change denied; admin role change of *other* member allowed;
+- Members: self role change denied; admin role change of _other_ member allowed;
   self-edit limited to allowed keys; removal by admin allowed, by member denied ✓
 - Repos/events: create with non-numeric repoId denied; event update/delete denied
   (append-only); non-member ingestion denied ✓
@@ -301,7 +336,27 @@ no trackers, no third-party requests beyond the four hosts in the CSP.
   allowed; cancel by requester allowed ✓
 - Integrations: member read allowed, member write denied, admin write allowed ✓
 - users/{uid}: cross-uid read/write denied; token-shaped field write denied ✓
+- Skills (M11) & domain tags (M17): closed vocabularies enforced; oversize lists
+  denied; setting another member's denied; a joiner may bring both in at create ✓
+- Summary doc (M16): counters move by increment; guests may maintain them; a member
+  cannot set `links` or `pinnedRepoId`, including smuggled in at create time; an
+  admin can; ordinary maintenance still works on a circle that has links ✓
+- Announcements (M17): admin-only create, author must be the poster, body bounds,
+  **nobody can edit one**, admin-only delete ✓
+- Saved items (M18): new and pre-M18 shapes both accepted, `kind` enum enforced,
+  another user's watches unreachable ✓
+- Sessions (M19): member creates, guest cannot, host immutable, cannot be born
+  cancelled, duration and https bounds; host or admin cancels; a bystander may move
+  `rsvpCount` but not the time; RSVP host field and `gid` cannot be forged ✓
+- Polls (M19): 2–5 options, cannot be born closed, voter cannot rewrite the question
+  or close it, author and admin can; **a closed poll refuses further votes**; nobody
+  can vote as someone else; changing your own vote allowed ✓
 - Default-deny: write to an undeclared path denied ✓
+
+Two things the suite does **not** cover, stated so they are not mistaken for covered:
+the emulator does not enforce composite indexes (a query missing one passes locally
+and fails in production — only a real deploy catches it), and it cannot exercise the
+GitHub API or a real OAuth token.
 
 ## 11. Security release checklist (every milestone, gate for M8/launch)
 
