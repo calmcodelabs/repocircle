@@ -286,6 +286,27 @@ the serverless redesign; ingestion complexity moved client-side rather than remo
   ownership (collab routing, management rights); GitHub stays untouched.
   102 rules + 66 unit tests.
 
+- **M13 · Complete transactions (2026-09-06).** The three live-test bugs shared a
+  root: removal and joining left half-finished state behind.
+  - **Rejoin fixed:** Join.tsx now probes the member doc *from the server* and
+    redirects only when it exists — the users/{uid}.groupIds mirror (which an
+    admin can't clean on removal) no longer turns a fresh invite into a dead
+    end. Navigation happens only after joinViaInvite's server read-back.
+  - **Sticky denial fixed:** activeGroup re-subscribes once (3s) on a first
+    permission-denied before declaring it fact; the denied screen gained a
+    Try again pill (retryActiveGroup). Live evidence: a join commit landed 80s
+    after listeners had given up.
+  - **Orphans adoptable:** removeMember/leaveGroup flag the departing member's
+    repos `seekingOwner + ownerLeft` *before* the membership goes; admins can
+    hand them over (HandOverSheet now admin-capable) and adoption clears the
+    flags; RepoDetail shows "owner left the circle — up for adoption" and gives
+    admins an "Open for adoption" pill for historical orphans.
+  - **Stale mirrors visible:** PersonalHome renders unreachable circles as a
+    dashed card with "Remove from my list" (never auto-forgets — an outage is
+    indistinguishable from a removal). Away-inbox "new" dots now also respect a
+    per-device, per-account localStorage watermark, closing the 1h markSeen gap.
+  - 106 rules + 69 unit tests.
+
 ---
 
 ## §6 · Phase 2 outline (after retention signal, PRD §13)

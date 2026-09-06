@@ -186,7 +186,7 @@ service cloud.firestore {
                ['fullName', 'htmlUrl', 'description', 'language', 'topics', 'githubOwnerLogin',
                 'ownerUid', 'registeredBy', 'status', 'demoUrl', 'archived', 'lastEventAt',
                 'poll', 'stats7d', 'daily', 'pitch', 'needs', 'domainTags', 'seekingOwner',
-                'adoptedByUid', 'adoptedByLogin', 'adoptedFromLogin', 'adoptedAt',
+                'adoptedByUid', 'adoptedByLogin', 'adoptedFromLogin', 'adoptedAt', 'ownerLeft',
                 'interestCount', 'commentCount', 'createdAt', 'v'])
           && request.resource.data.registeredBy == resource.data.registeredBy
           && request.resource.data.status in ['idea', 'building', 'paused', 'done']
@@ -202,7 +202,7 @@ service cloud.firestore {
             !request.resource.data.diff(resource.data).affectedKeys()
                .hasAny(['status', 'demoUrl', 'archived', 'pitch', 'needs', 'domainTags',
                         'seekingOwner', 'ownerUid', 'adoptedByUid', 'adoptedByLogin',
-                        'adoptedFromLogin', 'adoptedAt'])
+                        'adoptedFromLogin', 'adoptedAt', 'ownerLeft'])
             || isAdmin(gid)
             || resource.data.ownerUid == me()
             || resource.data.registeredBy == me()

@@ -1,7 +1,13 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { sessionUser, signOutApp } from '../auth/session';
-import { activeDenied, activeGroup, myMembership, setActiveGroup } from '../data/activeGroup';
+import {
+  activeDenied,
+  activeGroup,
+  myMembership,
+  retryActiveGroup,
+  setActiveGroup,
+} from '../data/activeGroup';
 import { forgetGroup } from '../data/groups';
 import { myUserDoc } from '../data/users';
 import { toast } from '../ui/Toast';
@@ -75,11 +81,16 @@ export function GroupShell({ gid, children }: { gid: string; children: Component
         <EmptyState
           line="This group isn’t available to you — it may have been removed, or you’re not a member."
           action={
-            inMyList ? (
-              <Pill onClick={() => void forget()}>Remove it from my groups</Pill>
-            ) : (
-              <a href="#/new">Go to your groups</a>
-            )
+            <div class="row wrap">
+              <Pill variant="primary" onClick={() => retryActiveGroup()}>
+                Try again
+              </Pill>
+              {inMyList ? (
+                <Pill onClick={() => void forget()}>Remove it from my groups</Pill>
+              ) : (
+                <a href="#/new">Go to your groups</a>
+              )}
+            </div>
           }
         />
       </div>

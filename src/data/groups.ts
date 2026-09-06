@@ -105,6 +105,26 @@ export async function fetchMyGroups(groupIds: string[]): Promise<Group[]> {
     .map((r) => r.value);
 }
 
+/**
+ * Like fetchMyGroups, but unreachable gids come back too. The mirror in
+ * users/{me}.groupIds can outlive reality (removed by an admin, group deleted —
+ * nobody else may write my user doc), and silently dropping those left dead
+ * entries in the list forever. Surfacing them lets the owner clean up; we never
+ * auto-forget, because an outage is indistinguishable from a removal here.
+ */
+export async function fetchMyGroupsDetailed(
+  groupIds: string[],
+): Promise<{ groups: Group[]; unreachable: string[] }> {
+  const results = await Promise.allSettled(groupIds.map(fetchGroup));
+  const groups: Group[] = [];
+  const unreachable: string[] = [];
+  results.forEach((r, i) => {
+    if (r.status === 'fulfilled' && r.value !== null) groups.push(r.value);
+    else unreachable.push(groupIds[i]!);
+  });
+  return { groups, unreachable };
+}
+
 export async function updateGroupProfile(
   gid: string,
   name: string,

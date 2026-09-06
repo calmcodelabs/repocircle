@@ -198,6 +198,31 @@ export async function addInterest(
 }
 
 /**
+ * A departing member's repos don't leave with them — they stay, flagged as
+ * waiting for adoption, so comments, interest and history survive and the
+ * M12 handover machinery can give them a live owner. Never deletes anything.
+ */
+export async function markReposOwnerLeft(gid: string, ownerUid: string): Promise<number> {
+  const { getDocs, query: q, where } = await import('firebase/firestore');
+  const snap = await getDocs(
+    q(collection(db(), `groups/${gid}/repos`), where('ownerUid', '==', ownerUid)),
+  );
+  if (snap.empty) return 0;
+  const batch = writeBatch(db());
+  snap.forEach((d) => batch.update(d.ref, { seekingOwner: true, ownerLeft: true }));
+  await batch.commit();
+  return snap.size;
+}
+
+/** Admin affordance for repos orphaned before this existed. */
+export async function markRepoOwnerLeft(gid: string, repoId: string): Promise<void> {
+  await updateDoc(doc(db(), `groups/${gid}/repos/${repoId}`), {
+    seekingOwner: true,
+    ownerLeft: true,
+  });
+}
+
+/**
  * Handover: ownership moves to a member who raised their hand. One write, the
  * credit line ("taken over by @x · started by @y") reads straight from it.
  */
@@ -214,6 +239,7 @@ export async function adoptRepo(
     adoptedFromLogin: repo.adoptedFromLogin ?? repo.githubOwnerLogin,
     adoptedAt: serverTimestamp(),
     seekingOwner: false,
+    ownerLeft: false,
   });
   audit(gid, actor, 'repo_adopted', 'repo', repo.fullName, `→ @${adopter.login}`);
 }

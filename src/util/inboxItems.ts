@@ -63,3 +63,16 @@ export function isNewSince(at: Timestamp | null, lastSeen: Timestamp | null | un
   if (!lastSeen) return true; // never marked seen — everything recent is news
   return at.toMillis() > lastSeen.toMillis();
 }
+
+/**
+ * The server watermark (users.lastSeenAt) advances at most hourly to save
+ * writes, so "new" dots survived reloads inside that hour. A per-device,
+ * per-account watermark closes the gap: anything older than the last local
+ * visit stops being new, whatever the server thinks.
+ */
+export function applyLocalWatermark(items: InboxItem[], localSeenMs: number): InboxItem[] {
+  if (!localSeenMs) return items;
+  return items.map((i) =>
+    i.isNew && (i.at?.toMillis() ?? 0) <= localSeenMs ? { ...i, isNew: false } : i,
+  );
+}

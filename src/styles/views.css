@@ -973,3 +973,11 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* M13: unreachable circle card */
+.phome__group--dead {
+  display: grid;
+  gap: 8px;
+  align-content: center;
+  border-style: dashed;
+}

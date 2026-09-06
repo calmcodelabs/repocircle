@@ -20,11 +20,46 @@ export const myMembership = computed<Member | null>(() => {
 });
 
 let unsubs: Unsubscribe[] = [];
+let retryTimer: ReturnType<typeof setTimeout> | undefined;
+
+function teardown(): void {
+  for (const u of unsubs) u();
+  unsubs = [];
+  if (retryTimer) clearTimeout(retryTimer);
+  retryTimer = undefined;
+}
+
+/**
+ * A denial can be a fact (removed) or a moment (listener attached while the
+ * membership write was still committing — live-observed at 80s once). Before
+ * declaring it a fact, re-subscribe once after a pause; the manual Try again
+ * on the denied screen covers anything slower.
+ */
+function noteDenied(gid: string, retried: boolean): void {
+  if (gid !== activeGid.value) return;
+  if (!retried && !retryTimer) {
+    retryTimer = setTimeout(() => {
+      retryTimer = undefined;
+      if (gid === activeGid.value) subscribe(gid, true);
+    }, 3000);
+    return;
+  }
+  activeDenied.value = true;
+}
+
+export function retryActiveGroup(): void {
+  const gid = activeGid.value;
+  if (!gid) return;
+  teardown();
+  activeDenied.value = false;
+  activeGroup.value = undefined;
+  activeMembers.value = null;
+  subscribe(gid, false);
+}
 
 export function setActiveGroup(gid: string | null): void {
   if (gid === activeGid.value) return;
-  for (const u of unsubs) u();
-  unsubs = [];
+  teardown();
   activeGid.value = gid;
   activeGroup.value = undefined;
   activeMembers.value = null;
@@ -37,6 +72,12 @@ export function setActiveGroup(gid: string | null): void {
     // storage denied — remembering the last group is best-effort
   }
 
+  subscribe(gid, false);
+}
+
+function subscribe(gid: string, retriedDenied: boolean): void {
+  for (const u of unsubs) u();
+  unsubs = [];
   unsubs.push(
     resilientWatch(
       (onOk, onErr) =>
@@ -53,8 +94,7 @@ export function setActiveGroup(gid: string | null): void {
           log('warn', `group watch: ${code}`);
           noteServerError(code, 'group');
           if (code === 'resource-exhausted' || code === 'unavailable') return;
-          activeDenied.value = true;
-          activeGroup.value = null;
+          noteDenied(gid, retriedDenied);
         },
       },
     ),
@@ -69,7 +109,7 @@ export function setActiveGroup(gid: string | null): void {
         noteServerError(code, 'members');
         // A blocked or unreachable backend is not the same as being removed from
         // the circle — never claim that on its behalf.
-        if (code !== 'resource-exhausted' && code !== 'unavailable') activeDenied.value = true;
+        if (code !== 'resource-exhausted' && code !== 'unavailable') noteDenied(gid, retriedDenied);
       },
     ),
   );

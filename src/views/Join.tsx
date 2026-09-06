@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'preact/hooks';
+import { doc, getDocFromServer } from 'firebase/firestore';
+import { db } from '../firebase';
 import { sessionUser } from '../auth/session';
 import { getInvite, inviteState, type InviteState } from '../data/invites';
 import { joinViaInvite } from '../data/members';
-import { myProfile, myUserDoc } from '../data/users';
+import { myProfile } from '../data/users';
 import { navigate } from '../router';
 import { Avatar } from '../ui/Avatar';
 import { Chip } from '../ui/Chip';
@@ -23,8 +25,7 @@ const STATE_LINE: Record<Exclude<InviteState, 'valid'>, string> = {
 export function Join({ gid, token }: { gid: string; token: string }) {
   const [invite, setInvite] = useState<Invite | null | undefined>(undefined);
   const [busy, setBusy] = useState(false);
-
-  const alreadyIn = myUserDoc.value?.groupIds.includes(gid) ?? false;
+  const uid = sessionUser.value?.uid;
 
   useEffect(() => {
     let alive = true;
@@ -36,9 +37,22 @@ export function Join({ gid, token }: { gid: string; token: string }) {
     };
   }, [gid, token]);
 
+  // Membership truth lives in the member doc, not in users/{me}.groupIds — a
+  // removed member's mirror still lists the gid (admins can't write other
+  // people's user docs), and the old mirror-based redirect turned their fresh
+  // invite into a dead end. Ask the server; only a doc that exists redirects.
   useEffect(() => {
-    if (alreadyIn) navigate(`#/g/${gid}`);
-  }, [alreadyIn, gid]);
+    if (!uid) return;
+    let alive = true;
+    void getDocFromServer(doc(db(), `groups/${gid}/members/${uid}`))
+      .then((snap) => {
+        if (alive && snap.exists()) navigate(`#/g/${gid}`);
+      })
+      .catch(() => undefined); // denied ⇒ not a member — stay and offer the join
+    return () => {
+      alive = false;
+    };
+  }, [gid, uid]);
 
   async function onJoin() {
     const uid = sessionUser.value?.uid;

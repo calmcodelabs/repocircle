@@ -169,6 +169,8 @@ export type Repo = {
   domainTags?: string[];
   /** Owner has moved on and would like someone else to take it over. */
   seekingOwner?: boolean;
+  /** The owner left the circle; the repo stays and waits for adoption. */
+  ownerLeft?: boolean;
   /** Set on handover: ownership moved in-app; the credit line reads from these. */
   adoptedByUid?: string;
   adoptedByLogin?: string;

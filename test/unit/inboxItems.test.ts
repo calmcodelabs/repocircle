@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Timestamp } from 'firebase/firestore';
 import {
+  applyLocalWatermark,
   isNewSince,
   mergeInbox,
   parseSubjectPath,
@@ -85,5 +86,27 @@ describe('isNewSince', () => {
   it('compares against the watermark', () => {
     expect(isNewSince(t(6), t(5))).toBe(true);
     expect(isNewSince(t(4), t(5))).toBe(false);
+  });
+});
+
+describe('applyLocalWatermark', () => {
+  const base = {
+    key: 'k',
+    kind: 'reply' as const,
+    gid: 'g',
+    actorLogin: 'a',
+    href: '#/g/g/repo/1',
+  };
+  it('clears newness for items seen locally', () => {
+    const out = applyLocalWatermark([{ ...base, at: t(50), isNew: true }], 100);
+    expect(out[0]?.isNew).toBe(false);
+  });
+  it('keeps items newer than the local visit', () => {
+    const out = applyLocalWatermark([{ ...base, at: t(150), isNew: true }], 100);
+    expect(out[0]?.isNew).toBe(true);
+  });
+  it('zero watermark is a no-op', () => {
+    const out = applyLocalWatermark([{ ...base, at: t(50), isNew: true }], 0);
+    expect(out[0]?.isNew).toBe(true);
   });
 });

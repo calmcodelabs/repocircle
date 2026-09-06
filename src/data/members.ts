@@ -17,6 +17,7 @@ import { anonymizeMyContent } from '../util/anonymize';
 import { audit } from './audit';
 import { ensureUserDoc, forgetGroup } from './groups';
 import { resilientWatch } from './resilientWatch';
+import { markReposOwnerLeft } from './repos';
 import type { Availability, HelpArea, Invite, Member, MyProfile, Role } from './types';
 
 export function watchMembers(
@@ -101,8 +102,18 @@ export async function setRole(
 }
 
 export async function removeMember(gid: string, actor: MyProfile, target: Member): Promise<void> {
+  // Their repos stay behind, flagged for adoption — before the membership goes,
+  // so a partial failure leaves a member with flagged repos, not orphans.
+  const orphaned = await markReposOwnerLeft(gid, target.uid);
   await deleteDoc(doc(db(), `groups/${gid}/members/${target.uid}`));
-  audit(gid, actor, 'member_removed', 'member', target.login);
+  audit(
+    gid,
+    actor,
+    'member_removed',
+    'member',
+    target.login,
+    orphaned > 0 ? `${orphaned} repo(s) up for adoption` : undefined,
+  );
 }
 
 /**
@@ -111,6 +122,7 @@ export async function removeMember(gid: string, actor: MyProfile, target: Member
  */
 export async function leaveGroup(gid: string, profile: MyProfile): Promise<void> {
   await anonymizeMyContent(gid, profile.uid);
+  await markReposOwnerLeft(gid, profile.uid); // while my membership still authorizes it
   await deleteDoc(doc(db(), `groups/${gid}/members/${profile.uid}`));
   await forgetGroup(profile.uid, gid);
 }

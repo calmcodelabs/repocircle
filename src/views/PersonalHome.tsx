@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'preact/hooks';
 import { sessionUser, signOutApp } from '../auth/session';
 import { fetchMyOpenItems, type MyAsk } from '../data/asks';
-import { fetchMyGroups } from '../data/groups';
+import { fetchMyGroupsDetailed, forgetGroup } from '../data/groups';
 import { fetchMyRepos, type MyRepo } from '../data/repos';
 import type { Group } from '../data/types';
 import { markSeen, myUserDoc } from '../data/users';
 import { fetchInbox } from '../data/inbox';
-import type { InboxItem } from '../util/inboxItems';
+import { applyLocalWatermark, type InboxItem } from '../util/inboxItems';
 import { fetchWatchedRepos, removeWatch, type WatchedRepo } from '../data/watches';
 import { CommentBody } from './CommentBody';
 import { navigate } from '../router';
@@ -31,14 +31,16 @@ export function PersonalHome() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [inbox, setInbox] = useState<InboxItem[] | null>(null);
   const [watched, setWatched] = useState<WatchedRepo[] | null>(null);
+  const [unreachable, setUnreachable] = useState<string[]>([]);
 
   const groupIds = me?.groupIds ?? [];
 
   useEffect(() => {
     let alive = true;
-    void fetchMyGroups(groupIds).then(async (gs) => {
+    void fetchMyGroupsDetailed(groupIds).then(async ({ groups: gs, unreachable: dead }) => {
       if (!alive) return;
       setGroups(gs);
+      setUnreachable(dead);
       if (u) {
         const [mine, items] = await Promise.all([
           fetchMyRepos(gs, u.uid),
@@ -61,10 +63,22 @@ export function PersonalHome() {
   useEffect(() => {
     if (!u || !me) return;
     let alive = true;
+    const seenKey = `rc.seenLocal.${u.uid}`;
+    let localSeen = 0;
+    try {
+      localSeen = Number(localStorage.getItem(seenKey) ?? 0);
+    } catch {
+      /* storage unavailable */
+    }
     void fetchInbox(me.groupIds, u.uid, me.login, me.lastSeenAt).then((items) => {
       if (!alive) return;
-      setInbox(items);
+      setInbox(applyLocalWatermark(items, localSeen));
       markSeen(u.uid);
+      try {
+        localStorage.setItem(seenKey, String(Date.now()));
+      } catch {
+        /* storage unavailable */
+      }
     });
     void fetchWatchedRepos(u.uid, me.groupIds).then((w) => alive && setWatched(w));
     return () => {
@@ -163,6 +177,24 @@ export function PersonalHome() {
                 </div>
                 {g.description && <span class="small dim phome__desc">{g.description}</span>}
               </a>
+            ))}
+            {unreachable.map((gid) => (
+              <div key={gid} class="card phome__group phome__group--dead">
+                <span class="small dim">
+                  A circle here can’t be opened — you may have been removed, or it was deleted.
+                </span>
+                <button
+                  class="chip"
+                  onClick={() =>
+                    u &&
+                    void forgetGroup(u.uid, gid).then(() =>
+                      setUnreachable((xs) => xs.filter((x) => x !== gid)),
+                    )
+                  }
+                >
+                  Remove from my list
+                </button>
+              </div>
             ))}
             <a class="card phome__group phome__group--new" href="#/new">
               <span class="dim">+ New group</span>

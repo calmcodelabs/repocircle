@@ -14,7 +14,7 @@ import { REPO_NEEDS } from '../data/types';
 import { sparkSeries } from '../poll/engine';
 import { CollabSheet } from './CollabSheet';
 import { fetchRepoCollabs, type CollabRequest } from '../data/collabs';
-import { adoptRepo, watchInterests } from '../data/repos';
+import { adoptRepo, markRepoOwnerLeft, watchInterests } from '../data/repos';
 import { addWatch, isWatching, removeWatch } from '../data/watches';
 import { myProfile } from '../data/users';
 import { buildJourney } from '../util/journey';
@@ -188,6 +188,8 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
             <Chip tone="accent">
               taken over by @{repo.adoptedByLogin} · started by @{repo.adoptedFromLogin}
             </Chip>
+          ) : repo.ownerLeft ? (
+            <Chip tone="warn">owner left the circle — up for adoption</Chip>
           ) : (
             repo.seekingOwner && <Chip tone="warn">Looking for a new owner</Chip>
           )}
@@ -235,9 +237,20 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
               {watching ? 'Watching' : 'Watch'}
             </Pill>
           )}
-          {repo.seekingOwner && isMine && interests.length > 0 && (
+          {repo.seekingOwner && (isMine || iAmAdmin) && interests.length > 0 && (
             <Pill variant="primary" onClick={() => setHandOver(true)}>
               Hand it over
+            </Pill>
+          )}
+          {!repo.seekingOwner && !ownerMember && iAmAdmin && (
+            <Pill
+              onClick={() =>
+                void markRepoOwnerLeft(gid, repoId)
+                  .then(() => toast('Flagged — anyone interested can now take it over'))
+                  .catch(() => toast('Could not flag it.', { error: true }))
+              }
+            >
+              Open for adoption
             </Pill>
           )}
           {canManageRepo(repo, uid, iAmAdmin) ? (
@@ -387,8 +400,9 @@ function HandOverSheet({
     <Sheet title={`Hand over ${repo.fullName.split('/')[1]}`} onClose={onClose}>
       <div class="stack">
         <p class="small dim">
-          They become the owner in this circle — collab requests route to them and the card credits
-          you as the starter. On GitHub itself nothing changes.
+          They become the owner in this circle — collab requests route to them, and the card keeps
+          crediting @{repo.adoptedFromLogin ?? repo.githubOwnerLogin} as the starter. On GitHub
+          itself nothing changes.
         </p>
         {candidates.length === 0 && (
           <p class="small faint">Nobody who raised a hand is still in the circle.</p>
