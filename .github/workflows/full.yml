@@ -84,11 +84,19 @@ jobs:
   perf:
     name: lighthouse budgets
     runs-on: ubuntu-latest
-    # Non-blocking: the config is correct but Lighthouse aborts with NO_FCP on
-    # the author's machine for reasons not yet found (see lighthouserc.cjs). A
-    # clean runner may well succeed, and the data is worth having either way —
-    # but the enforced weight budget is the gzip check in the fast gate, so
-    # nothing depends on this job.
+    # Scheduled and manual runs only — deliberately NOT on push or pull request.
+    #
+    # Lighthouse aborts with NO_FCP everywhere it has been tried, including on
+    # these runners (see lighthouserc.cjs), so the job currently spends about
+    # 2m17s of runner time per invocation and emits nothing. It is off the PR
+    # path until that is fixed; it costs no wall-clock there either way, because
+    # it was never on the critical path, but paying for a job that produces no
+    # data on every push is not worth it.
+    #
+    # Kept wired rather than deleted: the moment the cause is found this starts
+    # producing budgets again, and the nightly run is where that would show up.
+    # To put it back on every push, delete the `if:` below.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     continue-on-error: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
