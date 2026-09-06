@@ -26,7 +26,7 @@ async function seedAsk(id: string, overrides: Record<string, unknown> = {}) {
   });
 }
 
-describe('asks + claims', () => {
+describe('[asks] [claims] asks + claims', () => {
   it('member can post a valid ask', async () => {
     const bob = env.authenticatedContext('bob');
     await assertSucceeds(setDoc(doc(db(bob), `groups/${GID}/asks/a1`), askDoc('bob')));

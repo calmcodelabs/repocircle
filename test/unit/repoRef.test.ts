@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { parseRepoRef } from '../../src/util/repoRef';
 
-describe('parseRepoRef', () => {
+describe('[mentions] parseRepoRef', () => {
   it('parses bare owner/name', () => {
     expect(parseRepoRef('calmcodelabs/score-keeper')).toEqual({
       owner: 'calmcodelabs',

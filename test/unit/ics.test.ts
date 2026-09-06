@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { buildIcs, icsEscape, icsStamp } from '../../src/util/ics';
 
-describe('icsStamp', () => {
+describe('[ics-export] icsStamp', () => {
   it('is basic-format UTC with no punctuation', () => {
     expect(icsStamp(new Date(Date.UTC(2026, 8, 12, 14, 30, 0)))).toBe('20260912T143000Z');
   });
@@ -9,7 +9,7 @@ describe('icsStamp', () => {
 
 // RFC 5545 §3.3.11. The backslash has to be escaped first or it escapes the
 // escapes — String.raw here so the expectations say exactly what they mean.
-describe('icsEscape', () => {
+describe('[ics-export] icsEscape', () => {
   it('escapes backslashes, semicolons and commas', () => {
     expect(icsEscape(String.raw`a,b;c\d`)).toBe(String.raw`a\,b\;c\\d`);
   });
@@ -27,7 +27,7 @@ describe('icsEscape', () => {
   });
 });
 
-describe('buildIcs', () => {
+describe('[ics-export] buildIcs', () => {
   const start = new Date(Date.UTC(2026, 8, 12, 14, 0, 0));
 
   it('wraps events in a calendar', () => {

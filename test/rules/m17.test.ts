@@ -32,7 +32,7 @@ function annDoc(uid: string, body = 'Demo day is Thursday at six.') {
 
 // M17 — the circle's voice. Admin-only and append-only: an announcement is a
 // statement made at a moment, so correcting it means posting again.
-describe('announcements', () => {
+describe('[announcements] announcements', () => {
   const path = `groups/${GID}/announcements/a1`;
 
   it('an admin posts one', async () => {
@@ -114,7 +114,7 @@ describe('announcements', () => {
 
 // M17 — the second join question. Closed vocabulary, same as helpWith, because
 // the join screen offers chips and the value has to stay joinable.
-describe('member domainTags', () => {
+describe('[join-flow] member domainTags', () => {
   it('a member sets them from the vocabulary', async () => {
     const bob = env.authenticatedContext('bob');
     await assertSucceeds(

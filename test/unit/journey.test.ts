@@ -52,7 +52,7 @@ function collab(
   };
 }
 
-describe('buildJourney', () => {
+describe('[journey] buildJourney', () => {
   it('orders started → interest → joined chronologically', () => {
     const j = buildJourney(repo(), [interest('bo', 200)], [collab('bo', 300)], []);
     expect(j.map((m) => m.kind)).toEqual(['started', 'interest', 'joined']);
@@ -104,7 +104,7 @@ describe('buildJourney', () => {
   });
 });
 
-describe('idea origin (M15)', () => {
+describe('[journey] [ideas] idea origin (M15)', () => {
   it('opens the story with the idea chapter, chronological', () => {
     const j = buildJourney(repo({ createdAt: t(300) }), [], [], [], 4, {
       authorLogin: 'dana',

@@ -27,7 +27,7 @@ function item(over: Partial<InboxItem>): InboxItem {
   };
 }
 
-describe('parseSubjectPath', () => {
+describe('[away-inbox] parseSubjectPath', () => {
   it('parses repo comment paths', () => {
     expect(parseSubjectPath('groups/g1/repos/42/comments/c9')).toEqual({
       gid: 'g1',
@@ -56,14 +56,14 @@ describe('parseSubjectPath', () => {
   });
 });
 
-describe('subjectHref', () => {
+describe('[away-inbox] subjectHref', () => {
   it('routes repos and asks', () => {
     expect(subjectHref({ gid: 'g', kind: 'repo', subjectId: '5' })).toBe('#/g/g/repo/5');
     expect(subjectHref({ gid: 'g', kind: 'ask', subjectId: 'a' })).toBe('#/g/g/ask/a');
   });
 });
 
-describe('mergeInbox', () => {
+describe('[away-inbox] mergeInbox', () => {
   it('drops my own actions', () => {
     expect(mergeInbox([item({ actorUid: 'me' })], 'me')).toEqual([]);
   });
@@ -90,7 +90,7 @@ describe('mergeInbox', () => {
   });
 });
 
-describe('isNewSince', () => {
+describe('[away-inbox] isNewSince', () => {
   it('null timestamp is never new', () => {
     expect(isNewSince(null, t(5))).toBe(false);
   });
@@ -103,7 +103,7 @@ describe('isNewSince', () => {
   });
 });
 
-describe('applyLocalWatermark', () => {
+describe('[away-inbox] applyLocalWatermark', () => {
   const base = {
     key: 'k',
     kind: 'reply' as const,

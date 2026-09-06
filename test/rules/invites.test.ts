@@ -38,7 +38,7 @@ async function seedInvite(token: string, overrides: Record<string, unknown> = {}
   });
 }
 
-describe('invites + join flow', () => {
+describe('[invites] [join-flow] invites + join flow', () => {
   it('admin can create a valid invite', async () => {
     const alice = env.authenticatedContext('alice');
     await assertSucceeds(setDoc(doc(db(alice), `groups/${GID}/invites/tok1`), inviteDoc()));

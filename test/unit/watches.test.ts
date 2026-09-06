@@ -10,7 +10,7 @@ import {
 } from '../../src/data/watches';
 
 // Class A: only a provable not-exists deletes; ambiguity hides, never prunes.
-describe('pruneDecision', () => {
+describe('[watches] pruneDecision', () => {
   it('prunes only on a successful read that finds nothing', () => {
     expect(pruneDecision({ ok: true, exists: false }, true)).toBe('prune');
     expect(pruneDecision({ ok: true, exists: false }, false)).toBe('prune');
@@ -28,7 +28,7 @@ describe('pruneDecision', () => {
 });
 
 // M18 — saved things widened beyond repos.
-describe('watchId', () => {
+describe('[watches] watchId', () => {
   it('keeps the original two-part id for repos so old saves still resolve', () => {
     expect(watchId('g1', 'repo', '42')).toBe('g1_42');
   });
@@ -39,7 +39,7 @@ describe('watchId', () => {
   });
 });
 
-describe('watchPath and watchHref', () => {
+describe('[watches] watchPath and watchHref', () => {
   it('point at the right collection per kind', () => {
     expect(watchPath({ gid: 'g1', kind: 'repo', itemId: '42' })).toBe('groups/g1/repos/42');
     expect(watchPath({ gid: 'g1', kind: 'ask', itemId: 'a1' })).toBe('groups/g1/asks/a1');
@@ -53,7 +53,7 @@ describe('watchPath and watchHref', () => {
   });
 });
 
-describe('savable builders', () => {
+describe('[watches] savable builders', () => {
   it('title a repo by its full name and the others by their title', () => {
     expect(savableRepo({ id: '1', fullName: 'a/b' })).toEqual({
       kind: 'repo',

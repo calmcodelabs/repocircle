@@ -46,7 +46,7 @@ function repoDoc(overrides: Record<string, unknown> = {}) {
   };
 }
 
-describe('repos', () => {
+describe('[repo-registry] [repo-status] repos', () => {
   it('member can register with numeric doc id; junk id denied', async () => {
     const bob = env.authenticatedContext('bob');
     await assertSucceeds(setDoc(doc(db(bob), `groups/${GID}/repos/67890`), repoDoc()));
@@ -126,7 +126,7 @@ describe('repos', () => {
   });
 });
 
-describe('idea board fields and interests', () => {
+describe('[repo-needs] [interests] idea board fields and interests', () => {
   it('owner sets pitch/needs/tags; an unrelated member cannot', async () => {
     const bob = env.authenticatedContext('bob');
     const carol = env.authenticatedContext('carol');
@@ -190,7 +190,7 @@ describe('idea board fields and interests', () => {
   });
 });
 
-describe('comments', () => {
+describe('[comments] comments', () => {
   const comment = (author: string) => ({
     authorUid: author,
     authorLogin: author,

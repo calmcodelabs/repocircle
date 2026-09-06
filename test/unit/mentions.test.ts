@@ -6,7 +6,7 @@ import {
   tokenizeComment,
 } from '../../src/util/mentions';
 
-describe('tokenizeComment', () => {
+describe('[mentions] tokenizeComment', () => {
   it('splits mentions, repo refs and links out of plain text', () => {
     const t = tokenizeComment('hey @ishvak look at #pocket-journal https://example.com/x done');
     expect(t.find((x) => x.kind === 'mention')?.value).toBe('ishvak');
@@ -31,7 +31,7 @@ describe('tokenizeComment', () => {
   });
 });
 
-describe('extractMentions / extractRepoRefs', () => {
+describe('[mentions] extractMentions / extractRepoRefs', () => {
   const members = ['ishvak', 'calmcodelabs'];
   const repos = ['pocket-journal', 'score-keeper'];
 
@@ -50,7 +50,7 @@ describe('extractMentions / extractRepoRefs', () => {
   });
 });
 
-describe('isSafeUrl', () => {
+describe('[mentions] isSafeUrl', () => {
   it('allows only http(s)', () => {
     expect(isSafeUrl('https://x.com')).toBe(true);
     expect(isSafeUrl('http://x.com')).toBe(true);

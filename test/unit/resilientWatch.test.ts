@@ -8,7 +8,7 @@ const unavailable = { code: 'unavailable' } as FirestoreError;
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
 
-describe('resilientWatch', () => {
+describe('[resilient-listeners] resilientWatch', () => {
   it('retries a transient permission-denied and recovers', () => {
     const unsubs: Array<() => void> = [];
     let attaches = 0;

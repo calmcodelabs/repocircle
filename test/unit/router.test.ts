@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { parseHash } from '../../src/router';
 
-describe('parseHash', () => {
+describe('[routing] parseHash', () => {
   it('maps the route table', () => {
     expect(parseHash('')).toEqual({ name: 'root' });
     expect(parseHash('#/')).toEqual({ name: 'root' });

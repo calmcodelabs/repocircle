@@ -7,7 +7,7 @@ const base = {
   created_at: '2026-09-05T10:00:00Z',
 };
 
-describe('normalizeEvent', () => {
+describe('[poll-engine] normalizeEvent', () => {
   it('push → commits with branch summary', () => {
     const n = normalizeEvent(
       {
@@ -117,7 +117,7 @@ describe('normalizeEvent', () => {
   });
 });
 
-describe('idGreater / dayKey', () => {
+describe('[poll-engine] idGreater / dayKey', () => {
   it('compares digit strings by magnitude', () => {
     expect(idGreater('100', '99')).toBe(true);
     expect(idGreater('99', '100')).toBe(false);

@@ -18,7 +18,7 @@ afterAll(async () => {
   await env.cleanup();
 });
 
-describe('groups/{gid}', () => {
+describe('[groups-create] groups/{gid}', () => {
   it('unauthenticated cannot create a group', async () => {
     const anon = env.unauthenticatedContext();
     await assertFails(setDoc(doc(db(anon), 'groups/gx'), groupDoc('nobody')));

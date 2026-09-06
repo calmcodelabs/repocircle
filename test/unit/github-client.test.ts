@@ -15,7 +15,7 @@ beforeEach(() => {
   configureTokenProvider({ get: () => TOKEN, refresh: async () => TOKEN });
 });
 
-describe('github client', () => {
+describe('[poll-engine] github client', () => {
   it('rejects non-relative paths (no token exfiltration surface)', async () => {
     await expect(ghGet('https://evil.example/steal')).rejects.toMatchObject({ kind: 'invalid' });
     expect(fetchMock).not.toHaveBeenCalled();

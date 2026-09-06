@@ -16,7 +16,7 @@ const dayOne: HomeGateInput = {
   showAll: false,
 };
 
-describe('isSettledIn', () => {
+describe('[home-gating] isSettledIn', () => {
   it('is false in the first hours with nothing done', () => {
     expect(isSettledIn(dayOne)).toBe(false);
   });
@@ -38,7 +38,7 @@ describe('isSettledIn', () => {
   });
 });
 
-describe('visibleBlocks', () => {
+describe('[home-gating] visibleBlocks', () => {
   it('gives a day-one member the essentials only', () => {
     const b = visibleBlocks(dayOne);
     expect(b).toMatchObject({
@@ -95,7 +95,7 @@ describe('visibleBlocks', () => {
   });
 });
 
-describe('isNarrowed', () => {
+describe('[home-gating] isNarrowed', () => {
   it('is true while the conversational blocks are held back', () => {
     expect(isNarrowed(visibleBlocks(dayOne))).toBe(true);
   });

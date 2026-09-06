@@ -31,7 +31,7 @@ const userDoc = {
   v: 1,
 };
 
-describe('users/{uid}', () => {
+describe('[profiles] [auth-signin] users/{uid}', () => {
   it('unauthenticated cannot read a user doc', async () => {
     const anon = env.unauthenticatedContext();
     await assertFails(getDoc(doc(db(anon), 'users/alice')));

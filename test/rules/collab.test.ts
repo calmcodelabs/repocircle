@@ -46,7 +46,7 @@ function reqDoc(overrides: Record<string, unknown> = {}) {
   };
 }
 
-describe('collabRequests', () => {
+describe('[collab-requests] collabRequests', () => {
   it('member creates a pending request as themselves', async () => {
     const carol = env.authenticatedContext('carol');
     await assertSucceeds(setDoc(doc(db(carol), `groups/${GID}/collabRequests/r1`), reqDoc()));
