@@ -105,6 +105,27 @@ filtered out / all completed / failing source / permission) and confirm the copy
 matches each one. The "Active this week" block is the model — it already
 distinguished no-repos, all-paused and quiet-week.
 
+## Adding a class
+
+From T1 (2026-09-06) a new failure class ships with its gate in the same change.
+The executable half lives in `test/registry/invariants.ts` (a manifest of every
+instance, each with a written justification) and `test/static/classes.test.ts`
+(the gate). A grep cannot judge intent, so the gate does not try: it refuses to
+let a *new* instance appear without someone writing down which kind it is, and
+refuses to let the manifest keep entries that have gone.
+
+Where each class is enforced today, and what is still human:
+
+| Class | Enforced by | Still a sweep |
+|---|---|---|
+| A | manifest of 15 mirror decisions; rules never read a stored count | whether a justification is honest |
+| B | manifest of 10 give-up paths naming a recovery; the denied-circle retry is component-tested; resilientWatch's contract is integration-tested | per-view recovery beyond the circle shell |
+| C | no read-modify-write on counters, one documented exception | — |
+| D | `scripts/verify-artifact.mjs`: stamp matches entry hash, consecutive builds differ; the reload bar is a real, keyboard-reachable button (component) | a live two-build swap in a browser |
+| E | manifest of 4 documented digests | whether staleness is really the design |
+| F | manifest of 6 predicate spellings, 2 flagged as violations | consolidating them |
+| G | every view with an `EmptyState` has its reasons enumerated (42 so far); the invalid-invite copy is asserted end-to-end | the remaining 41 reasons, one test each |
+
 ## Deliberate exceptions
 
 - Best-effort writes (checklist ticks, audit lines, markSeen) swallow errors by

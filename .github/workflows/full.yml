@@ -1,0 +1,138 @@
+# The full suite (TESTING.md §8).
+#
+# Runs beside the fast gate rather than in front of it: a failure here reports,
+# it does not un-deploy. That is deliberate — these layers are thorough and slow,
+# and making them block would trade the thing they protect (confidence) for the
+# thing the split protects (deploy latency).
+#
+# On a schedule as well as on push, because the trend and flakiness data in the
+# dashboard is only useful at a steady cadence: a test that fails one run in ten
+# is invisible if the suite only ever runs when someone pushes.
+name: full suite
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # 02:30 UTC ≈ 08:00 IST — the numbers are waiting by the time anyone looks.
+    - cron: '30 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: full-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      # Rules and integration share one emulator boot rather than paying twice.
+      - run: npm run coverage:integration
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: raw-backend
+          path: reports/raw/
+          retention-days: 14
+
+  ui:
+    name: component and journeys
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run coverage:unit
+      - run: npm run coverage:component
+      # Journeys and the accessibility audit run against the emulator-mode
+      # build, served by scripts/e2e-serve.mjs (which Playwright starts).
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: raw-ui
+          path: reports/raw/
+          retention-days: 14
+
+  perf:
+    name: lighthouse budgets
+    runs-on: ubuntu-latest
+    # Non-blocking: the config is correct but Lighthouse aborts with NO_FCP on
+    # the author's machine for reasons not yet found (see lighthouserc.cjs). A
+    # clean runner may well succeed, and the data is worth having either way —
+    # but the enforced weight budget is the gzip check in the fast gate, so
+    # nothing depends on this job.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test:perf
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: lighthouse
+          path: reports/raw/lighthouse/
+          retention-days: 14
+
+  report:
+    name: publish reports
+    needs: [backend, ui]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: raw-*
+          merge-multiple: true
+          path: reports/raw/
+      # The fast gate's results are not here, so the report covers the slow
+      # layers only; the run summary says which layers it saw.
+      # Merge the per-layer coverage and hold the ratchet before reporting, so a
+      # silent coverage regression cannot ride along with a green suite.
+      - run: npm run coverage:check
+      - run: npm run report -- --label "full suite ${{ github.run_number }}"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: test-reports
+          path: reports/
+          retention-days: 90
+      - name: Summarise into the run page
+        if: always()
+        run: |
+          {
+            echo "## Test report"
+            echo
+            sed -n '1,40p' reports/latest/summary.md
+          } >> "$GITHUB_STEP_SUMMARY"

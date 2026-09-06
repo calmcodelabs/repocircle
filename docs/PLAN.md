@@ -460,6 +460,31 @@ and each block states its read cost against the M16 target (<30/visit).
 
 ---
 
+## §5d · The testing overhaul — T0–T7 (planned 2026-09-06, not yet built)
+
+Shashwat asked for exhaustive testing: every feature covered at every layer
+where it has behavior, layered and indexed reports an agent can navigate in
+three hops, a backend/UI split, executable failure-class gates, and a
+dashboard. The full plan — decisions, layer architecture L0–L7, report store,
+milestone gates — is [TESTING.md](TESTING.md), which is binding once T0 lands.
+
+| # | Milestone | One line |
+|---|---|---|
+| T0 | Spine & harness — **done 2026-09-06** | feature registry + completeness gates, emulator-guard change, CTRF wiring, report generator v0, scenario library. As-built notes: TESTING.md §9a |
+| T1 | Gates — **done 2026-09-06** | failure classes as L0 checks, query→index manifest, artifact smoke L7. As-built + two findings: TESTING.md §9b |
+| T2 | Backend depth — **done** | integration layer L3: flows, partial failures, races, poll engine on fixtures |
+| T3 | UI depth — **done** | component layer L4: every view, every state, Class B/G enumerated |
+| T4 | Journeys — **done** | Playwright E2E L5: 14 journeys, multi-user contexts, GitHub route fixtures |
+| T5 | Pixels & wallet — **done; visual baselines pending a container run, Lighthouse non-blocking (TESTING.md §9d)** | visual baselines (container-only), axe, Lighthouse, the update journey |
+| T6 | Dashboard & analysis — **done** | single-file dashboard, feature matrix, flakiness board, trends |
+| T7 | CI staging — **done** | fast gate blocks deploy (< 6 min), full suite publishes reports; DoD amended |
+
+Closed while planning (do not re-litigate): **one build artifact** — test
+affordances are compile-time flags, never a separate testing build; deploy
+speed is protected by the fast-gate/full-suite split, not by artifact
+divergence. TESTING.md §3 records the one contained exception (the
+emulator-mode E2E build) and how its delta is verified.
+
 ## §6 · Phase 2 outline (after retention signal, PRD §13)
 
 Clusters, in likely order — each gets its own mini-plan when scheduled:
@@ -520,6 +545,12 @@ GitLab (I-04), archive automation (A-05), lead analytics (A-06 — group-level o
 - [ ] **docs/REVIEW.md failure-class sweep run against the diff** (added 2026-09-06;
       classes A–G: mirror-as-truth, latched errors, counter races, stale bundles,
       one-shot-on-live-page, duplicated predicates, lying empty states)
+- [ ] **Testing system (TESTING.md, T0–T7 all shipped 2026-09-06/07):** the
+      feature registry reflects the change (a new src file or rules block that
+      no feature claims fails the build); the enforced layers are green —
+      static, unit, rules, integration, component, e2e; `npm run test:full`
+      regenerates the report and the dashboard. A new failure class ships with
+      its gate in the same change. `KNOWN_GAPS` may shrink, never grow.
 
 Works on phone *and* laptop on the live site · rules deny everything the UI doesn't
 offer · empty/loading/error states exist · keyboard reachable · strings match voice ·
