@@ -51,6 +51,28 @@ service cloud.firestore {
         || repoData(gid, repoId).registeredBy == me()
         || repoData(gid, repoId).ownerUid == me();
     }
+    // M16 summary doc (ADR-021): a capped display mirror. It authorizes
+    // nothing, so the rules police shape and size, not truth.
+    function sumInt(d, k) { return !(k in d) || d[k] is int; }
+    function sumList(d, k, n) { return !(k in d) || (d[k] is list && d[k].size() <= n); }
+    function validSummary(d) {
+      return d.keys().hasOnly(['memberCount', 'repoCount', 'openAskCount', 'faces', 'arrivals',
+                               'newRepos', 'wantsAHand', 'links', 'pinnedRepoId', 'v'])
+        && sumInt(d, 'memberCount') && sumInt(d, 'repoCount') && sumInt(d, 'openAskCount')
+        && sumList(d, 'faces', 8) && sumList(d, 'arrivals', 5) && sumList(d, 'newRepos', 6)
+        && sumList(d, 'wantsAHand', 10) && sumList(d, 'links', 6)
+        && (!('pinnedRepoId' in d) || d.pinnedRepoId == null || str(d.pinnedRepoId, 1, 20));
+    }
+    // links + pinnedRepoId are the admin surface (M17); everything else is
+    // maintained by whichever member's client performed the underlying write.
+    function summaryTouchesAdminKeys() {
+      return resource == null
+        ? (('links' in request.resource.data && request.resource.data.links.size() > 0)
+           || ('pinnedRepoId' in request.resource.data
+               && request.resource.data.pinnedRepoId != null))
+        : request.resource.data.diff(resource.data).affectedKeys()
+            .hasAny(['links', 'pinnedRepoId']);
+    }
 
     // ---------- users ----------
     match /users/{uid} {
@@ -520,6 +542,19 @@ service cloud.firestore {
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['state']))
         );
         allow delete: if isAdmin(gid); // group-deletion sweep only; app offers no per-request delete
+      }
+
+      // ---------- meta/summary — Home's one read (M16, ADR-021) ----------
+      // Maintained by member clients at write time; Spark has no triggers.
+      // Guests may write it as well: a member count left wrong by one after a
+      // guest joins is a visible lie, and that costs more than the blast radius
+      // of a shape-capped display document.
+      match /meta/{docId} {
+        allow read: if isMember(gid);
+        allow create, update: if isMember(gid) && docId == 'summary'
+          && validSummary(request.resource.data)
+          && (isAdmin(gid) || !summaryTouchesAdminKeys());
+        allow delete: if isAdmin(gid);
       }
 
       // ---------- integrations ----------
