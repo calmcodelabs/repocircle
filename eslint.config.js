@@ -3,7 +3,9 @@ import tseslint from 'typescript-eslint';
 import globals from 'globals';
 
 export default tseslint.config(
-  { ignores: ['dist/', 'node_modules/'] },
+  // docs/ holds build tooling (Node scripts) and generated assets, not app
+  // source — linting it with the browser config fails on Node globals.
+  { ignores: ['dist/', 'node_modules/', 'docs/'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
