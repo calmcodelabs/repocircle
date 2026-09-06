@@ -12,7 +12,8 @@ A private space where a group of engineers shares what they're working on — an
 
 [![ci](https://github.com/calmcodelabs/repocircle/actions/workflows/deploy.yml/badge.svg)](https://github.com/calmcodelabs/repocircle/actions/workflows/deploy.yml)
 ![tests](https://img.shields.io/badge/tests-117%20rules%20%2B%2080%20unit-3dd68c)
-![no server](https://img.shields.io/badge/architecture-static%20PWA-6b7679)
+![license](https://img.shields.io/badge/license-MIT-6b7679)
+![architecture](https://img.shields.io/badge/architecture-static%20PWA-6b7679)
 
 </div>
 
@@ -133,6 +134,10 @@ Pushing to `main` builds and deploys to GitHub Pages automatically.
 | [PLAN.md](docs/PLAN.md) | Milestones, acceptance criteria, risk register |
 | [UI.md](docs/UI.md) | The design system |
 | [SETUP.md](docs/SETUP.md) | First-time Firebase and GitHub setup |
+
+## License
+
+[MIT](LICENSE) — use it, fork it, run your own circle.
 
 ## Status
 
