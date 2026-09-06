@@ -324,7 +324,15 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
           <span class="sectionhead__mark" />
           <span class="sectionhead__title">What it looks like</span>
         </div>
-        <img class="repodetail__shot" src={socialPreviewUrl(repo.fullName)} alt="" loading="lazy" />
+        <img
+          class="repodetail__shot"
+          src={socialPreviewUrl(repo.fullName)}
+          alt=""
+          loading="lazy"
+          // A repo GitHub can't render a card for should show nothing, not a
+          // broken-image glyph (Class G's cousin: never render a lie).
+          onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = 'none')}
+        />
         {readme === undefined && <span class="skeleton" />}
         {readme === null && (
           <EmptyState
