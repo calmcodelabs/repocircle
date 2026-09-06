@@ -4,8 +4,8 @@
  * off and redeploy to bring the app back; it is one line on purpose.
  */
 export const MAINTENANCE = {
-  on: false,
+  on: true,
   heading: 'Back shortly',
-  body: 'RepoCircle is paused for a few hours while we sort out a hosting limit. Nothing you have created is lost — your circle, repos and comments are all safe.',
-  eta: 'Expected back around midday IST',
+  body: 'RepoCircle is getting ready for its first circles. It will be open shortly — nothing you do here will be lost.',
+  eta: 'Back around midday IST',
 } as const;
