@@ -648,6 +648,39 @@ composited the animation would show nothing at all. The block now zeroes the
 delay and drops the fill. Measured before and after: panel opacity at 50ms went
 from 0 to 1 under reduced motion.
 
+## 9e. Visual baselines (2026-09-07)
+
+Generated in the Playwright container and committed; `visual` is now an enforced
+layer. Three baselines: sign-in at desktop and mobile, and not-found. Seventeen
+screens remain, listed in `KNOWN_GAPS`.
+
+Two things had to be fixed before the baselines were worth anything, and both
+are the reason the generator prints "review the images before committing them".
+
+**The CSP blocks style injection.** `page.addStyleTag` — the obvious way to
+disable animations before a shot — is refused by `style-src 'self'`, and
+loosening the policy would mean the screenshots came from an artifact nobody
+receives. The specs now call `emulateMedia({ reducedMotion: 'reduce' })`, which
+triggers the app's *own* reduced-motion block. That block only reaches the
+settled state at all because of the fix in §9d, so the two findings are linked:
+the visual layer depends on reduced motion being correct.
+
+**A mask can destroy the thing it is protecting.** `.halo` was masked as
+"an animated gradient". It is neither animated nor small: it is
+`position: fixed; inset: 0`, so Playwright painted the entire viewport with its
+mask colour and wrote a solid magenta reference — 4.7 KB where the real page is
+284 KB. That baseline would have passed forever while proving nothing. It was
+caught by looking at the images, which is the only thing that catches it.
+
+Also removed: a shot named "the pause screen is unmistakable" that captured the
+sign-in screen. The pause is deliberately skipped for emulator builds — that is
+what lets anyone develop while the app is paused — so this harness cannot reach
+it, and a maintenance-sounding name over a sign-in screenshot is worse than no
+coverage. The pause screen's content is asserted in the component layer instead.
+
+Verified to actually catch a regression: a one-word copy change in `NotFound`
+produced 709 differing pixels on that screen and left the other two green.
+
 ## 10. Dependencies and scripts
 
 New devDependencies (all dev-side; the app's 3 runtime deps are untouched):

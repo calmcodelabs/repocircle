@@ -57,11 +57,12 @@ export const ENFORCED_LAYERS: Layer[] = [
   'integration',
   'component',
   'e2e',
+  'visual',
 ];
-// 'visual' is deliberately absent: its baselines can only be generated inside
-// the Playwright container (scripts/visual-baselines.sh), so enforcing it on a
-// machine that has never run that would fail for the wrong reason. It joins the
-// list in the same change that commits container-generated baselines.
+// 'visual' joined the list once container-generated baselines were committed.
+// They can only be produced by scripts/visual-baselines.sh — a baseline made on
+// a developer machine fails for everyone else, because font rasterisation is not
+// portable.
 
 /**
  * Declared-but-not-yet-built feature/layer pairs in the ENFORCED_LAYERS, as of
@@ -220,6 +221,26 @@ export const KNOWN_GAPS: Array<[string, Layer]> = [
   ['maintenance-mode', 'e2e'],
   ['diag', 'e2e'],
   ['csp', 'e2e'],
+  // Baselines exist for sign-in (two viewports) and not-found. These screens
+  // need one shot each, generated the same way — inside the container, never
+  // on a developer machine.
+  ['onboarding', 'visual'],
+  ['personal-home', 'visual'],
+  ['join-flow', 'visual'],
+  ['membership-roles', 'visual'],
+  ['settings-admin', 'visual'],
+  ['repo-registry', 'visual'],
+  ['repo-needs', 'visual'],
+  ['repo-list-view', 'visual'],
+  ['active-this-week', 'visual'],
+  ['sparklines', 'visual'],
+  ['asks', 'visual'],
+  ['ideas', 'visual'],
+  ['profiles', 'visual'],
+  ['sessions', 'visual'],
+  ['polls-voting', 'visual'],
+  ['home-gating', 'visual'],
+  ['ui-primitives', 'visual'],
 ];
 
 export type Feature = {

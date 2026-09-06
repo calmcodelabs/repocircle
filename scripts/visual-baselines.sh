@@ -1,25 +1,57 @@
 #!/usr/bin/env bash
 # Generate or verify visual baselines inside the Playwright container.
 #
-# Never run `--update-snapshots` on a developer machine: font rasterisation and
-# subpixel hinting differ between operating systems, so a locally generated
-# baseline fails for everybody else and for CI. The container is the only
-# environment whose rendering is reproducible, which makes it the only place a
-# baseline is allowed to come from (TESTING.md §2, L6).
+# Never run `--update-snapshots` on a developer machine. Font rasterisation and
+# subpixel hinting differ between operating systems and even between font
+# versions, so a locally generated baseline fails for everybody else and for CI.
+# The container is the only rendering environment that reproduces, which makes
+# it the only place a baseline is allowed to come from (TESTING.md §2, L6).
 #
 #   scripts/visual-baselines.sh update   # (re)generate baselines
 #   scripts/visual-baselines.sh          # verify against them
+#
+# The image tag is derived from the installed @playwright/test version rather
+# than hard-coded: a mismatch means the container's bundled browser is not the
+# one the test runner expects, which produces baselines nobody can reproduce.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-IMAGE="mcr.microsoft.com/playwright:v1.56.0-noble"
+VERSION="$(node -p "require('./node_modules/@playwright/test/package.json').version")"
+IMAGE="mcr.microsoft.com/playwright:v${VERSION}-noble"
 MODE="${1:-verify}"
-ARGS="--project=visual"
-[ "$MODE" = "update" ] && ARGS="$ARGS --update-snapshots"
 
-echo "Running the visual project in $IMAGE ($MODE)"
+ARGS="--project=visual"
+if [ "$MODE" = "update" ]; then
+  ARGS="$ARGS --update-snapshots"
+fi
+
+echo "Playwright $VERSION -> $IMAGE ($MODE)"
+
+# The visual specs run against the emulator-mode build, which means the suite
+# boots the Firestore emulator — and that is a JVM. The Playwright image does
+# not ship a JRE, so install one inside the container if it is missing. Doing it
+# here rather than in a Dockerfile keeps this to one file and one command.
+RUN_SCRIPT='
+set -e
+if ! command -v java >/dev/null 2>&1; then
+  echo "[visual] installing a headless JRE for the Firestore emulator"
+  apt-get update -qq
+  apt-get install -y -qq --no-install-recommends default-jre-headless >/dev/null
+fi
+java -version 2>&1 | head -1
+npx playwright test '"$ARGS"'
+'
+
 docker run --rm --init --ipc=host \
   -v "$PWD":/work -w /work \
   -e CI=1 \
+  -e HOME=/tmp \
   "$IMAGE" \
-  bash -lc "npx playwright test $ARGS"
+  bash -lc "$RUN_SCRIPT"
+
+if [ "$MODE" = "update" ]; then
+  echo
+  echo "Baselines written. Review the images before committing them —"
+  echo "an accepted-but-wrong baseline silently blesses a visual bug."
+  git status --short "test/e2e" | sed 's/^/  /'
+fi

@@ -475,7 +475,7 @@ milestone gates — is [TESTING.md](TESTING.md), which is binding once T0 lands.
 | T2 | Backend depth — **done** | integration layer L3: flows, partial failures, races, poll engine on fixtures |
 | T3 | UI depth — **done** | component layer L4: every view, every state, Class B/G enumerated |
 | T4 | Journeys — **done** | Playwright E2E L5: 14 journeys, multi-user contexts, GitHub route fixtures |
-| T5 | Pixels & wallet — **done; visual baselines pending a container run, Lighthouse non-blocking (TESTING.md §9d)** | visual baselines (container-only), axe, Lighthouse, the update journey |
+| T5 | Pixels & wallet — **done; baselines committed and enforced (§9e), Lighthouse off the PR path (§9d)** | visual baselines (container-only), axe, Lighthouse, the update journey |
 | T6 | Dashboard & analysis — **done** | single-file dashboard, feature matrix, flakiness board, trends |
 | T7 | CI staging — **done** | fast gate blocks deploy (< 6 min), full suite publishes reports; DoD amended |
 
