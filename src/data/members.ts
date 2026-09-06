@@ -18,6 +18,7 @@ import { audit } from './audit';
 import { ensureUserDoc, forgetGroup } from './groups';
 import { resilientWatch } from './resilientWatch';
 import { markReposOwnerLeft } from './repos';
+import { noteMemberJoined, noteMemberLeft } from './summary';
 import type { Availability, HelpArea, Invite, Member, MyProfile, Role } from './types';
 
 export function watchMembers(
@@ -68,6 +69,13 @@ export async function joinViaInvite(
     () => null,
   );
   if (!check?.exists()) throw new Error('join-not-persisted');
+  // Only after the membership is provably on the server: a mirror that counts
+  // a join the server rejected would be worse than one that lags.
+  await noteMemberJoined(
+    gid,
+    { uid: profile.uid, login: profile.login, avatarUrl: profile.avatarUrl },
+    { founder: false },
+  );
 }
 
 /** Self-only (rules-enforced): what I can help with + what I'm learning. */
@@ -106,6 +114,7 @@ export async function removeMember(gid: string, actor: MyProfile, target: Member
   // so a partial failure leaves a member with flagged repos, not orphans.
   const orphaned = await markReposOwnerLeft(gid, target.uid);
   await deleteDoc(doc(db(), `groups/${gid}/members/${target.uid}`));
+  await noteMemberLeft(gid, target.uid);
   audit(
     gid,
     actor,
@@ -123,6 +132,7 @@ export async function removeMember(gid: string, actor: MyProfile, target: Member
 export async function leaveGroup(gid: string, profile: MyProfile): Promise<void> {
   await anonymizeMyContent(gid, profile.uid);
   await markReposOwnerLeft(gid, profile.uid); // while my membership still authorizes it
+  await noteMemberLeft(gid, profile.uid); // ditto — the mirror write needs membership
   await deleteDoc(doc(db(), `groups/${gid}/members/${profile.uid}`));
   await forgetGroup(profile.uid, gid);
 }

@@ -273,7 +273,10 @@ export type SummaryNewRepo = {
 export type SummaryNeed = {
   repoId: string;
   fullName: string;
-  needs: RepoNeed;
+  needs: RepoNeed | null;
+  /** Owner moved on or left; the repo waits for someone to take it. */
+  seekingOwner?: boolean;
+  /** When it started waiting — M18 orders the longest-waiting first. */
   since: Timestamp | null;
 };
 /** Admin-curated circle links (M17) — schema lands with the doc, UI follows. */

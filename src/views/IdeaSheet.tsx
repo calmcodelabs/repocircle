@@ -32,7 +32,7 @@ export function IdeaSheet({
   async function save() {
     setBusy(true);
     try {
-      await setIdeaDetails(gid, repo.id, {
+      await setIdeaDetails(gid, repo, {
         pitch: pitch.trim(),
         needs,
         domainTags: [...tags],

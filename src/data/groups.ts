@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { newGroupId } from './ids';
+import { initSummary } from './summary';
 import type { Group, MyProfile } from './types';
 
 /**
@@ -89,6 +90,13 @@ export async function createGroup(
   // Confirm it reached the server: a local-only write would otherwise look like success.
   const check = await getDocFromServer(doc(db(), 'groups', gid)).catch(() => null);
   if (!check?.exists()) throw new Error('group-not-persisted');
+  // Home reads this instead of the whole circle (ADR-021); best-effort, so a
+  // failure here leaves a circle with no mirror rather than no circle.
+  await initSummary(gid, {
+    uid: profile.uid,
+    login: profile.login,
+    avatarUrl: profile.avatarUrl,
+  });
   return gid;
 }
 

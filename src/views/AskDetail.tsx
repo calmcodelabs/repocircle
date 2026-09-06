@@ -82,7 +82,7 @@ export function AskDetail({ gid, askId }: { gid: string; askId: string }) {
     try {
       await resolveAsk(
         gid,
-        ask.id,
+        ask,
         withClaimer ? { uid: withClaimer.uid, login: withClaimer.login } : null,
       );
       toast('Resolved — one more unblocked');
@@ -247,7 +247,7 @@ export function AskDetail({ gid, askId }: { gid: string; askId: string }) {
               isAuthor && (
                 <Pill
                   busy={busy}
-                  onClick={() => void reopenAsk(gid, ask.id).then(() => toast('Reopened'))}
+                  onClick={() => void reopenAsk(gid, ask).then(() => toast('Reopened'))}
                 >
                   Reopen
                 </Pill>
@@ -257,7 +257,7 @@ export function AskDetail({ gid, askId }: { gid: string; askId: string }) {
               <Pill
                 variant="danger"
                 busy={busy}
-                onClick={() => void deleteAsk(gid, ask.id).then(() => navigate(`#/g/${gid}`))}
+                onClick={() => void deleteAsk(gid, ask).then(() => navigate(`#/g/${gid}`))}
               >
                 Really delete
               </Pill>

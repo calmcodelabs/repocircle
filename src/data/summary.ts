@@ -165,27 +165,55 @@ export async function noteRepoRemoved(gid: string, repoId: string): Promise<void
 }
 
 /**
- * A repo declaring (or withdrawing) what it needs is the input to both the
- * matcher and M18's longest-waiting view, so `since` is the moment it started
- * waiting — preserved across edits that do not change the need.
+ * What a repo is waiting for — a declared need, or an owner who left. Both
+ * feed the same Home block and the M11 matcher, so they share one mirror
+ * entry. Takes a batch because a departing member can orphan many repos at
+ * once, and that should cost one write, not one per repo.
+ *
+ * `since` is the moment it started waiting and survives edits that do not
+ * change what it wants; M18 orders the longest-waiting first from it.
  */
-export async function noteRepoNeeds(
-  gid: string,
-  repo: Pick<Repo, 'id' | 'fullName'>,
-  needs: SummaryNeed['needs'] | null,
-): Promise<void> {
+export type WantChange = {
+  repoId: string;
+  fullName: string;
+  needs: SummaryNeed['needs'];
+  seekingOwner: boolean;
+};
+
+export async function noteWants(gid: string, changes: WantChange[]): Promise<void> {
+  if (changes.length === 0) return;
   await patch(gid, {}, (cur) => {
-    if (!needs) return { wantsAHand: dropById(cur.wantsAHand, repo.id, repoIdOf) };
-    const existing = (cur.wantsAHand ?? []).find((w) => w.repoId === repo.id);
-    const entry: SummaryNeed = {
-      repoId: repo.id,
-      fullName: repo.fullName,
-      needs,
-      since: existing?.needs === needs ? (existing.since ?? Timestamp.now()) : Timestamp.now(),
-    };
-    return {
-      wantsAHand: prependCapped(cur.wantsAHand, entry, repoIdOf, SUMMARY_CAPS.wantsAHand),
-    };
+    let list: SummaryNeed[] = cur.wantsAHand ?? [];
+    for (const c of changes) {
+      if (!c.needs && !c.seekingOwner) {
+        list = dropById(list, c.repoId, repoIdOf);
+        continue;
+      }
+      const prev = list.find((w) => w.repoId === c.repoId);
+      const same = prev && prev.needs === c.needs && !!prev.seekingOwner === c.seekingOwner;
+      const entry: SummaryNeed = {
+        repoId: c.repoId,
+        fullName: c.fullName,
+        needs: c.needs,
+        ...(c.seekingOwner ? { seekingOwner: true } : {}),
+        since: same ? (prev.since ?? Timestamp.now()) : Timestamp.now(),
+      };
+      list = prependCapped(list, entry, repoIdOf, SUMMARY_CAPS.wantsAHand);
+    }
+    return { wantsAHand: list };
+  });
+}
+
+/** Founder's circle starts with an explicit zeroed mirror rather than gaps. */
+export async function initSummary(gid: string, founder: SummaryFace): Promise<void> {
+  await patch(gid, {
+    memberCount: 1,
+    repoCount: 0,
+    openAskCount: 0,
+    faces: [founder],
+    arrivals: [],
+    newRepos: [],
+    wantsAHand: [],
   });
 }
 
@@ -240,12 +268,13 @@ export async function rebuildSummary(gid: string): Promise<void> {
     }));
 
   const wantsAHand: SummaryNeed[] = live
-    .filter((r) => !!r.needs)
+    .filter((r) => !!r.needs || !!r.seekingOwner)
     .slice(0, SUMMARY_CAPS.wantsAHand)
     .map((r) => ({
       repoId: r.id,
       fullName: r.fullName,
-      needs: r.needs!,
+      needs: r.needs ?? null,
+      ...(r.seekingOwner ? { seekingOwner: true } : {}),
       // The moment it started waiting is not recorded on the repo, so a rebuild
       // dates it from the repo instead — honest, and only ever a repair.
       since: r.createdAt,

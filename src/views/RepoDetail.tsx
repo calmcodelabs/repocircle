@@ -261,7 +261,7 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
           {!repo.seekingOwner && !liveOwner && iAmAdmin && (
             <Pill
               onClick={() =>
-                void markRepoOwnerLeft(gid, repoId)
+                void markRepoOwnerLeft(gid, repo)
                   .then(() => toast('Flagged — anyone interested can now take it over'))
                   .catch(() => toast('Could not flag it.', { error: true }))
               }

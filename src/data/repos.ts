@@ -17,6 +17,7 @@ import { db } from '../firebase';
 import type { GhRepo } from '../github/types';
 import { audit } from './audit';
 import { resilientWatch } from './resilientWatch';
+import { noteReposRegistered, noteRepoRemoved, noteWants, type WantChange } from './summary';
 import type { MyProfile, Repo, RepoInterest, RepoNeed, RepoStatus } from './types';
 
 /** Map a GitHub API repo onto our doc shape (rules-compatible: clamps + allowlists). */
@@ -84,6 +85,16 @@ export async function registerRepos(
     await batch.commit();
   }
   if (fresh.length > 0) {
+    await noteReposRegistered(
+      gid,
+      fresh.map((gh) => ({
+        repoId: String(gh.id),
+        fullName: gh.full_name.slice(0, 140),
+        language: gh.language ?? null,
+        ownerLogin: gh.owner.login,
+        at: Timestamp.now(),
+      })),
+    );
     // Onboarding checklist signal (F-12); best-effort.
     void updateDoc(doc(db(), `groups/${gid}/members/${me.uid}`), {
       'checklist.addedRepo': true,
@@ -114,6 +125,7 @@ export async function removeRepo(gid: string, me: MyProfile, repo: Repo): Promis
     }
   }
   await deleteDoc(doc(db(), `groups/${gid}/repos/${repo.id}`));
+  await noteRepoRemoved(gid, repo.id);
   audit(gid, me, 'repo_removed', 'repo', repo.fullName);
 }
 
@@ -156,15 +168,23 @@ export async function fetchMyRepos(
 /** Owner-authored idea fields: the pitch, what help is wanted, how to browse it. */
 export async function setIdeaDetails(
   gid: string,
-  repoId: string,
+  repo: Pick<Repo, 'id' | 'fullName'>,
   fields: { pitch: string; needs: RepoNeed | null; domainTags: string[]; seekingOwner: boolean },
 ): Promise<void> {
-  await updateDoc(doc(db(), `groups/${gid}/repos/${repoId}`), {
+  await updateDoc(doc(db(), `groups/${gid}/repos/${repo.id}`), {
     pitch: fields.pitch.slice(0, 200),
     needs: fields.needs,
     domainTags: fields.domainTags.slice(0, 4),
     seekingOwner: fields.seekingOwner,
   });
+  await noteWants(gid, [
+    {
+      repoId: repo.id,
+      fullName: repo.fullName,
+      needs: fields.needs,
+      seekingOwner: fields.seekingOwner,
+    },
+  ]);
 }
 
 export function watchInterests(
@@ -209,17 +229,36 @@ export async function markReposOwnerLeft(gid: string, ownerUid: string): Promise
   );
   if (snap.empty) return 0;
   const batch = writeBatch(db());
-  snap.forEach((d) => batch.update(d.ref, { seekingOwner: true, ownerLeft: true }));
+  const changes: WantChange[] = [];
+  snap.forEach((d) => {
+    batch.update(d.ref, { seekingOwner: true, ownerLeft: true });
+    const r = d.data() as Omit<Repo, 'id'>;
+    changes.push({
+      repoId: d.id,
+      fullName: r.fullName,
+      needs: r.needs ?? null,
+      seekingOwner: true,
+    });
+  });
   await batch.commit();
+  await noteWants(gid, changes);
   return snap.size;
 }
 
 /** Admin affordance for repos orphaned before this existed. */
-export async function markRepoOwnerLeft(gid: string, repoId: string): Promise<void> {
-  await updateDoc(doc(db(), `groups/${gid}/repos/${repoId}`), {
+export async function markRepoOwnerLeft(gid: string, repo: Repo): Promise<void> {
+  await updateDoc(doc(db(), `groups/${gid}/repos/${repo.id}`), {
     seekingOwner: true,
     ownerLeft: true,
   });
+  await noteWants(gid, [
+    {
+      repoId: repo.id,
+      fullName: repo.fullName,
+      needs: repo.needs ?? null,
+      seekingOwner: true,
+    },
+  ]);
 }
 
 /**
@@ -241,6 +280,14 @@ export async function adoptRepo(
     seekingOwner: false,
     ownerLeft: false,
   });
+  await noteWants(gid, [
+    {
+      repoId: repo.id,
+      fullName: repo.fullName,
+      needs: repo.needs ?? null,
+      seekingOwner: false,
+    },
+  ]);
   audit(gid, actor, 'repo_adopted', 'repo', repo.fullName, `→ @${adopter.login}`);
 }
 

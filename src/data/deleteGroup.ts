@@ -57,6 +57,7 @@ export async function deleteGroupEverything(gid: string, profile: MyProfile): Pr
     await sweepCollection(`groups/${gid}/collabRequests`);
     await sweepCollection(`groups/${gid}/integrations`);
     await sweepCollection(`groups/${gid}/auditLog`);
+    await sweepCollection(`groups/${gid}/meta`);
 
     step('Removing members…');
     const members = await getDocs(collection(db(), `groups/${gid}/members`));

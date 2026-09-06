@@ -22,6 +22,7 @@ import { db } from '../firebase';
 import { log, noteServerError } from '../util/log';
 import { randomToken } from './ids';
 import { resilientWatch } from './resilientWatch';
+import { noteAskClosed, noteAskOpened } from './summary';
 import type { Ask, AskClaim, AskKind, MyProfile } from './types';
 
 function askDocs(snap: { docs: Array<{ id: string; data: () => unknown }> }): Ask[] {
@@ -119,6 +120,7 @@ export async function createAsk(
     createdAt: serverTimestamp(),
     v: 1,
   });
+  await noteAskOpened(gid);
   void updateDoc(doc(db(), `groups/${gid}/members/${profile.uid}`), {
     'checklist.postedOrAnswered': true,
   }).catch(() => undefined);
@@ -168,10 +170,10 @@ export async function unclaimAsk(gid: string, ask: Ask, uid: string): Promise<vo
 
 export async function resolveAsk(
   gid: string,
-  askId: string,
+  ask: Pick<Ask, 'id' | 'state'>,
   resolvedWith?: { uid: string; login: string } | null,
 ): Promise<void> {
-  await updateDoc(doc(db(), `groups/${gid}/asks/${askId}`), {
+  await updateDoc(doc(db(), `groups/${gid}/asks/${ask.id}`), {
     state: 'resolved',
     resolvedAt: serverTimestamp(),
     // One fact, never a count: who got the author unstuck (ADR-019).
@@ -179,14 +181,19 @@ export async function resolveAsk(
       ? { resolvedWithUid: resolvedWith.uid, resolvedWithLogin: resolvedWith.login }
       : {}),
   });
+  // Guarded on the state we came from: resolving an already-resolved ask (a
+  // double tap, a stale tab) must not push the mirror below zero.
+  if (ask.state !== 'resolved') await noteAskClosed(gid);
 }
 
-export async function reopenAsk(gid: string, askId: string): Promise<void> {
-  await updateDoc(doc(db(), `groups/${gid}/asks/${askId}`), { state: 'open', resolvedAt: null });
+export async function reopenAsk(gid: string, ask: Pick<Ask, 'id' | 'state'>): Promise<void> {
+  await updateDoc(doc(db(), `groups/${gid}/asks/${ask.id}`), { state: 'open', resolvedAt: null });
+  if (ask.state === 'resolved') await noteAskOpened(gid);
 }
 
-export async function deleteAsk(gid: string, askId: string): Promise<void> {
-  await deleteDoc(doc(db(), `groups/${gid}/asks/${askId}`));
+export async function deleteAsk(gid: string, ask: Pick<Ask, 'id' | 'state'>): Promise<void> {
+  await deleteDoc(doc(db(), `groups/${gid}/asks/${ask.id}`));
+  if (ask.state !== 'resolved') await noteAskClosed(gid);
 }
 
 /**
