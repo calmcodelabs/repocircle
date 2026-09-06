@@ -341,16 +341,6 @@
       ]
     },
     {
-      "collectionGroup": "sessions",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "startsAt",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
       "collectionGroup": "polls",
       "queryScope": "COLLECTION",
       "fields": [
