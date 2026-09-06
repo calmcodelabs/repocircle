@@ -50,19 +50,42 @@ for the member list a second time to find one membership document.
 
 The number after M16 is the point, and it is not the size of the number: **the
 cost stopped scaling with the circle.** Every read is now either one document
-or a bounded query, so a circle can grow without the bill following it. That
-also means the remaining ~130 is a fixed budget to spend down, rather than a
-slope to outrun.
+or a bounded query, so a circle can grow without the bill following it.
 
-Where it goes for a fully-unlocked member: open asks 25, recent discussion 12,
-your activity 12, accepted collaborations 12, the five repo blocks 34, recent
-members 8, ideas 10, the unblocked count up to 50 (throttled to once a minute
-per tab), and 3 for the group, membership and summary documents.
+M16.5 then spends that fixed budget down for the people who need least of it.
+Home is split into per-block components that each own their listener, so a
+block that does not render costs nothing (ADR-022):
 
-**M16.5 is what spends it down.** Most of those blocks do not render for most
-members; gating them at the listener rather than the markup takes a day-one
-member to roughly 45 and a typical member well below the ~130 ceiling. The
-under-30 target belongs to M16.5, not here — see PLAN §5c.
+| Who | Reads per home visit |
+|---|---|
+| A member in their first days | **~70** |
+| A settled member, everything showing | **~130** |
+
+Where the ~130 goes: open asks 25, repos wanting help 15, recent discussion 12,
+your activity 12, accepted collaborations 12, active repos 8, recent members 8,
+new repos 6, ideas 10, the unblocked count up to 50 (throttled to once a minute
+per tab, so usually zero), and 3 for the group, membership and summary
+documents.
+
+### The honest arithmetic, which does not fully flatter this
+
+The original target in this section was "under ~30 reads at any circle size".
+**That was written before anything was measured, and it is not reachable
+without hiding the product** — the ask list, the repos wanting help and the
+activity feed *are* Home, and they account for most of what is left. The target
+was wrong; the milestones are done.
+
+What that means for the bill, stated plainly:
+
+| Load on a 200-member circle | Reads/day | Verdict |
+|---|---|---|
+| 2 visits per member per day | ~35,000 | Inside the 50K free tier |
+| 5 visits per member per day | ~90,000 | **Over the free tier** |
+
+So heavy use by a circle at the top of the target range still needs Blaze. The
+difference M16 makes is what it costs there: **~$2/month rather than the ~$16
+projected before, and flat rather than rising with membership.** That is a bill
+worth paying; the previous one was a bill that punished growth.
 
 Found during the M16 review sweep and worth stating separately, because it was
 larger than the problem this milestone set out to fix: **the polling engine
@@ -94,9 +117,8 @@ a bounded query is the same cost order as a mirror while returning whole,
 current documents, where a mirror duplicates display fields that drift
 (ADR-021). Counts survive because no bounded query can produce one.
 
-Constant-cost is achieved; **under ~30 is M16.5's job** (progressive
-disclosure), since the remaining budget is dominated by blocks that most
-members should not be rendering at all.
+Constant-cost is achieved, and M16.5 halves it again for new members. Under
+~30 turned out to be the wrong target — see the arithmetic above.
 
 Not yet worth doing: caching aggregates in a scheduled job (needs a server),
 or Firestore bundles served from the CDN (real, but only after the above).

@@ -359,16 +359,22 @@ triage, monetization, public discovery. Design decisions live in ADR-021..025.
 Standing constraint for every milestone here: nothing may add an unbounded read,
 and each block states its read cost against the M16 target (<30/visit).
 
-- **M16.5 · Progressive Home.** GroupHome's blocks gate on member state, and the
-  gate lives at the *listener* level — a hidden block mounts no onSnapshot, so
-  disclosure and read cost are the same mechanism (Discord's progressive channel
-  disclosure, applied to blocks). Day-one members (checklist incomplete, joined
-  <48h) see head + checklist + active-this-week + members; completing checklist
-  items unlocks the rest — the checklist stops being a card and becomes the
-  disclosure mechanic (ADR-022). GroupHome splits into per-block components,
-  each owning its listener. Class G sweep is the gate for this milestone:
-  hidden-by-gate and empty are different states and the copy must never confuse
-  them. Read cost: strictly negative (fewer listeners for newer members).
+- **M16.5 · Progressive Home (shipped 2026-09-06).** GroupHome split into
+  per-block components, each owning its own listener — that is the whole
+  mechanism, because the read is paid when the listener attaches, so the layout
+  decision and the read budget became one decision (ADR-022). Which blocks
+  render comes from `src/util/homeBlocks.ts`, a pure `visibleBlocks()` with
+  unit tests: the matcher needs declared skills, the repo blocks need a
+  non-zero repo count, "Your activity" needs activity, and the three
+  conversational blocks (ideas, building together, recent discussion) wait
+  until the member has settled in — forty-eight hours, or three checklist steps,
+  whichever comes first. **Corrected from the plan:** the checklist is *not* the
+  unlock. It stays a guide, not a gate (F-12); every input can only widen the
+  page, `showAll` is a remembered one-tap escape hatch, and the page states
+  plainly that it is narrow rather than leaving someone to wonder (Class G at
+  screen scale). Unknown is never treated as zero — a summary that has not
+  loaded does not hide the repo blocks. Measured: a new member's Home costs
+  ~70 reads against a settled member's ~130, both constant at any circle size.
 
 - **M17 · Arrival.** Three small features shaping the first ten minutes.
   (1) *Join questions* (Discord Community Onboarding): Join.tsx collects two

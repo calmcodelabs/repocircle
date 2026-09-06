@@ -205,15 +205,30 @@ is a design error, not an optimisation opportunity. Only two screens may hold
 the full member list (the roster and settings, via an explicit
 `useCircleMembers`); every other page reads its own membership as one document.
 
-**ADR-022 · Disclosure is progressive, and the checklist is the unlock.**
+**ADR-022 · Home narrows to what can mean something yet, and says that it has.**
 Discord's onboarding data says the first ten minutes decide retention, and its
-mechanism — progressive disclosure — is the same shape as our read-cost fix,
-so we build them as one thing: GroupHome blocks gate on member state, and a
-gated block mounts no listener (hiding markup while paying for the data would
-be theatre). Day-one members see four blocks; completing checklist items
-reveals the rest, which turns F-12 from a card into the mechanic. Corollary
-(Class G): hidden-by-gate and empty are different states; no gated block may
-render "nothing yet", and the sweep for this is the milestone's release gate.
+mechanism — progressive disclosure — is the same shape as our read problem, so
+they are one piece of work: a block that is not rendered mounts no listener and
+costs no reads. Gating markup while the parent still subscribed would be
+theatre, which is why every Home block owns the listener it needs and
+`visibleBlocks()` is the read budget as much as the layout.
+
+**Corrected while building.** The plan said "the checklist is the unlock". That
+overstates it and contradicts a decision already made in the code: the F-12
+checklist is *a guide, not a gate* — every tab stays reachable and the card
+celebrates progress. So the rule is not "have they done their chores" but **can
+this block mean anything to this member yet**: the matcher needs skills to join
+on, "Your activity" is definitionally empty before you have any, the repo
+blocks need repos to exist. Every input can only ever *widen* the page. Checklist
+progress is admitted as evidence of settling in, never as a requirement, and
+after forty-eight hours it stops mattering at all.
+
+Two guardrails. `showAll` is a one-tap, remembered escape hatch that beats every
+narrowing except the matcher, which stays hidden because it has nothing to
+match on. And the page **says** it is narrow, because a page quietly smaller
+than it will be later is exactly the thing that sends someone hunting a bug
+that is not there — the same reasoning as Class G, applied to a whole screen
+rather than one empty state.
 
 **ADR-023 · Sessions are member gatherings; RSVP reuses interests; reminders
 wait for the Worker.** Any writing member may schedule one — "working on this
