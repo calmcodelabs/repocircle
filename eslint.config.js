@@ -35,4 +35,10 @@ export default tseslint.config(
     files: ['test/**', 'scripts/**', '*.config.ts', 'eslint.config.js'],
     languageOptions: { globals: { ...globals.node } },
   },
+  {
+    // CommonJS tooling config (Lighthouse CI reads .cjs), so `module` and
+    // `require` are the module system rather than undeclared globals.
+    files: ['**/*.cjs'],
+    languageOptions: { sourceType: 'commonjs', globals: { ...globals.node } },
+  },
 );
