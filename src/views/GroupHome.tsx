@@ -10,9 +10,9 @@ import {
 } from '../data/asks';
 import { watchRepos } from '../data/repos';
 import { myProfile } from '../data/users';
-import { HELP_AREAS, REPO_NEEDS, type Ask, type Repo } from '../data/types';
-import { ownsRepo } from '../util/skills';
-import { fetchAcceptedCollabs, type CollabRequest } from '../data/collabs';
+import { canWriteRole, HELP_AREAS, REPO_NEEDS, type Ask, type Repo } from '../data/types';
+import { circleOwner, ownsRepo } from '../util/skills';
+import { watchAcceptedCollabs, type CollabRequest } from '../data/collabs';
 import { SkillsSheet } from './Profile';
 import { toast } from '../ui/Toast';
 import { notifyDiscord } from '../notify/discord';
@@ -30,7 +30,7 @@ import { CollabInbox } from './CollabInbox';
 import { sparkSeries } from '../poll/engine';
 import { Spark } from '../ui/Spark';
 import { langClass } from '../util/lang';
-import { log } from '../util/log';
+import { log, noteServerError } from '../util/log';
 import { relTime } from '../util/time';
 
 /** Group Home, M1 edition: real tenancy, honest placeholders for M2/M3/M5 blocks. */
@@ -50,7 +50,7 @@ export function GroupHome({ gid }: { gid: string }) {
   const [recent, setRecent] = useState<RecentComment[]>([]);
   const iAmAdmin = me?.role === 'admin';
   const uid = sessionUser.value?.uid;
-  const canWrite = !!me && me.role !== 'guest' && me.role !== 'alumnus';
+  const canWrite = canWriteRole(me);
 
   useEffect(
     () =>
@@ -113,18 +113,11 @@ export function GroupHome({ gid }: { gid: string }) {
     () =>
       watchRepos(gid, setRepos, (code) => {
         log('warn', `home repos watch: ${code}`);
+        noteServerError(code, 'repos'); // Class B: give-ups surface, never just log
       }),
     [gid],
   );
-  useEffect(() => {
-    let alive = true;
-    void fetchAcceptedCollabs(gid)
-      .then((c) => alive && setCollabs(c))
-      .catch(() => undefined);
-    return () => {
-      alive = false;
-    };
-  }, [gid]);
+  useEffect(() => watchAcceptedCollabs(gid, setCollabs), [gid]);
 
   const live =
     repos?.filter((r) => !r.archived && r.status !== 'paused' && r.status !== 'done') ?? [];
@@ -168,7 +161,7 @@ export function GroupHome({ gid }: { gid: string }) {
   const together = (repos ?? [])
     .filter((r) => !r.archived)
     .map((r) => {
-      const owner = (members ?? []).find((m) => ownsRepo(r, m));
+      const owner = circleOwner(r, members);
       const mates = collabs
         .filter((c) => c.repoId === r.id && memberByUid.has(c.requesterUid))
         .map((c) => memberByUid.get(c.requesterUid)!)
@@ -182,7 +175,9 @@ export function GroupHome({ gid }: { gid: string }) {
   // New in the circle (M12): arrivals within a week, introduced by what they
   // bring — the moment 200 semi-strangers stop being invisible on day one.
   const arrivals = (members ?? [])
-    .filter((m) => m.uid !== uid && (m.joinedAt?.toMillis() ?? 0) >= weekMs)
+    .filter(
+      (m) => m.uid !== uid && m.joinedVia !== 'founder' && (m.joinedAt?.toMillis() ?? 0) >= weekMs,
+    )
     .sort((a, b) => (b.joinedAt?.toMillis() ?? 0) - (a.joinedAt?.toMillis() ?? 0))
     .slice(0, 5);
 

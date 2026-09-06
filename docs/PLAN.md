@@ -307,6 +307,21 @@ the serverless redesign; ingestion complexity moved client-side rather than remo
     per-device, per-account localStorage watermark, closing the 1h markSeen gap.
   - 106 rules + 69 unit tests.
 
+- **M14 · Failure-class review (2026-09-06).** Point-fixing three instances of
+  the same bug in one day forced the system: **docs/REVIEW.md** defines failure
+  classes A–F; every milestone's DoD now re-runs the sweep. Fixed in the same
+  pass, per class: **D** — tabs learn about deploys (SW update check on
+  visibility + 30min, reload bar on controllerchange; six same-day deploys had
+  left user tabs on old bundles — the real "nothing works" cause); **C** —
+  claimCount/interestCount raced via read-modify-write, now increment();
+  **A** — watches pruned on the groupIds *mirror*, now only on provable
+  not-exists (pruneDecision() pure + tested); **E** — Building together and
+  the journey used one-shot collab fetches on live pages, now watches;
+  **B** — repos-watch give-ups surface on the staleboard banner instead of a
+  silent skeleton; **F** — canWriteRole()/circleOwner() replace seven scattered
+  spellings of write-permission and ownership. Founders no longer appear as
+  "New in the circle". 76 unit + 106 rules tests.
+
 ---
 
 ## §6 · Phase 2 outline (after retention signal, PRD §13)
@@ -365,6 +380,10 @@ GitLab (I-04), archive automation (A-05), lead analytics (A-06 — group-level o
 | R8 | Solo-maintainer bus factor | —×M | These docs; everything reproducible from repo + two consoles | — |
 
 ## §10 · Definition of Done (every feature, every milestone)
+
+- [ ] **docs/REVIEW.md failure-class sweep run against the diff** (added 2026-09-06;
+      classes A–F: mirror-as-truth, latched errors, counter races, stale bundles,
+      one-shot-on-live-page, duplicated predicates)
 
 Works on phone *and* laptop on the live site · rules deny everything the UI doesn't
 offer · empty/loading/error states exist · keyboard reachable · strings match voice ·

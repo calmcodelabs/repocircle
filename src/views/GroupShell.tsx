@@ -12,6 +12,7 @@ import { forgetGroup } from '../data/groups';
 import { myUserDoc } from '../data/users';
 import { toast } from '../ui/Toast';
 import { serverUnavailable } from '../util/log';
+import { canWriteRole } from '../data/types';
 import { Pill } from '../ui/Pill';
 import { AskComposer } from './AskComposer';
 import { startPolling, stopPolling } from '../poll/engine';
@@ -164,7 +165,7 @@ export function GroupShell({ gid, children }: { gid: string; children: Component
 
       {children}
 
-      {myMembership.value && !['guest', 'alumnus'].includes(myMembership.value.role) && (
+      {canWriteRole(myMembership.value) && (
         <button class="fab" onClick={() => setAskOpen(true)} aria-label="Post an ask">
           + Ask
         </button>

@@ -4,7 +4,7 @@ import { db } from '../firebase';
 import { activeMembers, myMembership } from '../data/activeGroup';
 import { sessionUser } from '../auth/session';
 import { canManageRepo } from '../data/repos';
-import type { Repo, RepoInterest } from '../data/types';
+import { canWriteRole, type Repo, type RepoInterest } from '../data/types';
 import { doc, onSnapshot as onDoc } from 'firebase/firestore';
 import { fetchReadme, socialPreviewUrl } from '../github/repos';
 import { readmePreview } from '../util/readme';
@@ -13,14 +13,14 @@ import { InterestButton } from './InterestButton';
 import { REPO_NEEDS } from '../data/types';
 import { sparkSeries } from '../poll/engine';
 import { CollabSheet } from './CollabSheet';
-import { fetchRepoCollabs, type CollabRequest } from '../data/collabs';
+import { watchRepoCollabs, type CollabRequest } from '../data/collabs';
 import { adoptRepo, markRepoOwnerLeft, watchInterests } from '../data/repos';
 import { addWatch, isWatching, removeWatch } from '../data/watches';
 import { myProfile } from '../data/users';
 import { buildJourney } from '../util/journey';
 import { Sheet } from '../ui/Sheet';
 import { toast } from '../ui/Toast';
-import { ownsRepo } from '../util/skills';
+import { circleOwner, ownsRepo } from '../util/skills';
 import { Pill } from '../ui/Pill';
 import { Icon, type IconName } from '../ui/Icon';
 import { Avatar } from '../ui/Avatar';
@@ -66,7 +66,7 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
   const uid = sessionUser.value?.uid;
   const me = myMembership.value;
   const iAmAdmin = me?.role === 'admin';
-  const canWrite = !!me && me.role !== 'guest' && me.role !== 'alumnus';
+  const canWrite = canWriteRole(me);
 
   useEffect(
     () =>
@@ -97,15 +97,7 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
   );
 
   useEffect(() => watchInterests(gid, repoId, setInterests), [gid, repoId]);
-  useEffect(() => {
-    let alive = true;
-    void fetchRepoCollabs(gid, repoId)
-      .then((c) => alive && setRepoCollabs(c))
-      .catch(() => undefined);
-    return () => {
-      alive = false;
-    };
-  }, [gid, repoId]);
+  useEffect(() => watchRepoCollabs(gid, repoId, setRepoCollabs), [gid, repoId]);
   useEffect(() => {
     let alive = true;
     if (!uid) return;
@@ -159,15 +151,9 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
     : [];
   const isMine = !!repo && !!me && ownsRepo(repo, me);
 
-  const ownerMember = activeMembers.value?.find(
-    (m) => m.login.toLowerCase() === repo.githubOwnerLogin.toLowerCase(),
-  );
-  // Who owns it *here*. After an adoption the GitHub login still points at the
-  // original author, so keying "is this ownerless?" on that offered to re-open
-  // a repo somebody had just taken over.
-  const liveOwner = activeMembers.value?.find(
-    (m) => m.uid === repo.ownerUid || m.login.toLowerCase() === repo.githubOwnerLogin.toLowerCase(),
-  );
+  // Class F: one spelling of ownership, uid-first (mirrors lie after adoption).
+  const liveOwner = circleOwner(repo, activeMembers.value);
+  const ownerMember = liveOwner;
 
   return (
     <main class="stack">

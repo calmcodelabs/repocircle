@@ -11,7 +11,7 @@ import {
   watchClaims,
 } from '../data/asks';
 import { myProfile } from '../data/users';
-import type { Ask, AskClaim } from '../data/types';
+import { canWriteRole, type Ask, type AskClaim } from '../data/types';
 import { notifyDiscord } from '../notify/discord';
 import { navigate } from '../router';
 import { CommentThread } from './CommentThread';
@@ -38,7 +38,7 @@ export function AskDetail({ gid, askId }: { gid: string; askId: string }) {
 
   const uid = sessionUser.value?.uid;
   const me = myMembership.value;
-  const canWrite = !!me && me.role !== 'guest' && me.role !== 'alumnus';
+  const canWrite = canWriteRole(me);
   const isAuthor = !!ask && ask.authorUid === uid;
   const isAdmin = me?.role === 'admin';
   const iClaimed = !!uid && claims.some((c) => c.uid === uid);

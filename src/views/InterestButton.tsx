@@ -3,7 +3,7 @@ import { sessionUser } from '../auth/session';
 import { myMembership } from '../data/activeGroup';
 import { addInterest, removeInterest, watchInterests } from '../data/repos';
 import { myProfile } from '../data/users';
-import type { Repo, RepoInterest } from '../data/types';
+import { canWriteRole, type Repo, type RepoInterest } from '../data/types';
 import { Avatar } from '../ui/Avatar';
 import { toast } from '../ui/Toast';
 
@@ -17,7 +17,7 @@ export function InterestButton({ gid, repo }: { gid: string; repo: Repo }) {
   const [busy, setBusy] = useState(false);
   const uid = sessionUser.value?.uid;
   const me = myMembership.value;
-  const canWrite = !!me && me.role !== 'guest' && me.role !== 'alumnus';
+  const canWrite = canWriteRole(me);
   const mine = !!uid && interests.some((i) => i.uid === uid);
   const isOwner = repo.ownerUid === uid;
 
@@ -28,9 +28,9 @@ export function InterestButton({ gid, repo }: { gid: string; repo: Repo }) {
     if (!profile) return;
     setBusy(true);
     try {
-      if (mine) await removeInterest(gid, repo.id, profile.uid, interests.length);
+      if (mine) await removeInterest(gid, repo.id, profile.uid);
       else {
-        await addInterest(gid, repo, profile, interests.length);
+        await addInterest(gid, repo, profile);
         toast(`@${repo.githubOwnerLogin} will see you’re interested`);
       }
     } catch {

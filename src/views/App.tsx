@@ -4,6 +4,7 @@ import { myUserDoc } from '../data/users';
 import { route, type Route } from '../router';
 import { ProfileRecovery } from './ProfileRecovery';
 import { ToastRegion } from '../ui/Toast';
+import { updateReady } from '../util/appUpdate';
 import { lazyView } from '../util/lazy';
 import { GroupHome } from './GroupHome';
 import { GroupShell } from './GroupShell';
@@ -130,6 +131,11 @@ export function App() {
 
   return (
     <>
+      {updateReady.value && (
+        <button class="staleboard staleboard--update" onClick={() => location.reload()}>
+          RepoCircle was updated — tap to load the latest.
+        </button>
+      )}
       {view}
       <ToastRegion />
     </>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { languageEvidence, ownsRepo, suggestHelpWith } from '../../src/util/skills';
+import { circleOwner, languageEvidence, ownsRepo, suggestHelpWith } from '../../src/util/skills';
 import type { Repo } from '../../src/data/types';
 
 function repo(over: Partial<Repo>): Repo {
@@ -84,5 +84,24 @@ describe('suggestHelpWith', () => {
     );
     expect(all).not.toContain('design');
     expect(all).not.toContain('feedback');
+  });
+});
+
+describe('circleOwner', () => {
+  const members = [
+    { uid: 'u-new', login: 'newowner' },
+    { uid: 'u-auth', login: 'GithubAuthor' },
+  ];
+  it('prefers in-app ownership over the GitHub login', () => {
+    const r = repo({ ownerUid: 'u-new', githubOwnerLogin: 'githubauthor' });
+    expect(circleOwner(r, members)?.uid).toBe('u-new');
+  });
+  it('falls back to the GitHub author when no uid matches', () => {
+    const r = repo({ ownerUid: 'gone', githubOwnerLogin: 'GITHUBAUTHOR' });
+    expect(circleOwner(r, members)?.uid).toBe('u-auth');
+  });
+  it('undefined when nobody in the circle owns it', () => {
+    const r = repo({ ownerUid: 'gone', githubOwnerLogin: 'stranger' });
+    expect(circleOwner(r, members)).toBeUndefined();
   });
 });

@@ -10,6 +10,7 @@ import { clearToken, getToken } from './auth/vault';
 import { log } from './util/log';
 import { App } from './views/App';
 import { MAINTENANCE } from './maintenance';
+import { watchForUpdates } from './util/appUpdate';
 import { Maintenance } from './views/Maintenance';
 
 // CSP violations otherwise surface as unrelated-looking SDK errors — name them.
@@ -42,9 +43,12 @@ function boot(): void {
 // PWA: service worker (prod only) + connectivity + install prompt capture.
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    void navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {
-      log('warn', 'service worker registration failed');
-    });
+    void navigator.serviceWorker
+      .register(`${import.meta.env.BASE_URL}sw.js`)
+      .then(watchForUpdates)
+      .catch(() => {
+        log('warn', 'service worker registration failed');
+      });
   });
 }
 

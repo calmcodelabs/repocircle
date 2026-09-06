@@ -60,34 +60,47 @@ export async function fetchWatches(uid: string): Promise<Watch[]> {
 
 export type WatchedRepo = { watch: Watch; repo: Repo | null };
 
+export type PruneDecision = 'keep' | 'hide' | 'prune';
+
 /**
- * Resolve watches to live repo docs. A repo that's provably gone (readable
- * path, no doc) prunes its watch; a denied read (left the circle, outage) just
- * hides the row — never delete on ambiguity.
+ * Class A (REVIEW.md): groupIds is a mirror, so a miss there only HIDES the
+ * row. The single provable deletion ground is a successful read that says the
+ * doc does not exist. Denied/outage keeps everything — ambiguity never deletes.
  */
+export function pruneDecision(
+  read: { ok: boolean; exists: boolean },
+  inMirror: boolean,
+): PruneDecision {
+  if (read.ok && !read.exists) return 'prune';
+  if (!read.ok) return 'hide';
+  return inMirror ? 'keep' : 'hide';
+}
+
+/** Resolve watches to live repo docs, pruning only what's provably gone. */
 export async function fetchWatchedRepos(uid: string, myGroupIds: string[]): Promise<WatchedRepo[]> {
   const watches = (await fetchWatches(uid)).slice(0, 20);
   const out = await Promise.all(
     watches.map(async (w): Promise<WatchedRepo | null> => {
-      if (!myGroupIds.includes(w.gid)) {
-        // Not my circle anymore — the watch is stale by definition.
+      let read: { ok: boolean; exists: boolean };
+      let repo: Repo | null = null;
+      try {
+        const snap = await getDoc(doc(db(), `groups/${w.gid}/repos/${w.repoId}`));
+        read = { ok: true, exists: snap.exists() };
+        if (snap.exists()) repo = { id: snap.id, ...(snap.data() as Omit<Repo, 'id'>) };
+      } catch {
+        read = { ok: false, exists: false };
+      }
+      const decision = pruneDecision(read, myGroupIds.includes(w.gid));
+      if (decision === 'prune') {
         void removeWatch(uid, w.gid, w.repoId).catch(() => undefined);
         return null;
       }
-      try {
-        const snap = await getDoc(doc(db(), `groups/${w.gid}/repos/${w.repoId}`));
-        if (!snap.exists()) {
-          void removeWatch(uid, w.gid, w.repoId).catch(() => undefined);
-          return null;
-        }
-        return { watch: w, repo: { id: snap.id, ...(snap.data() as Omit<Repo, 'id'>) } };
-      } catch {
-        return { watch: w, repo: null }; // denied/outage: keep the watch, hide the row
-      }
+      if (decision === 'hide' || !repo) return null;
+      return { watch: w, repo };
     }),
   );
   return out
-    .filter((x): x is WatchedRepo => x !== null && x.repo !== null)
+    .filter((x): x is WatchedRepo => x !== null)
     .sort(
       (a, b) => (b.repo?.lastEventAt?.toMillis() ?? 0) - (a.repo?.lastEventAt?.toMillis() ?? 0),
     );

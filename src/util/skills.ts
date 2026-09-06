@@ -37,6 +37,22 @@ export function ownsRepo(r: Repo, m: Pick<Member, 'uid' | 'login'>): boolean {
   return r.ownerUid === m.uid || r.githubOwnerLogin.toLowerCase() === m.login.toLowerCase();
 }
 
+/**
+ * Class F: who owns this repo in the circle, resolved against live members —
+ * in-app ownership (uid) first, the GitHub author as fallback. The ONLY basis
+ * for "is this repo ownerless?" decisions (mirrors like githubOwnerLogin alone
+ * gave wrong answers after adoptions).
+ */
+export function circleOwner<M extends Pick<Member, 'uid' | 'login'>>(
+  r: Repo,
+  members: M[] | null | undefined,
+): M | undefined {
+  return (
+    members?.find((m) => m.uid === r.ownerUid) ??
+    members?.find((m) => m.login.toLowerCase() === r.githubOwnerLogin.toLowerCase())
+  );
+}
+
 export type LanguageEvidence = { language: string; repos: number };
 
 /**

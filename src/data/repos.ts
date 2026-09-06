@@ -1,4 +1,5 @@
 import {
+  increment,
   Timestamp,
   collection,
   deleteDoc,
@@ -181,7 +182,6 @@ export async function addInterest(
   gid: string,
   repo: Pick<Repo, 'id' | 'ownerUid'>,
   profile: MyProfile,
-  currentCount: number,
 ): Promise<void> {
   const batch = writeBatch(db());
   batch.set(doc(db(), `groups/${gid}/repos/${repo.id}/interests/${profile.uid}`), {
@@ -193,7 +193,7 @@ export async function addInterest(
     createdAt: serverTimestamp(),
     v: 1,
   });
-  batch.update(doc(db(), `groups/${gid}/repos/${repo.id}`), { interestCount: currentCount + 1 });
+  batch.update(doc(db(), `groups/${gid}/repos/${repo.id}`), { interestCount: increment(1) });
   await batch.commit();
 }
 
@@ -244,16 +244,9 @@ export async function adoptRepo(
   audit(gid, actor, 'repo_adopted', 'repo', repo.fullName, `→ @${adopter.login}`);
 }
 
-export async function removeInterest(
-  gid: string,
-  repoId: string,
-  uid: string,
-  currentCount: number,
-): Promise<void> {
+export async function removeInterest(gid: string, repoId: string, uid: string): Promise<void> {
   const batch = writeBatch(db());
   batch.delete(doc(db(), `groups/${gid}/repos/${repoId}/interests/${uid}`));
-  batch.update(doc(db(), `groups/${gid}/repos/${repoId}`), {
-    interestCount: Math.max(currentCount - 1, 0),
-  });
+  batch.update(doc(db(), `groups/${gid}/repos/${repoId}`), { interestCount: increment(-1) });
   await batch.commit();
 }

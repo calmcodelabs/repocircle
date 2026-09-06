@@ -80,22 +80,37 @@ export async function cancelCollabRequest(gid: string, reqId: string): Promise<v
   await updateDoc(doc(db(), `groups/${gid}/collabRequests/${reqId}`), { state: 'cancelled' });
 }
 
-/** All accepted collaborations in the circle — the Building-together facts. */
-export async function fetchAcceptedCollabs(gid: string): Promise<CollabRequest[]> {
-  const { getDocs } = await import('firebase/firestore');
-  const snap = await getDocs(
-    query(collection(db(), `groups/${gid}/collabRequests`), where('state', '==', 'accepted')),
+/**
+ * All accepted collaborations in the circle — the Building-together facts.
+ * Class E: Home is a live page, so this is a watch, not a fetch.
+ */
+export function watchAcceptedCollabs(
+  gid: string,
+  cb: (reqs: CollabRequest[]) => void,
+): Unsubscribe {
+  const q = query(
+    collection(db(), `groups/${gid}/collabRequests`),
+    where('state', '==', 'accepted'),
   );
-  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<CollabRequest, 'id'>) }));
+  return onSnapshot(
+    q,
+    (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<CollabRequest, 'id'>) }))),
+    () => undefined,
+  );
 }
 
-/** Every request that ever touched one repo (journey needs accepted ones). */
-export async function fetchRepoCollabs(gid: string, repoId: string): Promise<CollabRequest[]> {
-  const { getDocs } = await import('firebase/firestore');
-  const snap = await getDocs(
-    query(collection(db(), `groups/${gid}/collabRequests`), where('repoId', '==', repoId)),
+/** Every request that ever touched one repo — live for the journey (Class E). */
+export function watchRepoCollabs(
+  gid: string,
+  repoId: string,
+  cb: (reqs: CollabRequest[]) => void,
+): Unsubscribe {
+  const q = query(collection(db(), `groups/${gid}/collabRequests`), where('repoId', '==', repoId));
+  return onSnapshot(
+    q,
+    (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<CollabRequest, 'id'>) }))),
+    () => undefined,
   );
-  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<CollabRequest, 'id'>) }));
 }
 
 /** Requests awaiting MY decision (repos I own in this group). */

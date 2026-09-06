@@ -981,3 +981,12 @@
   align-content: center;
   border-style: dashed;
 }
+
+/* Class D: new bundle took over — reload affordance */
+.staleboard--update {
+  width: 100%;
+  text-align: center;
+  cursor: pointer;
+  color: var(--accent);
+  border-color: color-mix(in oklab, var(--accent) 35%, transparent);
+}

@@ -5,7 +5,7 @@ import { activeMembers, myMembership } from '../data/activeGroup';
 import { canManageRepo, registerRepos, removeRepo, setRepoStatus, watchRepos } from '../data/repos';
 import { excludeFromSync, hasDecidedSharing, setRepoSyncMode, syncMyRepos } from '../data/repoSync';
 import { myProfile } from '../data/users';
-import { REPO_NEEDS, REPO_STATUSES, type Repo, type RepoStatus } from '../data/types';
+import { canWriteRole, REPO_NEEDS, REPO_STATUSES, type Repo, type RepoStatus } from '../data/types';
 import { IdeaSheet } from './IdeaSheet';
 import { InterestButton } from './InterestButton';
 import { socialPreviewUrl } from '../github/repos';
@@ -49,7 +49,7 @@ export function Repos({ gid }: { gid: string }) {
   const me = myMembership.value;
   const uid = sessionUser.value?.uid;
   const iAmAdmin = me?.role === 'admin';
-  const canAdd = !!me && me.role !== 'guest' && me.role !== 'alumnus';
+  const canAdd = canWriteRole(me);
 
   useEffect(
     () =>

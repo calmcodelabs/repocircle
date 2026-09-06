@@ -1,4 +1,5 @@
 import {
+  increment,
   Timestamp,
   arrayRemove,
   arrayUnion,
@@ -140,7 +141,7 @@ export async function claimAsk(
   });
   batch.update(doc(db(), `groups/${gid}/asks/${ask.id}`), {
     state: 'claimed',
-    claimCount: (ask.claimCount ?? 0) + 1,
+    claimCount: increment(1), // Class C: never read-modify-write a counter
     claimerUids: arrayUnion(profile.uid),
   });
   await batch.commit();
@@ -150,12 +151,16 @@ export async function claimAsk(
 }
 
 export async function unclaimAsk(gid: string, ask: Ask, uid: string): Promise<void> {
+  // Class C exception, noted: the open/claimed transition must branch on the
+  // count, so it reads the snapshot value. A concurrent unclaim can leave
+  // state 'claimed' at zero claims; the next claim self-heals it. The counter
+  // itself still moves by increment.
   const remaining = Math.max((ask.claimCount ?? 1) - 1, 0);
   const batch = writeBatch(db());
   batch.delete(doc(db(), `groups/${gid}/asks/${ask.id}/claims/${uid}`));
   batch.update(doc(db(), `groups/${gid}/asks/${ask.id}`), {
     state: remaining === 0 ? 'open' : 'claimed',
-    claimCount: remaining,
+    claimCount: increment(-1),
     claimerUids: arrayRemove(uid),
   });
   await batch.commit();

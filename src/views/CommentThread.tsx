@@ -12,7 +12,7 @@ import {
 } from '../data/comments';
 import { watchRepos } from '../data/repos';
 import { myProfile } from '../data/users';
-import type { Repo } from '../data/types';
+import { canWriteRole, type Repo } from '../data/types';
 import { notifyDiscord } from '../notify/discord';
 import { Avatar } from '../ui/Avatar';
 import { EmptyState } from '../ui/EmptyState';
@@ -45,7 +45,7 @@ export function CommentThread({
 
   const uid = sessionUser.value?.uid;
   const me = myMembership.value;
-  const canWrite = !!me && me.role !== 'guest' && me.role !== 'alumnus';
+  const canWrite = canWriteRole(me);
 
   useEffect(() => watchComments(gid, subject, setComments), [gid, subject.kind, subject.id]);
   useEffect(() => watchRepos(gid, setRepos, () => undefined), [gid]);

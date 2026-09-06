@@ -72,6 +72,11 @@ export type MyProfile = {
   avatarUrl: string;
 };
 
+/** Class F (REVIEW.md): the only spelling of "may this member write?". */
+export function canWriteRole(m: Pick<Member, 'role'> | null | undefined): boolean {
+  return !!m && m.role !== 'guest' && m.role !== 'alumnus';
+}
+
 export const ROLE_LABEL: Record<Role, string> = {
   admin: 'admin',
   member: 'member',

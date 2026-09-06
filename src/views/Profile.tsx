@@ -21,7 +21,7 @@ import { StatusDot } from '../ui/StatusDot';
 import { toast } from '../ui/Toast';
 import { availabilityText } from '../util/availability';
 import { langClass } from '../util/lang';
-import { log } from '../util/log';
+import { log, noteServerError } from '../util/log';
 import { languageEvidence, ownsRepo, suggestHelpWith } from '../util/skills';
 import { relTime } from '../util/time';
 import { AvailabilitySheet } from './Members';
@@ -46,6 +46,7 @@ export function Profile({ gid, uid }: { gid: string; uid: string }) {
     () =>
       watchRepos(gid, setRepos, (code) => {
         log('warn', `profile repos watch: ${code}`);
+        noteServerError(code, 'repos'); // Class B
       }),
     [gid],
   );
