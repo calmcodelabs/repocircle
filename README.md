@@ -37,39 +37,31 @@ RepoCircle is a small, shared window: your circle's repositories, the ideas that
 
 ### Work finds the person who can help
 
-<img src="docs/slides/crops/matcher.png" width="620" align="right" alt="Wants what you're good at">
+Say once what you can help with — frontend, backend, ML, design, or just review. Repositories and ideas that asked for exactly that appear on your home page. No broadcasting into a channel, no volunteering blindly.
 
-Say once what you can help with — frontend, backend, ML, design, or just review. Repositories and ideas that asked for exactly that appear on your home page.
-
-No broadcasting into a channel, no volunteering blindly. The people who declared a need and the people who can meet it find each other.
-
-<br clear="right">
+![Wants what you're good at](docs/slides/crops/matcher.png)
 
 ### Ideas count, before there is any code
 
-<img src="docs/slides/crops/idea-open.png" width="620" align="left" alt="An open idea">
-
 An idea doesn't need a repository to exist here. Give it a sentence and say what kind of help it wants, and the circle can discuss it, refine it, and raise a hand to build it.
+
+![An open idea](docs/slides/crops/idea-open.png)
 
 When it becomes real, **germination** links the idea to the repository it became — and the repository credits whoever had the idea. The person who builds something doesn't have to be the person who thought of it.
 
-<br clear="left">
+![A germinated idea](docs/slides/crops/germinated.png)
 
 ### Every project remembers how it started
 
-<img src="docs/slides/crops/journey.png" width="620" align="right" alt="The journey of a repository">
-
 Born as an idea, taken up, joined, released. Assembled entirely from facts the app already stores — never scored, never aggregated into a ranking.
 
-<br clear="right">
+![The journey of a repository](docs/slides/crops/journey.png)
 
 ### Ask for help, and credit the answer
 
-<img src="docs/slides/crops/ask-resolved.png" width="620" align="left" alt="A resolved ask">
-
 Post what you're stuck on. Someone claims it. When it's resolved, the ask records who had the answer — one fact on one page, never a tally.
 
-<br clear="left">
+![A resolved ask](docs/slides/crops/ask-resolved.png)
 
 ### And the rest
 
