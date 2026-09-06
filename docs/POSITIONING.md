@@ -105,7 +105,14 @@ flow. Who is in the room changes, and that has consequences:
 - A contribution marketplace with bounties or assigned tasks
 - Our own chat
 
-## 7. Deferred
+## 7. Deferred — no longer
 
-Hosting and read cost at this scale. The current Firebase Spark setup is a dev-phase
-choice, not a scaling decision — revisit before any real community launch.
+Hosting and read cost at this scale were deferred here as a dev-phase concern.
+That stopped being true on 2026-09-06, when ordinary use exhausted the Firestore
+free tier and took the app down for a day.
+
+Now analysed and planned in [SCALING.md](SCALING.md): hosting is measured at
+0.4% of its limit at target scale and stays put; the read pattern is the real
+constraint — a 200-member circle costs ~900 document reads per home visit, which
+no per-operation billing model survives. Fixing it is M16, scheduled
+immediately after launch.
