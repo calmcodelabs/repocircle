@@ -14,8 +14,14 @@ Qureshi (`s-qureshi`, backend), Arjun K V (`arjun-kv`, full-stack), Felix Weber
 (`felix-w`, frontend, joined yesterday). Their projects: `pgmirror`,
 `latency-lab`, `inferbench`, `tokensmith`, `flagpole`, `driftwatch`.
 
-Capture settings: 1360px wide, 2× device pixel ratio, full page, dark theme
-(the app's only theme).
+Capture settings: 1360 px CSS width at 2× device pixel ratio (so 2720 px wide
+files), full page, dark theme — the app's only theme.
+
+Two notes on the images. The signed-in viewer's avatar in the top-right corner
+has been replaced with a neutral initial tile, because the capture ran through
+a real GitHub account and no real person should appear in demo material. The
+fictional members show GitHub's default avatar, since their handles have no
+account behind them.
 
 ---
 
@@ -26,14 +32,17 @@ Capture settings: 1360px wide, 2× device pixel ratio, full page, dark theme
 > Six engineers, six repositories, and one page that answers "what is everyone
 > building, and where could I help?" — without opening a single timeline.
 
-Shows, top to bottom: **Wants what you're good at** (the matcher — Noor works
-on backend and ML, so `driftwatch`, `inferbench`, `flagpole` and an *idea*
-about on-call handovers surface automatically), **New in the circle** (Felix
-joined yesterday, introduced by what he brings rather than a bare name),
-**Ideas brewing**, **New this week**, **Building together** (repos where two
-circle members are collaborating), **Wants a hand**, **Active this week** with
-real activity sparklines, an open stuck-flag, and **Recent discussion** across
-every project.
+Shows, top to bottom: **Wants what you're good at** — the matcher. Noor works
+on backend and ML, so `driftwatch`, `inferbench` and `flagpole` surface, and so
+do two *ideas* that have no code yet, marked with an `idea` chip. Then **New in
+the circle** (Felix joined yesterday, introduced by what he brings rather than a
+bare name), **Ideas brewing**, **New this week**, **Building together** (repos
+where two members are collaborating), **Wants a hand**, **Active this week**
+with real activity sparklines, an open stuck-flag, and **Recent discussion**
+across every project — including a rendered `@n-rahman` mention chip.
+
+It is a tall image (2720 × 6892). For a README hero, crop to the top third —
+the header through the matcher — and use the other screenshots for the rest.
 
 Talking point: nothing here is a leaderboard. There are no scores, no streaks,
 no rankings anywhere in the product — by design.
@@ -45,10 +54,9 @@ no rankings anywhere in the product — by design.
 > Come back after a few days and see exactly what happened *to you* — replies,
 > mentions, and people who raised a hand for your work.
 
-The inbox is a visit-time digest, not a notification system: three new items
-(a reply from Felix on the `pgmirror` cutover script, a mention from Mira, and
-a raised hand), the repos you chose to watch, your own projects, and your open
-asks and claims.
+The inbox is a visit-time digest, not a notification system: a reply from Felix
+on the `pgmirror` cutover script and a raised hand from Mira, alongside the
+repos you chose to watch, your own projects, and your open asks and claims.
 
 ## 03-repo-journey.png — A project's story, told from facts
 
@@ -144,6 +152,30 @@ coming — not an assignment.
 
 | Filename | Route | Shows |
 |---|---|---|
-| `11-invite.png` | `#/join/:gid/:token` | The invite screen a newcomer sees: who invited them, the circle, and a plain explanation of the product |
-| `12-share-sheet.png` | any circle page → **+ Share** | The two-way chooser: pitch an idea, or post an ask |
-| `13-signin.png` | `#/` signed out | Sign-in — GitHub only, public repositories only |
+## 11-invite.png — The first thing an invited person sees
+
+**Route:** `#/join/:gid/:token`, signed out · **Headline feature:** the invite.
+
+> "You're invited to a circle. Sign in with GitHub to see who, and what they're
+> building."
+
+Invite links are private: the circle's contents stay hidden until the person
+signs in. The card underneath is the app's own illustration of the core loop —
+someone's repository, and a teammate joining in.
+
+## 12-share-sheet.png — Two ways to put something in front of the circle
+
+**Route:** any circle page → **+ Share** · **Headline feature:** the entry point.
+
+> **An idea** — no repo yet; pitch it and see who'd build it with you.
+> **An ask** — you need a hand with something you're building.
+
+The distinction matters: an idea is looking for a builder, an ask is looking for
+an answer. Both are first-class.
+
+## 13-signin.png — Sign-in
+
+**Route:** `#/`, signed out · **Headline feature:** the promise, up front.
+
+GitHub sign-in, and the line that sets expectations: **reads public repos
+only.** No private repository access is ever requested.
