@@ -22,3 +22,8 @@ Thumbs.db
 
 # UI inspiration images — third-party design work, local reference only
 design-refs/
+
+# demo video build artifacts (regenerate with docs/slides/build-video.sh)
+docs/slides/repocircle-demo.mp4
+docs/slides/repocircle-demo.gif
+docs/slides/.parts/
