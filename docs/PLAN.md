@@ -349,6 +349,120 @@ the serverless redesign; ingestion complexity moved client-side rather than remo
 
 ---
 
+## §5c · The inspiration arc — M16.5–M20 (planned 2026-09-06, after the M16 fix)
+
+Thirteen features accepted from a study of what Discord, Slack and Teams do well,
+filtered against POSITIONING §6 (no chat, no ranking, no server) and read cost
+(SCALING.md). Examined and rejected in the same pass: chat/huddles/voice, XP and
+reaction roles, bots and workflow automation, emoji reactions, AI notification
+triage, monetization, public discovery. Design decisions live in ADR-021..025.
+Standing constraint for every milestone here: nothing may add an unbounded read,
+and each block states its read cost against the M16 target (<30/visit).
+
+- **M16.5 · Progressive Home.** GroupHome's blocks gate on member state, and the
+  gate lives at the *listener* level — a hidden block mounts no onSnapshot, so
+  disclosure and read cost are the same mechanism (Discord's progressive channel
+  disclosure, applied to blocks). Day-one members (checklist incomplete, joined
+  <48h) see head + checklist + active-this-week + members; completing checklist
+  items unlocks the rest — the checklist stops being a card and becomes the
+  disclosure mechanic (ADR-022). GroupHome splits into per-block components,
+  each owning its listener. Class G sweep is the gate for this milestone:
+  hidden-by-gate and empty are different states and the copy must never confuse
+  them. Read cost: strictly negative (fewer listeners for newer members).
+
+- **M17 · Arrival.** Three small features shaping the first ten minutes.
+  (1) *Join questions* (Discord Community Onboarding): Join.tsx collects two
+  chip-only answers before the join commits — "what can you help with"
+  (HELP_AREAS, closed vocabulary, already validated by validSkills()) and "what
+  do you want to build" (DOMAIN_TAGS, new member.domainTags key: allowlist +
+  hasOnly + ≤4 — the arc's one member-doc rules change). Answers ride the
+  member-doc create that joinViaInvite already performs: one write, zero new
+  reads, and the first Home render is personalised because the M11 matcher has
+  skills to join on. Both questions skippable ("choose later" = today's exact
+  behaviour); a rejoin with helpWith already set skips the questions; SkillsSheet
+  remains the edit path. Clickable options only, never free text — the closed
+  vocabulary is what makes the matcher work.
+  (2) *Announcements* (Viva Engage post types): groups/{gid}/announcements/{id},
+  admin-only create (body ≤280), latest rendered above the Home stats via a
+  limit-1 query, history in a sheet that queries the last 10 only when opened,
+  audit line on post, per-user dismissal via localStorage seen-stamp. FAB
+  chooser gains an admin-only third row.
+  (3) *Bookmarks + pinned repo* (Slack channel bookmarks): links[] ≤6 (https-
+  validated) and pinnedRepoId on the summary doc, admin-only keys, edited from
+  Settings; the pinned repo renders first in the repos block under a "this
+  month" label — position, never score. Read cost: +1 (announcements query).
+
+- **M18 · Triage.** The personal layer; no new collections, two rules touches.
+  (1) *Actionable inbox* (Slack Activity 2.0 — "recall is finding the message
+  you half-remembered; triage is processing everything that happened while you
+  were gone"): every away-inbox row acts in place — inline reply for
+  mentions/replies (the doc path in item.key carries everything addComment
+  needs), view-profile for interests (deep-linking a pending collab from the
+  same person when one exists — no fake "accept" button; the collab flow stays
+  requester→owner), plus Save (writes a watch — Slack's "move" behaviour) and
+  Dismiss on every row. Dismissal is per-device localStorage, capped, pruned
+  past the server watermark — a deliberate exception, documented: triage state
+  is ephemeral and the hourly watermark supersedes it.
+  (2) *Untouched view* (Discord forums' named failure mode — posts that sit
+  unanswered sink): open asks re-sort oldest-unclaimed-first with an age line
+  (client-side re-sort of the existing listener, zero reads); wantsAHand[] on
+  the summary doc orders longest-waiting first. Class G: "no open asks" and
+  "everything got claimed" are different sentences (the unblocked>0 trick
+  generalises).
+  (3) *Save for later* (Slack saved items): watches generalise — new ids
+  ${gid}_${kind}_${id}, docs gain kind ('repo'|'ask'|'idea') + title; missing
+  kind reads as 'repo' so every existing watch survives. pruneDecision() reused
+  verbatim per kind. PersonalHome "Watched repos" becomes "Saved", chip-filtered.
+  (4) *Notification levels* (Slack's three-option redesign): honest scope —
+  with no push, "notifications" means what the inbox shows. circlePrefs
+  {gid: 'all'|'mentions'|'mute'} on users/{uid}; fetchInbox filters query-side,
+  so mute *saves* reads (skips the gid's three queries entirely), 'mentions'
+  drops the interest queries. Exactly three options. Read cost: net negative.
+
+- **M19 · Gatherings.** The arc's only new collections; rules budget ~30–35
+  emulator tests (shape/role/state/vote-once/foreign-write denials).
+  (1) *Sessions* (Discord Scheduled Events, ADR-023): groups/{gid}/sessions/{id}
+  {title ≤80, detail ≤500, startsAt, durationMin ≤480?, url? https, repoId?,
+  hostUid/Login/AvatarUrl, cancelled, rsvpCount (increment mirror), createdAt,
+  v}. Any canWrite member creates — "working on this Saturday 3pm, join me" is
+  a member ritual, not an admin act; edit/cancel by host or admin. RSVP =
+  sessions/{id}/interests/{uid} with repoOwnerUid: hostUid — the away-inbox,
+  its collection-group rule and its composite index cover RSVPs with zero new
+  code paths (the M15 trick); parseSubjectPath gains a sessions branch (unknown
+  paths already degrade to null in old clients — Class D safe). Home "Coming
+  up": startsAt >= now, asc, limit 3 (one composite index). *.ics download*
+  ships here: a pure buildIcs() string util (unit-tested: UTC, escaping) + Blob
+  download per session and all-upcoming. Reminders are visit-time only
+  ("you RSVP'd · starts in 3h" on PersonalHome); push waits for Phase 3.
+  (2) *Polls* (Viva Engage, ADR-024): groups/{gid}/polls/{id} {question ≤120,
+  options map key→{label ≤60, count} 2–5, author*, state open|closed, createdAt,
+  closedAt?, v}; vote = polls/{id}/votes/{uid} {optionKey} — doc-id-per-uid
+  makes one-vote-per-member structural. Counts are increment mirrors (Class C;
+  count() per option is truth if disputed — same note as unclaimAsk). Results
+  reveal only after your own vote is in (kills bandwagon and anchoring).
+  Closed polls collapse to one fact line: "decided: Tuesday demo night ·
+  14 voted." FAB gains row four; Home block gates on an open poll existing.
+  Read cost: +≤4 (sessions query + poll doc).
+
+- **M20 · Breadth.** Display-layer, near-zero risk.
+  (1) *Gallery view* (Discord forum List/Gallery): Repos toggle persisted in
+  localStorage; cards use the M9 social-preview image (hide-when-absent logic
+  reused), name, language dot, needs chip; rides M16 pagination. No rules.
+  (2) *Cross-circle repos* (Slack Connect, ADR-025): mutual-membership only —
+  RepoDetail checks my other groups (groupIds ≤8) for the same GitHub repo id
+  via direct getDocs under existing rules, renders "also in <circle> →" links.
+  Nothing shows to non-mutual viewers, and that is the design: a circle's
+  existence is itself private. Zero rules changes; the badge resolves from
+  live reads, never a stored mirror (Class A). Read cost: +≤7, RepoDetail only.
+
+- **Phase-3 additions from the arc:** live .ics subscription URLs and session
+  push reminders join the Worker list (§7, ADR-011). Digest email, thanks-cards
+  (the ADR-019 boundary case), circle canvas, public directory and workflow
+  automation were explicitly deferred or rejected — reasons in the 2026-09-06
+  study; do not resurrect casually.
+
+---
+
 ## §6 · Phase 2 outline (after retention signal, PRD §13)
 
 Clusters, in likely order — each gets its own mini-plan when scheduled:

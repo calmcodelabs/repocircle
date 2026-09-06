@@ -176,3 +176,57 @@ linked repo's owner — rules validate the repo exists in the circle. Nothing is
 migrated or deleted: comments and hands raised stay on the idea, the repo's
 journey opens with the idea chapter, and the credit line is a single fact
 (never aggregated). Parked is an honest shelf, not a soft delete.
+
+
+**ADR-021 · The circle summary doc is a mirror, and Home is one read.**
+`groups/{gid}/meta/summary` holds the counters (memberCount, repoCount,
+openAskCount — increment() only, Class C), the capped lists (newRepos ≤6,
+arrivals ≤5, wantsAHand ≤10) and the admin surface (links ≤6, pinnedRepoId).
+Clients maintain it at write time — Spark has no triggers — so it drifts, and
+that is priced in: every entry is display-only (Class A by construction) and
+resolves to an authoritative doc on tap; no action or verdict ever keys on it.
+Rules split the writable keys by affectedKeys(): member-maintained keys carry
+shape caps, admin keys require isAdmin(). This doc is what turns a 300-member
+Home from ~900 reads into ~1; it exists for that reason and no other, and if a
+block cannot be fed from it or from a bounded query, the block does not ship.
+
+**ADR-022 · Disclosure is progressive, and the checklist is the unlock.**
+Discord's onboarding data says the first ten minutes decide retention, and its
+mechanism — progressive disclosure — is the same shape as our read-cost fix,
+so we build them as one thing: GroupHome blocks gate on member state, and a
+gated block mounts no listener (hiding markup while paying for the data would
+be theatre). Day-one members see four blocks; completing checklist items
+reveals the rest, which turns F-12 from a card into the mechanic. Corollary
+(Class G): hidden-by-gate and empty are different states; no gated block may
+render "nothing yet", and the sweep for this is the milestone's release gate.
+
+**ADR-023 · Sessions are member gatherings; RSVP reuses interests; reminders
+wait for the Worker.** Any writing member may schedule one — "working on this
+Saturday, join me" is a circle ritual, not an admin act (edit/cancel: host or
+admin). An RSVP is an interests doc with repoOwnerUid = hostUid, so the
+away-inbox, the collection-group read rule and the composite index cover
+session RSVPs with zero new paths — the same reuse that made ideas cheap
+(ADR-020). Calendar export is a client-built .ics download; a live
+subscription URL and push reminders need a sender and join the Phase-3 Worker
+list (ADR-011). rsvpCount is a participation mirror like claimCount — counts
+on a thing are fine; ranking people never is (ADR-019).
+
+**ADR-024 · Polls decide questions; they never rate people or work.**
+A poll is the circle choosing what to do next — "which workshop", "when do we
+demo" — with 2–5 options, one vote per member (doc id = uid makes it
+structural), counts as increment mirrors. Results reveal only after your own
+vote is in: bandwagon and anchoring die there. The ADR-019 line, drawn
+explicitly: options are never members and never repos-as-quality — a poll on
+people or projects is a leaderboard wearing a hat. Rules cannot read
+semantics, so the composer's framing and this ADR are the guardrail, exactly
+as ADR-014 is for availability tone. A closed poll collapses to a single fact
+line and stays as the record.
+
+**ADR-025 · Cross-circle surfacing requires mutual membership.**
+ADR-009 lets a repo be registered in many circles; showing that is allowed
+only where the viewer is a member of both, resolved by direct reads under
+existing rules (one getDoc per shared circle, groupIds ≤8) — never a global
+registry. A circle's existence is itself private information; a
+publicRepos/{id} index would leak it to anyone holding a repo id. Nothing
+renders for non-mutual viewers, and that is the design, not a gap. The badge
+resolves from live reads at view time, never from a stored mirror (Class A).
