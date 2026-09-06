@@ -339,6 +339,14 @@ the serverless redesign; ingestion complexity moved client-side rather than remo
   reuse, per-reason empty states, display-hint credit with the idea doc as
   truth). 117 rules + 79 unit tests.
 
+- **M16 · Read-cost work (planned, next after launch).** The group home mounts
+  seven listeners, three reading whole collections; a 200-member circle costs
+  ~900 document reads per visit, which exhausts the free tier in ~55 visits and
+  would cost real money on Blaze. Paginate repos, add a per-circle summary doc,
+  stop re-deriving on every snapshot, and scope the member reads to what is
+  shown — target under ~30 reads per visit at any size. Full analysis, platform
+  comparison and the hosting/custom-domain plan: **docs/SCALING.md**.
+
 ---
 
 ## §6 · Phase 2 outline (after retention signal, PRD §13)

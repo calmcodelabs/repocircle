@@ -121,6 +121,7 @@ Every push to `main` builds and deploys to GitHub Pages.
 | [DATA-MODEL.md](docs/DATA-MODEL.md) | Every collection, field and index |
 | [DECISIONS.md](docs/DECISIONS.md) | ADRs — why each decision was taken, and what it cost |
 | [REVIEW.md](docs/REVIEW.md) | The failure classes this codebase has hit, and the sweep run against every change |
+| [SCALING.md](docs/SCALING.md) | What holds at 300 people, what breaks, and the plan for it |
 | [PLAN.md](docs/PLAN.md) | Milestones, acceptance criteria, risk register |
 | [UI.md](docs/UI.md) | The design system |
 | [SETUP.md](docs/SETUP.md) | First-time Firebase and GitHub setup |
