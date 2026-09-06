@@ -92,11 +92,7 @@ export async function createGroup(
   if (!check?.exists()) throw new Error('group-not-persisted');
   // Home reads this instead of the whole circle (ADR-021); best-effort, so a
   // failure here leaves a circle with no mirror rather than no circle.
-  await initSummary(gid, {
-    uid: profile.uid,
-    login: profile.login,
-    avatarUrl: profile.avatarUrl,
-  });
+  await initSummary(gid);
   return gid;
 }
 

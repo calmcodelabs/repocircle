@@ -3,7 +3,12 @@ import {
   deleteDoc,
   doc,
   increment,
+  limit,
   onSnapshot,
+  orderBy,
+  query,
+  where,
+  type Query,
   serverTimestamp,
   setDoc,
   updateDoc,
@@ -36,6 +41,81 @@ export function watchIdeas(
           const ideas = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Idea, 'id'>) }));
           ideas.sort((a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0));
           cb(ideas);
+        },
+        onErr,
+      ),
+    { onGiveUp: onError },
+  );
+}
+
+/** M16 — open ideas only, newest first, bounded. */
+export function watchOpenIdeas(
+  gid: string,
+  cb: (ideas: Idea[]) => void,
+  onError: (code: string) => void,
+  max = 6,
+): Unsubscribe {
+  return boundedIdeaWatch(
+    query(
+      collection(db(), `groups/${gid}/ideas`),
+      where('state', '==', 'open'),
+      orderBy('createdAt', 'desc'),
+      limit(max),
+    ),
+    cb,
+    onError,
+  );
+}
+
+/** The matcher's slice: open ideas asking for something this member offers. */
+export function watchMatchingIdeas(
+  gid: string,
+  needs: string[],
+  cb: (ideas: Idea[]) => void,
+  onError: (code: string) => void,
+  max = 3,
+): Unsubscribe {
+  if (needs.length === 0) {
+    cb([]);
+    return () => undefined;
+  }
+  return boundedIdeaWatch(
+    query(
+      collection(db(), `groups/${gid}/ideas`),
+      where('state', '==', 'open'),
+      where('needs', 'in', needs.slice(0, 10)),
+      orderBy('createdAt', 'desc'),
+      limit(max),
+    ),
+    cb,
+    onError,
+  );
+}
+
+/**
+ * Class G: "nothing brewing" and "every idea here became a repo" are different
+ * facts and must not share a sentence. One document answers which one it is.
+ */
+export function watchAnyGerminated(gid: string, cb: (any: boolean) => void): Unsubscribe {
+  return onSnapshot(
+    query(collection(db(), `groups/${gid}/ideas`), where('state', '==', 'germinated'), limit(1)),
+    (snap) => cb(!snap.empty),
+    () => cb(false),
+  );
+}
+
+function boundedIdeaWatch(
+  q: Query,
+  cb: (ideas: Idea[]) => void,
+  onError: (code: string) => void,
+): Unsubscribe {
+  return resilientWatch(
+    (onOk, onErr) =>
+      onSnapshot(
+        q,
+        (snap) => {
+          onOk();
+          cb(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Idea, 'id'>) })));
         },
         onErr,
       ),

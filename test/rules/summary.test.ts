@@ -27,18 +27,10 @@ async function seedSummary(fields: Record<string, unknown> = {}): Promise<void> 
       memberCount: 3,
       repoCount: 0,
       openAskCount: 0,
-      faces: [],
-      arrivals: [],
-      newRepos: [],
-      wantsAHand: [],
       v: 1,
       ...fields,
     });
   });
-}
-
-function face(uid: string) {
-  return { uid, login: uid, avatarUrl: `https://avatars.githubusercontent.com/${uid}` };
 }
 
 // M16 (ADR-021): the summary is a display mirror, so the rules police shape,
@@ -71,10 +63,6 @@ describe('circle summary doc', () => {
         memberCount: 3,
         repoCount: 2,
         openAskCount: 1,
-        faces: [face('alice'), face('bob')],
-        arrivals: [],
-        newRepos: [],
-        wantsAHand: [],
         v: 1,
       }),
     );
@@ -112,49 +100,6 @@ describe('circle summary doc', () => {
   it('only the summary doc id is writable under meta', async () => {
     const bob = env.authenticatedContext('bob');
     await assertFails(setDoc(doc(db(bob), `groups/${GID}/meta/health`), { memberCount: 1, v: 1 }));
-  });
-
-  describe('caps', () => {
-    it('faces over 8 is rejected', async () => {
-      await seedSummary();
-      const bob = env.authenticatedContext('bob');
-      const nine = Array.from({ length: 9 }, (_, i) => face(`u${i}`));
-      await assertFails(updateDoc(doc(db(bob), SUMMARY), { faces: nine }));
-    });
-
-    it('exactly 8 faces is fine', async () => {
-      await seedSummary();
-      const bob = env.authenticatedContext('bob');
-      const eight = Array.from({ length: 8 }, (_, i) => face(`u${i}`));
-      await assertSucceeds(updateDoc(doc(db(bob), SUMMARY), { faces: eight }));
-    });
-
-    it('arrivals over 5 is rejected', async () => {
-      await seedSummary();
-      const bob = env.authenticatedContext('bob');
-      const six = Array.from({ length: 6 }, (_, i) => face(`u${i}`));
-      await assertFails(updateDoc(doc(db(bob), SUMMARY), { arrivals: six }));
-    });
-
-    it('newRepos over 6 is rejected', async () => {
-      await seedSummary();
-      const bob = env.authenticatedContext('bob');
-      const seven = Array.from({ length: 7 }, (_, i) => ({ repoId: `${i}`, fullName: `o/r${i}` }));
-      await assertFails(updateDoc(doc(db(bob), SUMMARY), { newRepos: seven }));
-    });
-
-    it('wantsAHand over 10 is rejected', async () => {
-      await seedSummary();
-      const bob = env.authenticatedContext('bob');
-      const eleven = Array.from({ length: 11 }, (_, i) => ({ repoId: `${i}`, needs: 'frontend' }));
-      await assertFails(updateDoc(doc(db(bob), SUMMARY), { wantsAHand: eleven }));
-    });
-
-    it('a list field must be a list', async () => {
-      await seedSummary();
-      const bob = env.authenticatedContext('bob');
-      await assertFails(updateDoc(doc(db(bob), SUMMARY), { faces: 'alice' }));
-    });
   });
 
   describe('admin surface (links, pinnedRepoId)', () => {

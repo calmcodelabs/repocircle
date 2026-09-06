@@ -196,6 +196,12 @@ export type Repo = {
   /** The human sentence: what is this idea, in the owner's words. */
   pitch?: string;
   needs?: RepoNeed | null;
+  /**
+   * When this repo started waiting for the help it asked for. Stored so the
+   * longest-waiting can be found with an ordered query (M18) instead of a
+   * mirror — a repo that nobody answers must not quietly sink.
+   */
+  needsSince?: Timestamp | null;
   domainTags?: string[];
   /** Owner has moved on and would like someone else to take it over. */
   seekingOwner?: boolean;
@@ -253,32 +259,12 @@ export type AskClaim = {
 
 /**
  * M16 — the per-circle summary doc (`groups/{gid}/meta/summary`, ADR-021).
- * Home used to learn "how many members, how many repos, who is new" by reading
- * every member and every repo. This one document answers all of it in one read.
  *
- * Every field is a display mirror (Class A): nothing here authorizes anything
- * and no action keys on it — tapping through resolves the authoritative doc.
- * Timestamps inside these arrays are client clocks on purpose; Firestore
- * forbids serverTimestamp() inside an array element, and these are display-only.
+ * Counts only. Firestore bills documents returned rather than scanned, so every
+ * list on Home is a bounded query over real documents; a count is the one thing
+ * no bounded query can answer, and reading a whole collection to get one is
+ * what took the app down. Display-only (Class A) — nothing authorizes on it.
  */
-export type SummaryFace = { uid: string; login: string; avatarUrl: string };
-export type SummaryArrival = SummaryFace & { at: Timestamp | null };
-export type SummaryNewRepo = {
-  repoId: string;
-  fullName: string;
-  language: string | null;
-  ownerLogin: string;
-  at: Timestamp | null;
-};
-export type SummaryNeed = {
-  repoId: string;
-  fullName: string;
-  needs: RepoNeed | null;
-  /** Owner moved on or left; the repo waits for someone to take it. */
-  seekingOwner?: boolean;
-  /** When it started waiting — M18 orders the longest-waiting first. */
-  since: Timestamp | null;
-};
 /** Admin-curated circle links (M17) — schema lands with the doc, UI follows. */
 export type SummaryLink = { label: string; url: string };
 
@@ -286,10 +272,6 @@ export type CircleSummary = {
   memberCount: number;
   repoCount: number;
   openAskCount: number;
-  faces: SummaryFace[];
-  arrivals: SummaryArrival[];
-  newRepos: SummaryNewRepo[];
-  wantsAHand: SummaryNeed[];
   links: SummaryLink[];
   pinnedRepoId: string | null;
   v: 1;

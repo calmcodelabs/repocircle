@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useMemo, useState } from 'preact/hooks';
 import { sessionUser } from '../auth/session';
-import { activeGroup, activeMembers, myMembership } from '../data/activeGroup';
+import { activeGroup, activeSummary, myMembership } from '../data/activeGroup';
 import {
   claimAsk,
   unblockedThisWeek,
@@ -8,12 +8,20 @@ import {
   watchMyClaims,
   watchNeedsHelp,
 } from '../data/asks';
-import { watchRepos } from '../data/repos';
+import { watchActiveRepos, watchNewRepos, watchOrphanRepos, watchWantedRepos } from '../data/repos';
+import { watchRecentMembers } from '../data/members';
 import { myProfile } from '../data/users';
-import { canWriteRole, HELP_AREAS, REPO_NEEDS, type Ask, type Repo } from '../data/types';
-import { circleOwner, ownsRepo } from '../util/skills';
+import {
+  canWriteRole,
+  HELP_AREAS,
+  REPO_NEEDS,
+  type Ask,
+  type Member,
+  type Repo,
+  type RepoNeed,
+} from '../data/types';
 import { watchAcceptedCollabs, type CollabRequest } from '../data/collabs';
-import { watchIdeas } from '../data/ideas';
+import { watchAnyGerminated, watchMatchingIdeas, watchOpenIdeas } from '../data/ideas';
 import type { Idea } from '../data/types';
 import { SkillsSheet } from './Profile';
 import { toast } from '../ui/Toast';
@@ -35,12 +43,25 @@ import { langClass } from '../util/lang';
 import { log, noteServerError } from '../util/log';
 import { relTime } from '../util/time';
 
-/** Group Home, M1 edition: real tenancy, honest placeholders for M2/M3/M5 blocks. */
+const ALL_NEEDS: RepoNeed[] = REPO_NEEDS.map((n) => n.key);
+const WEEK_MS = 7 * 86_400_000;
+
+/**
+ * Group Home. Every block is fed by the circle summary (counts) or a bounded
+ * query (lists) — M16. It used to read the whole repo, member and idea
+ * collections, which cost about nine hundred document reads a visit at two
+ * hundred members and took the app down. See docs/SCALING.md.
+ */
 export function GroupHome({ gid }: { gid: string }) {
   const g = activeGroup.value;
-  const members = activeMembers.value;
+  const summary = activeSummary.value;
   const me = myMembership.value;
-  const [repos, setRepos] = useState<Repo[] | null>(null);
+  const [activeRepos, setActiveRepos] = useState<Repo[] | null>(null);
+  const [newRepos, setNewRepos] = useState<Repo[]>([]);
+  const [wanted, setWanted] = useState<Repo[]>([]);
+  const [forYouRepos, setForYouRepos] = useState<Repo[]>([]);
+  const [orphans, setOrphans] = useState<Repo[]>([]);
+  const [recentMembers, setRecentMembers] = useState<Member[] | null>(null);
   const [needsHelp, setNeedsHelp] = useState<Ask[] | null>(null);
   const [myAsks, setMyAsks] = useState<Ask[]>([]);
   const [myClaims, setMyClaims] = useState<Ask[]>([]);
@@ -49,11 +70,18 @@ export function GroupHome({ gid }: { gid: string }) {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [skillsOpen, setSkillsOpen] = useState(false);
   const [collabs, setCollabs] = useState<CollabRequest[]>([]);
-  const [ideas, setIdeas] = useState<Idea[] | null>(null);
+  const [brewing, setBrewing] = useState<Idea[] | null>(null);
+  const [ideasForMe, setIdeasForMe] = useState<Idea[]>([]);
+  const [anyGerminated, setAnyGerminated] = useState(false);
   const [recent, setRecent] = useState<RecentComment[]>([]);
   const iAmAdmin = me?.role === 'admin';
   const uid = sessionUser.value?.uid;
   const canWrite = canWriteRole(me);
+  const mySkills = useMemo(() => me?.helpWith ?? [], [me?.helpWith]);
+  const matchNeeds = useMemo<RepoNeed[]>(
+    () => (mySkills.length === 0 ? [] : [...mySkills, 'anything']),
+    [mySkills],
+  );
 
   useEffect(
     () =>
@@ -64,11 +92,9 @@ export function GroupHome({ gid }: { gid: string }) {
   );
   useEffect(() => (uid ? watchMyAsks(gid, uid, setMyAsks) : undefined), [gid, uid]);
   useEffect(() => (uid ? watchMyClaims(gid, uid, setMyClaims) : undefined), [gid, uid]);
-  // count() always hits the server (never the cache), and `needsHelp` gets a new
-  // array identity on every snapshot delivery — depending on it re-queried on every
-  // listener tick and burned quota fast. Key on what can actually change the count,
-  // and never more than once a minute.
-  const openCount = needsHelp?.length ?? 0;
+  // The resolved-count query always hits the server, so it is throttled to once
+  // a minute per tab and keyed on the one number that can change its answer.
+  const openAskCount = summary?.openAskCount ?? 0;
   useEffect(() => {
     const key = `rc.unblocked.${gid}`;
     let last = 0;
@@ -86,7 +112,7 @@ export function GroupHome({ gid }: { gid: string }) {
     void unblockedThisWeek(gid)
       .then(setUnblocked)
       .catch(() => undefined);
-  }, [gid, openCount]);
+  }, [gid, openAskCount]);
   useEffect(
     () => watchRecentComments(gid, setRecent, (code) => log('warn', `recent comments: ${code}`)),
     [gid],
@@ -114,99 +140,142 @@ export function GroupHome({ gid }: { gid: string }) {
 
   useEffect(
     () =>
-      watchRepos(gid, setRepos, (code) => {
+      watchActiveRepos(gid, setActiveRepos, (code) => {
         log('warn', `home repos watch: ${code}`);
         noteServerError(code, 'repos'); // Class B: give-ups surface, never just log
+      }),
+    [gid],
+  );
+  useEffect(
+    () => watchNewRepos(gid, setNewRepos, (code) => log('warn', `new repos watch: ${code}`)),
+    [gid],
+  );
+  useEffect(
+    () =>
+      watchWantedRepos(gid, ALL_NEEDS, setWanted, (code) => {
+        log('warn', `wanted repos watch: ${code}`);
+        noteServerError(code, 'repos');
+      }),
+    [gid],
+  );
+  useEffect(
+    () =>
+      watchWantedRepos(
+        gid,
+        matchNeeds,
+        setForYouRepos,
+        (code) => log('warn', `matcher watch: ${code}`),
+        5,
+      ),
+    [gid, matchNeeds],
+  );
+  useEffect(
+    () => watchOrphanRepos(gid, setOrphans, (code) => log('warn', `orphan repos: ${code}`)),
+    [gid],
+  );
+  useEffect(
+    () =>
+      watchRecentMembers(gid, setRecentMembers, (code) => {
+        log('warn', `recent members: ${code}`);
+        noteServerError(code, 'members');
       }),
     [gid],
   );
   useEffect(() => watchAcceptedCollabs(gid, setCollabs), [gid]);
   useEffect(
     () =>
-      watchIdeas(gid, setIdeas, (code) => {
+      watchOpenIdeas(gid, setBrewing, (code) => {
         log('warn', `home ideas watch: ${code}`);
         noteServerError(code, 'ideas');
       }),
     [gid],
   );
+  useEffect(
+    () =>
+      watchMatchingIdeas(gid, matchNeeds, setIdeasForMe, (code) =>
+        log('warn', `idea matcher: ${code}`),
+      ),
+    [gid, matchNeeds],
+  );
+  useEffect(() => watchAnyGerminated(gid, setAnyGerminated), [gid]);
 
-  const live =
-    repos?.filter((r) => !r.archived && r.status !== 'paused' && r.status !== 'done') ?? [];
-  const weekMs = Date.now() - 7 * 86_400_000;
-  const active = live.filter((r) => (r.lastEventAt?.toMillis() ?? 0) >= weekMs);
-  // Fresh ideas are the news in a circle that creates constantly — a two-day-old
-  // repo has no activity to speak of, so it would otherwise look like the deadest
-  // thing on the page.
-  const fresh = (repos ?? [])
-    .filter((r) => !r.archived && (r.createdAt?.toMillis() ?? 0) >= weekMs)
-    .slice(0, 6);
-  // The matcher (M11): repos whose declared need is something I said I can do.
-  // 'anything' means "co-builder wanted" and matches whoever offered anything at
-  // all. At 20 members this is a nicety; at 200 it's the reason to open the app.
-  const mySkills = me?.helpWith ?? [];
-  const forYou =
-    mySkills.length === 0
-      ? []
-      : (repos ?? [])
-          .filter(
-            (r) =>
-              !r.archived &&
-              r.needs &&
-              !(me && ownsRepo(r, me)) &&
-              (mySkills.includes(r.needs as (typeof mySkills)[number]) || r.needs === 'anything'),
-          )
-          .sort(
-            (a, b) =>
-              Math.max(b.lastEventAt?.toMillis() ?? 0, b.createdAt?.toMillis() ?? 0) -
-              Math.max(a.lastEventAt?.toMillis() ?? 0, a.createdAt?.toMillis() ?? 0),
-          )
-          .slice(0, 5);
-  const forYouIds = new Set(forYou.map((r) => r.id));
-  const ideasForMe =
-    mySkills.length === 0
-      ? []
-      : (ideas ?? []).filter(
-          (i) =>
-            i.state === 'open' &&
-            i.authorUid !== uid &&
-            i.needs &&
-            (mySkills.includes(i.needs as (typeof mySkills)[number]) || i.needs === 'anything'),
-        );
-  const brewing = (ideas ?? []).filter((i) => i.state === 'open').slice(0, 5);
-  const germinatedCount = (ideas ?? []).filter((i) => i.state === 'germinated').length;
-  const needing = (repos ?? [])
-    .filter((r) => !r.archived && (r.needs || r.seekingOwner) && !forYouIds.has(r.id))
-    .slice(0, 5);
-  // Building together (M12): the product working, made visible. A repo whose
-  // owner is here plus at least one accepted collaborator — facts only, drawn
-  // from the collab requests we already store. No counts, no ranking (ADR-019).
-  const memberByUid = new Map((members ?? []).map((m) => [m.uid, m]));
-  const together = (repos ?? [])
-    .filter((r) => !r.archived)
-    .map((r) => {
-      const owner = circleOwner(r, members);
-      const mates = collabs
-        .filter((c) => c.repoId === r.id && memberByUid.has(c.requesterUid))
-        .map((c) => memberByUid.get(c.requesterUid)!)
-        .filter((m) => m.uid !== owner?.uid);
-      const uniq = [...new Map(mates.map((m) => [m.uid, m])).values()];
-      return owner && uniq.length > 0 ? { repo: r, owner, mates: uniq } : null;
-    })
-    .filter((x): x is NonNullable<typeof x> => x !== null)
-    .slice(0, 5);
+  const weekMs = Date.now() - WEEK_MS;
+  // Derive once per snapshot rather than on every render (SCALING §2).
+  const active = useMemo(
+    () => (activeRepos ?? []).filter((r) => (r.lastEventAt?.toMillis() ?? 0) >= weekMs),
+    [activeRepos, weekMs],
+  );
+  const fresh = useMemo(
+    () => newRepos.filter((r) => (r.createdAt?.toMillis() ?? 0) >= weekMs).slice(0, 6),
+    [newRepos, weekMs],
+  );
+  const forYou = useMemo(
+    () => forYouRepos.filter((r) => r.ownerUid !== uid && r.registeredBy !== uid).slice(0, 5),
+    [forYouRepos, uid],
+  );
+  const forYouIds = useMemo(() => new Set(forYou.map((r) => r.id)), [forYou]);
+  const mineFilteredIdeas = useMemo(
+    () => ideasForMe.filter((i) => i.authorUid !== uid),
+    [ideasForMe, uid],
+  );
+  // Longest-waiting first (the query orders by needsSince), then the repos whose
+  // owner left. Anything already shown in the matcher is not repeated here.
+  const needing = useMemo(() => {
+    const seen = new Set(forYouIds);
+    const out: Repo[] = [];
+    for (const r of [...wanted, ...orphans]) {
+      if (seen.has(r.id)) continue;
+      seen.add(r.id);
+      out.push(r);
+    }
+    return out.slice(0, 5);
+  }, [wanted, orphans, forYouIds]);
+
+  // Building together (M12): the product working, made visible. Drawn straight
+  // from accepted collaboration requests — each one is a recorded fact, so no
+  // member lookup is needed to state it. No counts, no ranking (ADR-019).
+  const together = useMemo(() => {
+    const byRepo = new Map<
+      string,
+      { repoId: string; fullName: string; ownerLogin: string; mates: string[] }
+    >();
+    for (const c of collabs) {
+      const ownerLogin = c.repoFullName.split('/')[0] ?? '';
+      const cur = byRepo.get(c.repoId) ?? {
+        repoId: c.repoId,
+        fullName: c.repoFullName,
+        ownerLogin,
+        mates: [],
+      };
+      if (
+        c.requesterLogin &&
+        c.requesterLogin !== ownerLogin &&
+        !cur.mates.includes(c.requesterLogin)
+      ) {
+        cur.mates.push(c.requesterLogin);
+      }
+      byRepo.set(c.repoId, cur);
+    }
+    return [...byRepo.values()].filter((x) => x.mates.length > 0).slice(0, 5);
+  }, [collabs]);
 
   // New in the circle (M12): arrivals within a week, introduced by what they
   // bring — the moment 200 semi-strangers stop being invisible on day one.
-  const arrivals = (members ?? [])
-    .filter(
-      (m) => m.uid !== uid && m.joinedVia !== 'founder' && (m.joinedAt?.toMillis() ?? 0) >= weekMs,
-    )
-    .sort((a, b) => (b.joinedAt?.toMillis() ?? 0) - (a.joinedAt?.toMillis() ?? 0))
-    .slice(0, 5);
+  const arrivals = useMemo(
+    () =>
+      (recentMembers ?? [])
+        .filter(
+          (m) =>
+            m.uid !== uid && m.joinedVia !== 'founder' && (m.joinedAt?.toMillis() ?? 0) >= weekMs,
+        )
+        .slice(0, 5),
+    [recentMembers, uid, weekMs],
+  );
 
+  const memberCount = summary?.memberCount ?? recentMembers?.length ?? null;
+  const repoCount = summary?.repoCount ?? null;
   // Ask once, quietly, and only when there's something to match against.
-  const skillsPrompt =
-    canWrite && mySkills.length === 0 && (repos ?? []).some((r) => r.needs && !r.archived);
+  const skillsPrompt = canWrite && mySkills.length === 0 && wanted.length > 0;
 
   return (
     <main class="stack">
@@ -221,13 +290,13 @@ export function GroupHome({ gid }: { gid: string }) {
         )}
         <div class="stats stats--divided home__stats">
           <div class="stat">
-            <span class="stat__value">{members?.length ?? '–'}</span>
+            <span class="stat__value">{memberCount ?? '–'}</span>
             <span class="stat__label">members</span>
           </div>
           <div class="stat">
             <span class="stat__value">
               {active.length}
-              {live.length > 0 && <span class="stat__unit">/{live.length}</span>}
+              {repoCount ? <span class="stat__unit">/{repoCount}</span> : null}
             </span>
             <span class="stat__label">active this week</span>
           </div>
@@ -240,12 +309,14 @@ export function GroupHome({ gid }: { gid: string }) {
         </div>
       </section>
 
-      {(forYou.length > 0 || ideasForMe.length > 0) && (
+      {(forYou.length > 0 || mineFilteredIdeas.length > 0) && (
         <section class="card stack rise-2">
           <div class="sectionhead">
             <span class="sectionhead__mark" />
             <span class="sectionhead__title">Wants what you’re good at</span>
-            <span class="sectionhead__count">{forYou.length + Math.min(ideasForMe.length, 3)}</span>
+            <span class="sectionhead__count">
+              {forYou.length + Math.min(mineFilteredIdeas.length, 3)}
+            </span>
             <span class="topbar__spacer" />
             {uid && (
               <a class="small" href={`#/g/${gid}/m/${uid}`}>
@@ -267,7 +338,7 @@ export function GroupHome({ gid }: { gid: string }) {
               )}
             </a>
           ))}
-          {ideasForMe.slice(0, 3).map((i) => (
+          {mineFilteredIdeas.slice(0, 3).map((i) => (
             <a key={i.id} class="idea" href={`#/g/${gid}/idea/${i.id}`}>
               <span class="row">
                 <Chip tone="warn">idea</Chip>
@@ -328,14 +399,16 @@ export function GroupHome({ gid }: { gid: string }) {
         </section>
       )}
 
-      {(brewing.length > 0 || germinatedCount > 0) && (
+      {((brewing?.length ?? 0) > 0 || anyGerminated) && (
         <section class="card stack rise-2">
           <div class="sectionhead">
             <span class="sectionhead__mark" />
             <span class="sectionhead__title">Ideas brewing</span>
-            {brewing.length > 0 && <span class="sectionhead__count">{brewing.length}</span>}
+            {(brewing?.length ?? 0) > 0 && (
+              <span class="sectionhead__count">{brewing?.length}</span>
+            )}
           </div>
-          {brewing.map((i) => (
+          {(brewing ?? []).slice(0, 5).map((i) => (
             <a key={i.id} class="idea" href={`#/g/${gid}/idea/${i.id}`}>
               <span class="row">
                 <span class="idea__name">{i.title}</span>
@@ -351,7 +424,7 @@ export function GroupHome({ gid }: { gid: string }) {
               <span class="idea__pitch">{i.pitch}</span>
             </a>
           ))}
-          {brewing.length === 0 && germinatedCount > 0 && (
+          {brewing?.length === 0 && anyGerminated && (
             <EmptyState line="Nothing brewing right now — every idea here became a repo. Pitch the next one with + Share." />
           )}
         </section>
@@ -386,19 +459,18 @@ export function GroupHome({ gid }: { gid: string }) {
             <span class="sectionhead__title">Building together</span>
             <span class="sectionhead__count">{together.length}</span>
           </div>
-          {together.map(({ repo: r, owner, mates }) => (
-            <a key={r.id} class="row home__repo" href={`#/g/${gid}/repo/${r.id}`}>
+          {together.map((t) => (
+            <a key={t.repoId} class="row home__repo" href={`#/g/${gid}/repo/${t.repoId}`}>
               <span class="row">
-                <span class={`langdot ${langClass(r.language)}`} />
-                <span class="mono">{r.fullName.split('/')[1] ?? r.fullName}</span>
+                <span class="mono">{t.fullName.split('/')[1] ?? t.fullName}</span>
               </span>
               <span class="small dim">
-                @{owner.login} with {mates.map((m) => `@${m.login}`).join(', ')}
+                @{t.ownerLogin} with {t.mates.map((m) => `@${m}`).join(', ')}
               </span>
               <span class="topbar__spacer" />
               <span class="row home__faces">
-                {[owner, ...mates].slice(0, 4).map((m) => (
-                  <Avatar key={m.uid} src={m.avatarUrl} login={m.login} />
+                {[t.ownerLogin, ...t.mates].slice(0, 4).map((login) => (
+                  <Avatar key={login} login={login} />
                 ))}
               </span>
             </a>
@@ -441,15 +513,15 @@ export function GroupHome({ gid }: { gid: string }) {
           {active.length > 0 && <span class="sectionhead__count">{active.length}</span>}
           <span class="topbar__spacer" />
           {active.length > 0 && <span class="small faint spark__legend">last 7 days</span>}
-          {repos && repos.length > 0 && (
+          {repoCount !== null && repoCount > 0 && (
             <a class="small" href={`#/g/${gid}/repos`}>
               All repos →
             </a>
           )}
         </div>
-        {repos === null ? (
+        {activeRepos === null ? (
           <span class="skeleton" />
-        ) : repos.length === 0 ? (
+        ) : repoCount === 0 ? (
           <EmptyState
             line="No repos yet — register the group’s repos and this becomes your shared window."
             action={
@@ -458,7 +530,7 @@ export function GroupHome({ gid }: { gid: string }) {
               </a>
             }
           />
-        ) : live.length === 0 ? (
+        ) : activeRepos.length === 0 ? (
           <EmptyState line="Every repo here is paused or done — nothing in flight right now." />
         ) : active.length === 0 ? (
           <EmptyState line="Quiet week — no repo activity in the last 7 days." />
@@ -482,7 +554,7 @@ export function GroupHome({ gid }: { gid: string }) {
         )}
       </section>
 
-      <ChecklistCard gid={gid} hasDiscord={hasDiscord} memberCount={members?.length ?? 1} />
+      <ChecklistCard gid={gid} hasDiscord={hasDiscord} memberCount={memberCount ?? 1} />
 
       <CollabInbox gid={gid} />
 
@@ -601,14 +673,14 @@ export function GroupHome({ gid }: { gid: string }) {
         <div class="sectionhead">
           <span class="sectionhead__mark" />
           <span class="sectionhead__title">Members</span>
-          {members && <span class="sectionhead__count">{members.length}</span>}
+          {memberCount !== null && <span class="sectionhead__count">{memberCount}</span>}
           <span class="topbar__spacer" />
           {iAmAdmin && <Pill onClick={() => setInviteOpen(true)}>Invite people</Pill>}
           {me && <Chip tone={me.role === 'admin' ? 'accent' : 'default'}>you: {me.role}</Chip>}
         </div>
-        {members === null ? (
+        {recentMembers === null ? (
           <span class="skeleton" />
-        ) : members.length === 1 && iAmAdmin ? (
+        ) : memberCount === 1 && iAmAdmin ? (
           <EmptyState
             icon="users"
             line="Just you in here so far — invite your circle and their work shows up on this page."
@@ -620,13 +692,14 @@ export function GroupHome({ gid }: { gid: string }) {
           />
         ) : (
           <div class="row home__avatars">
-            {members.slice(0, 8).map((m) => (
+            {recentMembers.slice(0, 8).map((m) => (
               <a key={m.uid} href={`#/g/${gid}/m/${m.uid}`} aria-label={`@${m.login}`}>
                 <Avatar src={m.avatarUrl} login={m.login} />
               </a>
             ))}
             <a class="small" href={`#/g/${gid}/members`}>
-              {members.length} member{members.length === 1 ? '' : 's'} →
+              {memberCount ?? recentMembers.length} member
+              {(memberCount ?? recentMembers.length) === 1 ? '' : 's'} →
             </a>
           </div>
         )}
@@ -637,7 +710,9 @@ export function GroupHome({ gid }: { gid: string }) {
         <SkillsSheet
           gid={gid}
           me={me}
-          myRepos={(repos ?? []).filter((r) => ownsRepo(r, me))}
+          myRepos={[...(activeRepos ?? []), ...newRepos].filter(
+            (r) => r.ownerUid === uid || r.registeredBy === uid,
+          )}
           onClose={() => setSkillsOpen(false)}
         />
       )}

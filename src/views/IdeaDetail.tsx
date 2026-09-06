@@ -2,7 +2,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { sessionUser } from '../auth/session';
-import { myMembership } from '../data/activeGroup';
+import { myMembership, useCircleMembers } from '../data/activeGroup';
 import {
   addIdeaInterest,
   deleteIdea,
@@ -30,6 +30,7 @@ import { notifyDiscord } from '../notify/discord';
 
 /** M15 — one idea: the pitch, the discussion, the hands raised, the germination. */
 export function IdeaDetail({ gid, ideaId }: { gid: string; ideaId: string }) {
+  useCircleMembers(gid); // @mention completion in the comment thread
   const [idea, setIdea] = useState<Idea | null | undefined>(undefined);
   const [interests, setInterests] = useState<RepoInterest[]>([]);
   const [repos, setRepos] = useState<Repo[] | null>(null);

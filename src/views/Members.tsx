@@ -3,7 +3,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Timestamp } from 'firebase/firestore';
 import { sessionUser } from '../auth/session';
-import { activeMembers, myMembership } from '../data/activeGroup';
+import { myMembership, useCircleMembers } from '../data/activeGroup';
 import { removeMember, setAvailability, setRole } from '../data/members';
 import { myProfile } from '../data/users';
 import {
@@ -32,7 +32,7 @@ const ROLES: Role[] = ['admin', 'mentor', 'member', 'guest', 'alumnus'];
 
 /** S9 — member list with self availability + admin role/remove controls. */
 export function Members({ gid }: { gid: string }) {
-  const members = activeMembers.value;
+  const members = useCircleMembers(gid);
   const me = myMembership.value;
   const iAmAdmin = me?.role === 'admin';
   const [editAvail, setEditAvail] = useState(false);

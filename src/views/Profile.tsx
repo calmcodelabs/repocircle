@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { sessionUser } from '../auth/session';
-import { activeMembers } from '../data/activeGroup';
+import { useCircleMembers } from '../data/activeGroup';
 import { setSkills } from '../data/members';
 import { watchIdeas } from '../data/ideas';
 import { watchRepos } from '../data/repos';
@@ -36,7 +36,7 @@ import { AvailabilitySheet } from './Members';
  * purpose; there is no cross-circle profile, no counters, no comparison.
  */
 export function Profile({ gid, uid }: { gid: string; uid: string }) {
-  const members = activeMembers.value;
+  const members = useCircleMembers(gid);
   const m = members?.find((x) => x.uid === uid);
   const [repos, setRepos] = useState<Repo[] | null>(null);
   const [ideas, setIdeas] = useState<Idea[] | null>(null);

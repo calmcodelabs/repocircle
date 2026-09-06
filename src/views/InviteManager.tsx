@@ -2,7 +2,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { collection, getCountFromServer } from 'firebase/firestore';
 import { db } from '../firebase';
 import { sessionUser } from '../auth/session';
-import { activeGroup, activeMembers } from '../data/activeGroup';
+import { activeGroup, activeSummary } from '../data/activeGroup';
 import { createInvite, inviteState, inviteUrl, revokeInvite, watchInvites } from '../data/invites';
 import { myProfile } from '../data/users';
 import type { Invite } from '../data/types';
@@ -59,7 +59,7 @@ export function InviteManager({ gid, intro }: { gid: string; intro?: string }) {
         {
           groupName: group.name,
           groupDescription: group.description ?? '',
-          memberCount: activeMembers.value?.length ?? 1,
+          memberCount: activeSummary.value?.memberCount ?? 1,
           repoCount,
         },
         role,

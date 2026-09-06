@@ -4,6 +4,7 @@ import {
   deleteDoc,
   doc,
   getDocFromServer,
+  limit,
   onSnapshot,
   orderBy,
   query,
@@ -27,6 +28,36 @@ export function watchMembers(
   onError: (code: string) => void,
 ): Unsubscribe {
   const q = query(collection(db(), `groups/${gid}/members`), orderBy('joinedAt', 'asc'));
+  return resilientWatch(
+    (onOk, onErr) =>
+      onSnapshot(
+        q,
+        (snap) => {
+          onOk();
+          cb(snap.docs.map((d) => ({ uid: d.id, ...(d.data() as Omit<Member, 'uid'>) })));
+        },
+        onErr,
+      ),
+    { onGiveUp: onError },
+  );
+}
+
+/**
+ * M16 — the newest members, which is all Home needs: the avatar strip shows
+ * eight and "New in the circle" shows arrivals. The full list belongs to the
+ * Members page, which paginates it.
+ */
+export function watchRecentMembers(
+  gid: string,
+  cb: (members: Member[]) => void,
+  onError: (code: string) => void,
+  max = 8,
+): Unsubscribe {
+  const q = query(
+    collection(db(), `groups/${gid}/members`),
+    orderBy('joinedAt', 'desc'),
+    limit(max),
+  );
   return resilientWatch(
     (onOk, onErr) =>
       onSnapshot(
@@ -71,11 +102,7 @@ export async function joinViaInvite(
   if (!check?.exists()) throw new Error('join-not-persisted');
   // Only after the membership is provably on the server: a mirror that counts
   // a join the server rejected would be worse than one that lags.
-  await noteMemberJoined(
-    gid,
-    { uid: profile.uid, login: profile.login, avatarUrl: profile.avatarUrl },
-    { founder: false },
-  );
+  await noteMemberJoined(gid);
 }
 
 /** Self-only (rules-enforced): what I can help with + what I'm learning. */
@@ -114,7 +141,7 @@ export async function removeMember(gid: string, actor: MyProfile, target: Member
   // so a partial failure leaves a member with flagged repos, not orphans.
   const orphaned = await markReposOwnerLeft(gid, target.uid);
   await deleteDoc(doc(db(), `groups/${gid}/members/${target.uid}`));
-  await noteMemberLeft(gid, target.uid);
+  await noteMemberLeft(gid);
   audit(
     gid,
     actor,
@@ -132,7 +159,7 @@ export async function removeMember(gid: string, actor: MyProfile, target: Member
 export async function leaveGroup(gid: string, profile: MyProfile): Promise<void> {
   await anonymizeMyContent(gid, profile.uid);
   await markReposOwnerLeft(gid, profile.uid); // while my membership still authorizes it
-  await noteMemberLeft(gid, profile.uid); // ditto — the mirror write needs membership
+  await noteMemberLeft(gid); // ditto — the mirror write needs membership
   await deleteDoc(doc(db(), `groups/${gid}/members/${profile.uid}`));
   await forgetGroup(profile.uid, gid);
 }

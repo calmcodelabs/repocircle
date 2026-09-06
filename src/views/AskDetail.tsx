@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import { sessionUser } from '../auth/session';
-import { myMembership } from '../data/activeGroup';
+import { myMembership, useCircleMembers } from '../data/activeGroup';
 import {
   claimAsk,
   deleteAsk,
@@ -28,6 +28,7 @@ import { relTime } from '../util/time';
 
 /** S6 — full ask: claims with notes, resolve/reopen/delete by author or admin. */
 export function AskDetail({ gid, askId }: { gid: string; askId: string }) {
+  useCircleMembers(gid); // @mention completion in the comment thread
   const [ask, setAsk] = useState<Ask | null | undefined>(undefined);
   const [claims, setClaims] = useState<AskClaim[]>([]);
   const [resolvePick, setResolvePick] = useState(false);

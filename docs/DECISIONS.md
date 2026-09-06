@@ -178,17 +178,32 @@ journey opens with the idea chapter, and the credit line is a single fact
 (never aggregated). Parked is an honest shelf, not a soft delete.
 
 
-**ADR-021 · The circle summary doc is a mirror, and Home is one read.**
-`groups/{gid}/meta/summary` holds the counters (memberCount, repoCount,
-openAskCount — increment() only, Class C), the capped lists (newRepos ≤6,
-arrivals ≤5, wantsAHand ≤10) and the admin surface (links ≤6, pinnedRepoId).
-Clients maintain it at write time — Spark has no triggers — so it drifts, and
-that is priced in: every entry is display-only (Class A by construction) and
-resolves to an authoritative doc on tap; no action or verdict ever keys on it.
-Rules split the writable keys by affectedKeys(): member-maintained keys carry
-shape caps, admin keys require isAdmin(). This doc is what turns a 300-member
-Home from ~900 reads into ~1; it exists for that reason and no other, and if a
-block cannot be fed from it or from a bounded query, the block does not ship.
+**ADR-021 · The summary doc holds counts; every list is a bounded query.**
+`groups/{gid}/meta/summary` holds three numbers — memberCount, repoCount,
+openAskCount — plus the admin surface (links, pinnedRepoId) that M17 fills in.
+Nothing else. **Superseded during M16:** the first draft also mirrored capped
+lists (recent faces, arrivals, new repos, repos wanting help) into the same
+document. That was wrong, and the reason is worth keeping: Firestore bills
+documents *returned*, not scanned, so `orderBy(...).limit(6)` costs six reads
+against a six-hundred-repo collection. A bounded query is therefore the same
+cost order as a mirrored list while returning whole, current documents —
+where the mirror duplicated display fields that drift, which is Class A
+exposure in the exact codebase whose review system exists because of Class A.
+
+What survives is what no bounded query can answer: a count. Getting one
+otherwise means reading the whole collection, and that is what took the app
+down. Counts move by increment() (Class C), are maintained best-effort by
+member clients at write time (Spark has no triggers), and are display-only —
+nothing authorizes on them, and rebuildSummary() recounts from aggregation
+queries when they drift. Where a list needs an ordering the documents do not
+already carry, the ordering becomes a field on the document rather than a
+mirror: `repo.needsSince` is why the longest-waiting repo can be found with a
+query, so a repo nobody answers rises instead of sinking.
+
+Corollary, and the rule that pays for most of M16: reading a whole collection
+is a design error, not an optimisation opportunity. Only two screens may hold
+the full member list (the roster and settings, via an explicit
+`useCircleMembers`); every other page reads its own membership as one document.
 
 **ADR-022 · Disclosure is progressive, and the checklist is the unlock.**
 Discord's onboarding data says the first ten minutes decide retention, and its

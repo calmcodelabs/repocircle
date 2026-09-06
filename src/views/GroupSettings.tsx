@@ -3,7 +3,7 @@ import { deleteDoc, doc, getDoc, serverTimestamp, setDoc } from 'firebase/firest
 import { db } from '../firebase';
 import { sessionUser } from '../auth/session';
 import { invalidateDiscordCache, testDiscord, type DiscordConfig } from '../notify/discord';
-import { activeGroup, activeMembers, myMembership } from '../data/activeGroup';
+import { activeGroup, activeMembers, myMembership, useCircleMembers } from '../data/activeGroup';
 import { deleteGroupEverything, deleteGroupProgress } from '../data/deleteGroup';
 import { updateGroupProfile } from '../data/groups';
 import { InviteManager } from './InviteManager';
@@ -16,6 +16,7 @@ import { toast } from '../ui/Toast';
 import { LIMITS } from '../util/limits';
 
 export function GroupSettings({ gid }: { gid: string }) {
+  useCircleMembers(gid); // the roster screen is the one place that needs everybody
   const me = myMembership.value;
   const iAmAdmin = me?.role === 'admin';
 

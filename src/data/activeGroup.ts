@@ -1,4 +1,5 @@
-import { computed, signal } from '@preact/signals';
+import { signal } from '@preact/signals';
+import { useEffect } from 'preact/hooks';
 import type { Unsubscribe } from 'firebase/firestore';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -6,18 +7,30 @@ import { sessionUser } from '../auth/session';
 import { clearServerError, log, noteServerError } from '../util/log';
 import { watchMembers } from './members';
 import { resilientWatch } from './resilientWatch';
-import type { Group, Member } from './types';
+import { watchSummary } from './summary';
+import type { CircleSummary, Group, Member } from './types';
 
 export const activeGid = signal<string | null>(null);
 export const activeGroup = signal<Group | null | undefined>(undefined);
-export const activeMembers = signal<Member[] | null>(null);
+/** Counts for the whole circle in one document (M16, ADR-021). */
+export const activeSummary = signal<CircleSummary | null>(null);
 /** Set when the group listeners get permission-denied (not a member / removed). */
 export const activeDenied = signal(false);
 
-export const myMembership = computed<Member | null>(() => {
-  const uid = sessionUser.value?.uid;
-  return (uid && activeMembers.value?.find((m) => m.uid === uid)) || null;
-});
+/**
+ * My own membership, read as one document rather than sifted out of the whole
+ * member list. Every group-scoped page needs it (it decides what I may do), and
+ * paying two hundred reads for one document was most of what made Home
+ * expensive — see SCALING.md.
+ */
+export const myMembership = signal<Member | null>(null);
+
+/**
+ * The full member list. Opt-in (see useCircleMembers) because most pages never
+ * need it: Home shows eight faces and Repos shows none, while the member and
+ * settings screens genuinely work with everybody.
+ */
+export const activeMembers = signal<Member[] | null>(null);
 
 let unsubs: Unsubscribe[] = [];
 let retryTimer: ReturnType<typeof setTimeout> | undefined;
@@ -53,7 +66,7 @@ export function retryActiveGroup(): void {
   teardown();
   activeDenied.value = false;
   activeGroup.value = undefined;
-  activeMembers.value = null;
+  myMembership.value = null;
   subscribe(gid, false);
 }
 
@@ -62,7 +75,9 @@ export function setActiveGroup(gid: string | null): void {
   teardown();
   activeGid.value = gid;
   activeGroup.value = undefined;
+  activeSummary.value = null;
   activeMembers.value = null;
+  myMembership.value = null;
   activeDenied.value = false;
   if (!gid) return;
 
@@ -78,6 +93,8 @@ export function setActiveGroup(gid: string | null): void {
 function subscribe(gid: string, retriedDenied: boolean): void {
   for (const u of unsubs) u();
   unsubs = [];
+  const uid = sessionUser.value?.uid;
+
   unsubs.push(
     resilientWatch(
       (onOk, onErr) =>
@@ -98,21 +115,75 @@ function subscribe(gid: string, retriedDenied: boolean): void {
         },
       },
     ),
-    watchMembers(
+  );
+
+  if (uid) {
+    unsubs.push(
+      resilientWatch(
+        (onOk, onErr) =>
+          onSnapshot(
+            doc(db(), `groups/${gid}/members/${uid}`),
+            (snap) => {
+              onOk();
+              clearServerError();
+              myMembership.value = snap.exists()
+                ? ({ uid: snap.id, ...snap.data() } as Member)
+                : null;
+            },
+            onErr,
+          ),
+        {
+          onGiveUp: (code) => {
+            log('warn', `membership watch: ${code}`);
+            noteServerError(code, 'membership');
+            // A blocked or unreachable backend is not the same as being removed
+            // from the circle — never claim that on its behalf.
+            if (code !== 'resource-exhausted' && code !== 'unavailable') {
+              noteDenied(gid, retriedDenied);
+            }
+          },
+        },
+      ),
+    );
+  }
+
+  unsubs.push(
+    watchSummary(
       gid,
-      (m) => {
-        clearServerError();
-        activeMembers.value = m;
+      (s) => {
+        activeSummary.value = s;
       },
       (code) => {
-        log('warn', `members watch: ${code}`);
-        noteServerError(code, 'members');
-        // A blocked or unreachable backend is not the same as being removed from
-        // the circle — never claim that on its behalf.
-        if (code !== 'resource-exhausted' && code !== 'unavailable') noteDenied(gid, retriedDenied);
+        // Counts going missing is a cosmetic loss, never a denial verdict: the
+        // membership watch above is the only thing that decides that.
+        log('warn', `summary watch: ${code}`);
       },
     ),
   );
+}
+
+/**
+ * Subscribe to the whole member list for as long as this view is mounted.
+ * Deliberately explicit: reading every member is the single most expensive
+ * thing a page can do, so a page pays for it only by asking.
+ */
+export function useCircleMembers(gid: string): Member[] | null {
+  useEffect(() => {
+    let alive = true;
+    const un = watchMembers(
+      gid,
+      (m) => {
+        if (alive) activeMembers.value = m;
+      },
+      (code) => log('warn', `members watch: ${code}`),
+    );
+    return () => {
+      alive = false;
+      un();
+      activeMembers.value = null;
+    };
+  }, [gid]);
+  return activeMembers.value;
 }
 
 export function lastGid(): string | null {

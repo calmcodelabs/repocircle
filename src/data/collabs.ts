@@ -1,6 +1,7 @@
 import {
   collection,
   doc,
+  limit,
   onSnapshot,
   orderBy,
   query,
@@ -88,9 +89,13 @@ export function watchAcceptedCollabs(
   gid: string,
   cb: (reqs: CollabRequest[]) => void,
 ): Unsubscribe {
+  // Bounded (M16): Home shows at most five "building together" rows, so the
+  // whole accepted history was never needed to draw them.
   const q = query(
     collection(db(), `groups/${gid}/collabRequests`),
     where('state', '==', 'accepted'),
+    orderBy('createdAt', 'desc'),
+    limit(15),
   );
   return onSnapshot(
     q,

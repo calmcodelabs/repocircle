@@ -7,7 +7,10 @@ import {
   getDocs,
   limit,
   onSnapshot,
+  orderBy,
   query,
+  where,
+  type Query,
   serverTimestamp,
   updateDoc,
   writeBatch,
@@ -17,7 +20,7 @@ import { db } from '../firebase';
 import type { GhRepo } from '../github/types';
 import { audit } from './audit';
 import { resilientWatch } from './resilientWatch';
-import { noteReposRegistered, noteRepoRemoved, noteWants, type WantChange } from './summary';
+import { noteReposRegistered, noteRepoRemoved } from './summary';
 import type { MyProfile, Repo, RepoInterest, RepoNeed, RepoStatus } from './types';
 
 /** Map a GitHub API repo onto our doc shape (rules-compatible: clamps + allowlists). */
@@ -64,6 +67,116 @@ export function watchRepos(
   );
 }
 
+/**
+ * M16 — Home's repo blocks, one bounded query each. Firestore bills documents
+ * returned, not scanned, so these cost the same on a circle of six hundred
+ * repos as on one of six; the old whole-collection listener cost six hundred.
+ */
+function boundedRepoWatch(
+  q: Query,
+  cb: (repos: Repo[]) => void,
+  onError: (code: string) => void,
+): Unsubscribe {
+  return resilientWatch(
+    (onOk, onErr) =>
+      onSnapshot(
+        q,
+        (snap) => {
+          onOk();
+          cb(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Repo, 'id'>) })));
+        },
+        onErr,
+      ),
+    { onGiveUp: onError },
+  );
+}
+
+/**
+ * Repos still in flight, most recently active first. Paused and done are
+ * filtered in the query rather than after it: filtering a bounded list would
+ * make "every repo here is paused" a claim about the top eight wearing the
+ * words of a claim about the circle (Class G).
+ */
+export function watchActiveRepos(
+  gid: string,
+  cb: (repos: Repo[]) => void,
+  onError: (code: string) => void,
+  max = 8,
+): Unsubscribe {
+  return boundedRepoWatch(
+    query(
+      collection(db(), `groups/${gid}/repos`),
+      where('archived', '==', false),
+      where('status', 'in', ['idea', 'building']),
+      orderBy('lastEventAt', 'desc'),
+      limit(max),
+    ),
+    cb,
+    onError,
+  );
+}
+
+/** Newest registrations — a two-day-old repo has no activity to show yet. */
+export function watchNewRepos(
+  gid: string,
+  cb: (repos: Repo[]) => void,
+  onError: (code: string) => void,
+  max = 6,
+): Unsubscribe {
+  return boundedRepoWatch(
+    query(
+      collection(db(), `groups/${gid}/repos`),
+      where('archived', '==', false),
+      orderBy('createdAt', 'desc'),
+      limit(max),
+    ),
+    cb,
+    onError,
+  );
+}
+
+/**
+ * Repos waiting for help, longest-waiting first. Ordering by needsSince rather
+ * than recency is the point: a repo nobody answers must rise, not sink.
+ * Pass the member's own skills to get the matcher's slice of the same index.
+ */
+export function watchWantedRepos(
+  gid: string,
+  needs: RepoNeed[],
+  cb: (repos: Repo[]) => void,
+  onError: (code: string) => void,
+  max = 10,
+): Unsubscribe {
+  if (needs.length === 0) {
+    cb([]);
+    return () => undefined;
+  }
+  return boundedRepoWatch(
+    query(
+      collection(db(), `groups/${gid}/repos`),
+      where('needs', 'in', needs.slice(0, 10)),
+      orderBy('needsSince', 'asc'),
+      limit(max),
+    ),
+    cb,
+    onError,
+  );
+}
+
+/** Repos whose owner moved on — same block, different reason to be there. */
+export function watchOrphanRepos(
+  gid: string,
+  cb: (repos: Repo[]) => void,
+  onError: (code: string) => void,
+  max = 5,
+): Unsubscribe {
+  return boundedRepoWatch(
+    query(collection(db(), `groups/${gid}/repos`), where('seekingOwner', '==', true), limit(max)),
+    cb,
+    onError,
+  );
+}
+
 export async function getExistingRepoIds(gid: string): Promise<Set<string>> {
   const snap = await getDocs(collection(db(), `groups/${gid}/repos`));
   return new Set(snap.docs.map((d) => d.id));
@@ -85,16 +198,7 @@ export async function registerRepos(
     await batch.commit();
   }
   if (fresh.length > 0) {
-    await noteReposRegistered(
-      gid,
-      fresh.map((gh) => ({
-        repoId: String(gh.id),
-        fullName: gh.full_name.slice(0, 140),
-        language: gh.language ?? null,
-        ownerLogin: gh.owner.login,
-        at: Timestamp.now(),
-      })),
-    );
+    await noteReposRegistered(gid, fresh.length);
     // Onboarding checklist signal (F-12); best-effort.
     void updateDoc(doc(db(), `groups/${gid}/members/${me.uid}`), {
       'checklist.addedRepo': true,
@@ -125,7 +229,7 @@ export async function removeRepo(gid: string, me: MyProfile, repo: Repo): Promis
     }
   }
   await deleteDoc(doc(db(), `groups/${gid}/repos/${repo.id}`));
-  await noteRepoRemoved(gid, repo.id);
+  await noteRepoRemoved(gid);
   audit(gid, me, 'repo_removed', 'repo', repo.fullName);
 }
 
@@ -168,23 +272,25 @@ export async function fetchMyRepos(
 /** Owner-authored idea fields: the pitch, what help is wanted, how to browse it. */
 export async function setIdeaDetails(
   gid: string,
-  repo: Pick<Repo, 'id' | 'fullName'>,
+  repo: Pick<Repo, 'id' | 'needs' | 'needsSince'>,
   fields: { pitch: string; needs: RepoNeed | null; domainTags: string[]; seekingOwner: boolean },
 ): Promise<void> {
+  // The clock starts when the repo asks for something new, and keeps running
+  // across edits that leave the need alone — otherwise re-saving a pitch would
+  // send a repo that has waited a month back to the bottom of the queue.
+  const stillWaitingForTheSameThing =
+    fields.needs !== null && fields.needs === (repo.needs ?? null) && !!repo.needsSince;
   await updateDoc(doc(db(), `groups/${gid}/repos/${repo.id}`), {
     pitch: fields.pitch.slice(0, 200),
     needs: fields.needs,
+    needsSince: fields.needs
+      ? stillWaitingForTheSameThing
+        ? repo.needsSince
+        : serverTimestamp()
+      : null,
     domainTags: fields.domainTags.slice(0, 4),
     seekingOwner: fields.seekingOwner,
   });
-  await noteWants(gid, [
-    {
-      repoId: repo.id,
-      fullName: repo.fullName,
-      needs: fields.needs,
-      seekingOwner: fields.seekingOwner,
-    },
-  ]);
 }
 
 export function watchInterests(
@@ -229,19 +335,8 @@ export async function markReposOwnerLeft(gid: string, ownerUid: string): Promise
   );
   if (snap.empty) return 0;
   const batch = writeBatch(db());
-  const changes: WantChange[] = [];
-  snap.forEach((d) => {
-    batch.update(d.ref, { seekingOwner: true, ownerLeft: true });
-    const r = d.data() as Omit<Repo, 'id'>;
-    changes.push({
-      repoId: d.id,
-      fullName: r.fullName,
-      needs: r.needs ?? null,
-      seekingOwner: true,
-    });
-  });
+  snap.forEach((d) => batch.update(d.ref, { seekingOwner: true, ownerLeft: true }));
   await batch.commit();
-  await noteWants(gid, changes);
   return snap.size;
 }
 
@@ -251,14 +346,6 @@ export async function markRepoOwnerLeft(gid: string, repo: Repo): Promise<void> 
     seekingOwner: true,
     ownerLeft: true,
   });
-  await noteWants(gid, [
-    {
-      repoId: repo.id,
-      fullName: repo.fullName,
-      needs: repo.needs ?? null,
-      seekingOwner: true,
-    },
-  ]);
 }
 
 /**
@@ -280,14 +367,6 @@ export async function adoptRepo(
     seekingOwner: false,
     ownerLeft: false,
   });
-  await noteWants(gid, [
-    {
-      repoId: repo.id,
-      fullName: repo.fullName,
-      needs: repo.needs ?? null,
-      seekingOwner: false,
-    },
-  ]);
   audit(gid, actor, 'repo_adopted', 'repo', repo.fullName, `→ @${adopter.login}`);
 }
 

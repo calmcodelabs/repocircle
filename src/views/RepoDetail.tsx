@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { Timestamp, collection, limit, onSnapshot, orderBy, query } from 'firebase/firestore';
 import { db } from '../firebase';
-import { activeMembers, myMembership } from '../data/activeGroup';
+import { activeMembers, myMembership, useCircleMembers } from '../data/activeGroup';
 import { sessionUser } from '../auth/session';
 import { canManageRepo } from '../data/repos';
 import { canWriteRole, type Repo, type RepoInterest } from '../data/types';
@@ -56,6 +56,9 @@ const TYPE_ICON: Record<string, IconName> = {
 
 /** S7 detail — repo header + the last 30 normalized events. */
 export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
+  // Needs the roster: to name the repo's owner inside the circle, to tell which
+  // raised hands are still members, and for @mention completion in comments.
+  useCircleMembers(gid);
   const [repo, setRepo] = useState<Repo | null | undefined>(undefined);
   const [events, setEvents] = useState<FeedEvent[] | null>(null);
   const [collabOpen, setCollabOpen] = useState(false);

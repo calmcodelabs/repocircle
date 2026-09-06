@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { authError, ensureGitHubToken, sessionUser } from '../auth/session';
 import { hasToken } from '../auth/vault';
-import { activeMembers, myMembership } from '../data/activeGroup';
+import { activeSummary, myMembership } from '../data/activeGroup';
 import { canManageRepo, registerRepos, removeRepo, setRepoStatus, watchRepos } from '../data/repos';
 import { excludeFromSync, hasDecidedSharing, setRepoSyncMode, syncMyRepos } from '../data/repoSync';
 import { myProfile } from '../data/users';
@@ -112,7 +112,7 @@ export function Repos({ gid }: { gid: string }) {
    * Fires once per circle, and only for someone who can actually invite.
    */
   function maybeNudgeInvite() {
-    const soloAdmin = me?.role === 'admin' && (activeMembers.value?.length ?? 1) === 1;
+    const soloAdmin = me?.role === 'admin' && (activeSummary.value?.memberCount ?? 1) === 1;
     if (!soloAdmin) return;
     try {
       if (sessionStorage.getItem(`rc.inviteNudge.${gid}`)) return;
