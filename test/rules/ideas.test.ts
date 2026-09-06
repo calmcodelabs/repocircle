@@ -71,7 +71,7 @@ function idea(authorUid: string, over: Record<string, unknown> = {}) {
   };
 }
 
-describe('ideas', () => {
+describe('[ideas] ideas', () => {
   it('member creates their own idea', async () => {
     const bob = env.authenticatedContext('bob');
     await assertSucceeds(setDoc(doc(db(bob), `groups/${GID}/ideas/i2`), idea('bob')));

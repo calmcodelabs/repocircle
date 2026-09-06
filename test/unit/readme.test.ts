@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readmePreview } from '../../src/util/readme';
 
-describe('readmePreview', () => {
+describe('[repo-import] readmePreview', () => {
   it('strips markdown syntax but keeps the meaning', () => {
     const out = readmePreview(
       '# Pocket Journal\n\nSave things **from your phone** via `Telegram`.',

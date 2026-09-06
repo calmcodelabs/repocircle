@@ -20,7 +20,7 @@ afterAll(async () => {
 });
 
 // M11: helpWith/learning become real input, so their shape is enforced.
-describe('member skills (helpWith / learning)', () => {
+describe('[skills-matcher] [availability] member skills (helpWith / learning)', () => {
   it('self can set helpWith from the closed vocabulary plus learning', async () => {
     const bob = env.authenticatedContext('bob');
     await assertSucceeds(
@@ -108,7 +108,7 @@ describe('member skills (helpWith / learning)', () => {
 });
 
 // Unrelated guard: sanity that outsiders still cannot write member docs at all.
-describe('outsiders', () => {
+describe('[membership-roles] outsiders', () => {
   it('non-member cannot write skills into a group', async () => {
     const mallory = env.authenticatedContext('mallory');
     await assertFails(

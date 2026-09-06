@@ -73,7 +73,7 @@ function comment(over: Record<string, unknown> = {}) {
   };
 }
 
-describe('comments: gid + replyToUid (away-inbox fields)', () => {
+describe('[comments] [away-inbox] comments: gid + replyToUid (away-inbox fields)', () => {
   it('member writes a comment carrying its own gid', async () => {
     const bob = env.authenticatedContext('bob');
     await assertSucceeds(setDoc(doc(db(bob), `groups/${GID}/repos/111/comments/c2`), comment()));
@@ -97,7 +97,7 @@ describe('comments: gid + replyToUid (away-inbox fields)', () => {
   });
 });
 
-describe('collection-group comment reads', () => {
+describe('[comments] collection-group comment reads', () => {
   it('member: gid-pinned collection-group query succeeds', async () => {
     const bob = env.authenticatedContext('bob');
     await assertSucceeds(
@@ -149,7 +149,7 @@ describe('collection-group comment reads', () => {
   });
 });
 
-describe('interests: repoOwnerUid must be the truth', () => {
+describe('[interests] interests: repoOwnerUid must be the truth', () => {
   it('honest interest with owner routing succeeds', async () => {
     const bob = env.authenticatedContext('bob');
     await assertSucceeds(
@@ -179,7 +179,7 @@ describe('interests: repoOwnerUid must be the truth', () => {
   });
 });
 
-describe('repo ownership: the silent-transfer hole is closed', () => {
+describe('[repo-registry] [adoption-handover] repo ownership: the silent-transfer hole is closed', () => {
   it('a non-owner member cannot reassign ownerUid to themselves', async () => {
     const gia = env.authenticatedContext('gia');
     await assertFails(updateDoc(doc(db(gia), `groups/${GID}/repos/111`), { ownerUid: 'gia' }));
@@ -217,7 +217,7 @@ describe('repo ownership: the silent-transfer hole is closed', () => {
   });
 });
 
-describe('ask resolution credit', () => {
+describe('[claims] ask resolution credit', () => {
   it('author resolves recording who helped', async () => {
     await env.withSecurityRulesDisabled(async (ctx) => {
       await setDoc(doc(db(ctx), `groups/${GID}/asks/a1`), askDoc('bob'));
@@ -249,7 +249,7 @@ describe('ask resolution credit', () => {
   });
 });
 
-describe('users/{uid}/watches', () => {
+describe('[watches] users/{uid}/watches', () => {
   it('self can create and delete a watch', async () => {
     const bob = env.authenticatedContext('bob');
     await assertSucceeds(

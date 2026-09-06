@@ -11,7 +11,7 @@ afterAll(async () => {
   await env.cleanup();
 });
 
-describe('default deny backstop', () => {
+describe('[infrastructure] default deny backstop', () => {
   it('undeclared paths are unreadable and unwritable even signed in', async () => {
     const alice = env.authenticatedContext('alice');
     await assertFails(setDoc(doc(db(alice), 'junk/x'), { a: 1 }));

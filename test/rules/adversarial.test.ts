@@ -29,7 +29,7 @@ afterAll(async () => {
   await env.cleanup();
 });
 
-describe('adversarial: forged payloads outside the app happy path', () => {
+describe('[membership-roles] [repo-registry] [asks] adversarial: forged payloads outside the app happy path', () => {
   it('events with a non-poll source are rejected (webhook is Phase-3 only)', async () => {
     const bob = env.authenticatedContext('bob');
     const ev = {

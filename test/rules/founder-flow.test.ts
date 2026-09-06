@@ -30,7 +30,7 @@ afterAll(async () => {
 });
 
 // Replicates the exact client createGroup() batch + the GroupShell read-back.
-describe('founder create-then-read (client flow)', () => {
+describe('[groups-create] founder create-then-read (client flow)', () => {
   it('founder can create a group and immediately read group + members', async () => {
     const uid = 'alice';
     // Pre-existing user doc (created at sign-in) — the batch updates its groupIds.

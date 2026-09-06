@@ -32,7 +32,7 @@ afterAll(async () => {
 });
 
 // M18 — saved things widened from repos to anything worth coming back to.
-describe('saved items (users/{uid}/watches)', () => {
+describe('[watches] saved items (users/{uid}/watches)', () => {
   it('saves a repo in the new shape', async () => {
     const bob = env.authenticatedContext('bob');
     await assertSucceeds(
@@ -121,7 +121,7 @@ describe('saved items (users/{uid}/watches)', () => {
 });
 
 // M18 — per-circle inbox level, on my own user document.
-describe('circlePrefs', () => {
+describe('[notification-levels] circlePrefs', () => {
   it('I set my own', async () => {
     const bob = env.authenticatedContext('bob');
     await assertSucceeds(updateDoc(doc(db(bob), 'users/bob'), { circlePrefs: { [GID]: 'mute' } }));

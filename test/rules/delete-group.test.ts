@@ -43,7 +43,7 @@ afterAll(async () => {
   await env.cleanup();
 });
 
-describe('group deletion', () => {
+describe('[group-delete] group deletion', () => {
   it('members cannot delete the group, collab requests, or audit entries', async () => {
     const bob = env.authenticatedContext('bob');
     await assertFails(deleteDoc(doc(db(bob), `groups/${GID}`)));

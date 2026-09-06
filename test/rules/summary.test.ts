@@ -35,7 +35,7 @@ async function seedSummary(fields: Record<string, unknown> = {}): Promise<void> 
 
 // M16 (ADR-021): the summary is a display mirror, so the rules police shape,
 // caps and the admin/member key split — never truth.
-describe('circle summary doc', () => {
+describe('[summary-doc] circle summary doc', () => {
   it('a member reads it', async () => {
     await seedSummary();
     const bob = env.authenticatedContext('bob');
@@ -102,7 +102,7 @@ describe('circle summary doc', () => {
     await assertFails(setDoc(doc(db(bob), `groups/${GID}/meta/health`), { memberCount: 1, v: 1 }));
   });
 
-  describe('admin surface (links, pinnedRepoId)', () => {
+  describe('[circle-wall] admin surface (links, pinnedRepoId)', () => {
     it('a member cannot set links', async () => {
       await seedSummary();
       const bob = env.authenticatedContext('bob');
@@ -157,7 +157,7 @@ describe('circle summary doc', () => {
     });
   });
 
-  describe('delete', () => {
+  describe('[summary-doc] delete', () => {
     it('a member cannot delete the summary', async () => {
       await seedSummary();
       const bob = env.authenticatedContext('bob');

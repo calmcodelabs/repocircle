@@ -82,7 +82,7 @@ async function seedPoll(over: Record<string, unknown> = {}) {
 }
 
 // M19 (ADR-023) — calling a session is a member ritual, not an admin function.
-describe('sessions', () => {
+describe('[sessions] sessions', () => {
   it('a member calls one', async () => {
     const bob = env.authenticatedContext('bob');
     await assertSucceeds(setDoc(doc(db(bob), SESSION), sessionDoc('bob')));
@@ -185,7 +185,7 @@ describe('sessions', () => {
     await assertFails(deleteDoc(doc(db(carl), SESSION)));
   });
 
-  describe('RSVPs reuse the interests shape', () => {
+  describe('[rsvp] RSVPs reuse the interests shape', () => {
     const rsvpPath = `${SESSION}/interests/alice`;
     const good = {
       login: 'alice',
@@ -244,7 +244,7 @@ describe('sessions', () => {
 });
 
 // M19 (ADR-024) — a poll decides a question and never rates anybody.
-describe('polls', () => {
+describe('[polls-voting] polls', () => {
   it('a member asks one', async () => {
     const bob = env.authenticatedContext('bob');
     await assertSucceeds(setDoc(doc(db(bob), POLL), pollDoc('bob')));
@@ -337,7 +337,7 @@ describe('polls', () => {
     );
   });
 
-  describe('votes', () => {
+  describe('[polls-voting] votes', () => {
     it('a member votes once, in their own name', async () => {
       await seedPoll();
       const alice = env.authenticatedContext('alice');

@@ -11,7 +11,7 @@ function mockSessionStorage() {
   return store;
 }
 
-describe('auth/vault', () => {
+describe('[auth-signin] auth/vault', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.unstubAllGlobals();

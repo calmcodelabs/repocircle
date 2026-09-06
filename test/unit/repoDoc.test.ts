@@ -24,7 +24,7 @@ function gh(overrides: Partial<GhRepo> = {}): GhRepo {
   };
 }
 
-describe('toRepoDoc', () => {
+describe('[repo-registry] toRepoDoc', () => {
   it('clamps description to the rules limit and caps topics', () => {
     const d = toRepoDoc(gh({ description: 'x'.repeat(900) }), me);
     expect(d.description!.length).toBe(500);

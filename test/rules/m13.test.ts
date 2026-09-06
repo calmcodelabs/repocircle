@@ -40,7 +40,7 @@ afterAll(async () => {
 });
 
 // M13: departures flag repos for adoption instead of orphaning them.
-describe('ownerLeft', () => {
+describe('[adoption-handover] [leave-rejoin] ownerLeft', () => {
   it('admin can flag a member’s repos on removal', async () => {
     const alice = env.authenticatedContext('alice');
     await assertSucceeds(

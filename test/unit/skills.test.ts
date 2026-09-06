@@ -25,7 +25,7 @@ function repo(over: Partial<Repo>): Repo {
   };
 }
 
-describe('ownsRepo', () => {
+describe('[skills-matcher] ownsRepo', () => {
   it('matches by ownerUid', () => {
     expect(ownsRepo(repo({ ownerUid: 'u9' }), { uid: 'u9', login: 'other' })).toBe(true);
   });
@@ -41,7 +41,7 @@ describe('ownsRepo', () => {
   });
 });
 
-describe('languageEvidence', () => {
+describe('[skills-matcher] languageEvidence', () => {
   it('counts and sorts by use, ties alphabetical', () => {
     const ev = languageEvidence([
       repo({ language: 'Python' }),
@@ -61,7 +61,7 @@ describe('languageEvidence', () => {
   });
 });
 
-describe('suggestHelpWith', () => {
+describe('[skills-matcher] suggestHelpWith', () => {
   it('maps languages to areas, deduped, in evidence order', () => {
     const ev = languageEvidence([
       repo({ language: 'TypeScript' }),
@@ -87,7 +87,7 @@ describe('suggestHelpWith', () => {
   });
 });
 
-describe('circleOwner', () => {
+describe('[skills-matcher] circleOwner', () => {
   const members = [
     { uid: 'u-new', login: 'newowner' },
     { uid: 'u-auth', login: 'GithubAuthor' },
