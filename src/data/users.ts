@@ -21,7 +21,22 @@ export type UserDoc = {
   checklist: Record<string, boolean>;
   /** Watermark for the away-inbox: items newer than this are "new". */
   lastSeenAt?: Timestamp | null;
+  /** M18 — per-circle inbox level. Absent means 'all'. */
+  circlePrefs?: Record<string, CirclePref>;
 };
+
+/**
+ * M18 — exactly three options, which is what Slack landed on after finding
+ * that more of them made people feel less in control rather than more.
+ * With no push to send, "notifications" here means what the away-inbox shows,
+ * so muting a circle is also the cheapest thing you can do: its queries are
+ * skipped entirely rather than fetched and filtered.
+ */
+export type CirclePref = 'all' | 'mentions' | 'mute';
+
+export async function setCirclePref(uid: string, gid: string, pref: CirclePref): Promise<void> {
+  await updateDoc(doc(db(), 'users', uid), { [`circlePrefs.${gid}`]: pref });
+}
 
 /**
  * Advance the away-inbox watermark. Throttled hard: once an hour is plenty, and

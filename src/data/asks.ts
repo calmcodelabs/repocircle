@@ -55,6 +55,26 @@ export function watchNeedsHelp(
   );
 }
 
+/**
+ * M18 — the asks that have waited longest with nobody on them. Home's main list
+ * is newest-first, which is exactly how an unanswered ask sinks out of sight;
+ * this is the counterweight, and it is a query rather than a re-sort so it
+ * stays true past the twenty-five Home loads.
+ */
+export function watchLongestWaiting(gid: string, cb: (asks: Ask[]) => void, max = 3): Unsubscribe {
+  const q = query(
+    collection(db(), `groups/${gid}/asks`),
+    where('state', '==', 'open'),
+    orderBy('createdAt', 'asc'),
+    limit(max),
+  );
+  return onSnapshot(
+    q,
+    (snap) => cb(askDocs(snap)),
+    () => cb([]),
+  );
+}
+
 export function watchAsk(gid: string, askId: string, cb: (ask: Ask | null) => void): Unsubscribe {
   return onSnapshot(doc(db(), `groups/${gid}/asks/${askId}`), (snap) =>
     cb(snap.exists() ? { id: snap.id, ...(snap.data() as Omit<Ask, 'id'>) } : null),

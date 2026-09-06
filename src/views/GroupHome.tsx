@@ -7,6 +7,7 @@ import {
   unblockedThisWeek,
   watchMyAsks,
   watchMyClaims,
+  watchLongestWaiting,
   watchNeedsHelp,
 } from '../data/asks';
 import {
@@ -385,6 +386,7 @@ function WantsAHandBlock({
             <span class="mono">{shortName(r.fullName)}</span>
           </span>
           <span class="row">
+            {r.needsSince && <span class="small faint">asking {relTime(r.needsSince)}</span>}
             {r.seekingOwner && <Chip tone="warn">needs an owner</Chip>}
             {r.needs && <Chip tone="accent">{needLabel(r.needs)}</Chip>}
           </span>
@@ -482,10 +484,22 @@ function NeedsHelpBlock({
   unblocked: number;
 }) {
   const [asks, setAsks] = useState<Ask[] | null>(null);
+  const [waiting, setWaiting] = useState<Ask[]>([]);
   useEffect(
     () => watchNeedsHelp(gid, setAsks, (code) => log('warn', `asks watch: ${code}`)),
     [gid],
   );
+  // M18: the list above is newest-first, which is exactly how an unanswered ask
+  // sinks. This is the counterweight, and it is its own query so it stays true
+  // past the twenty-five Home loads.
+  useEffect(() => watchLongestWaiting(gid, setWaiting), [gid]);
+  const stale = useMemo(() => {
+    const shown = new Set((asks ?? []).slice(0, 3).map((a) => a.id));
+    const twoDays = Date.now() - 2 * 86_400_000;
+    return waiting.filter(
+      (a) => !shown.has(a.id) && (a.createdAt?.toMillis() ?? Date.now()) < twoDays,
+    );
+  }, [waiting, asks]);
 
   async function quickClaim(ask: Ask) {
     const profile = uid ? myProfile(uid) : null;
@@ -515,6 +529,21 @@ function NeedsHelpBlock({
         <span class="sectionhead__title">Needs help right now</span>
         {asks && asks.length > 0 && <span class="sectionhead__count">{asks.length}</span>}
       </div>
+      {/* Only worth saying when it has genuinely been sitting there, and only
+          about asks the main list is not already showing at the top. */}
+      {stale.length > 0 && (
+        <div class="stack waiting">
+          <span class="small faint">Waiting longest, nobody on it yet</span>
+          {stale.map((a) => (
+            <a key={a.id} class="row waiting__row" href={`#/g/${gid}/ask/${a.id}`}>
+              <span class="dot dot--warn" />
+              <span class="small">{a.title}</span>
+              <span class="topbar__spacer" />
+              <span class="small faint">asked {relTime(a.createdAt)}</span>
+            </a>
+          ))}
+        </div>
+      )}
       {asks === null && <span class="skeleton" />}
       {asks?.length === 0 && (
         <EmptyState

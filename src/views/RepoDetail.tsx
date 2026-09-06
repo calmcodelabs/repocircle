@@ -16,7 +16,7 @@ import { CollabSheet } from './CollabSheet';
 import { watchRepoCollabs, type CollabRequest } from '../data/collabs';
 import type { Idea } from '../data/types';
 import { adoptRepo, markRepoOwnerLeft, watchInterests } from '../data/repos';
-import { addWatch, isWatching, removeWatch } from '../data/watches';
+import { addWatch, isWatching, removeWatch, savableRepo } from '../data/watches';
 import { myProfile } from '../data/users';
 import { buildJourney } from '../util/journey';
 import { Sheet } from '../ui/Sheet';
@@ -119,7 +119,7 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
   useEffect(() => {
     let alive = true;
     if (!uid) return;
-    void isWatching(uid, gid, repoId).then((w) => alive && setWatching(w));
+    void isWatching(uid, gid, 'repo', repoId).then((w) => alive && setWatching(w));
     return () => {
       alive = false;
     };
@@ -149,8 +149,8 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
     if (!uid || !repo || watching === null) return;
     setWatching(!watching);
     try {
-      if (watching) await removeWatch(uid, gid, repoId);
-      else await addWatch(uid, gid, repo);
+      if (watching) await removeWatch(uid, gid, 'repo', repoId);
+      else await addWatch(uid, gid, savableRepo(repo));
     } catch {
       setWatching(watching);
       toast('Could not save that — check your connection.', { error: true });

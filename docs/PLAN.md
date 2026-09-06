@@ -395,32 +395,28 @@ and each block states its read cost against the M16 target (<30/visit).
   summary document Home already reads, so they cost nothing to show; the pin is
   a position an admin states, never a score (ADR-019). Rules 134 → 152.
 
-- **M18 · Triage.** The personal layer; no new collections, two rules touches.
-  (1) *Actionable inbox* (Slack Activity 2.0 — "recall is finding the message
-  you half-remembered; triage is processing everything that happened while you
-  were gone"): every away-inbox row acts in place — inline reply for
-  mentions/replies (the doc path in item.key carries everything addComment
-  needs), view-profile for interests (deep-linking a pending collab from the
-  same person when one exists — no fake "accept" button; the collab flow stays
-  requester→owner), plus Save (writes a watch — Slack's "move" behaviour) and
-  Dismiss on every row. Dismissal is per-device localStorage, capped, pruned
-  past the server watermark — a deliberate exception, documented: triage state
-  is ephemeral and the hourly watermark supersedes it.
-  (2) *Untouched view* (Discord forums' named failure mode — posts that sit
-  unanswered sink): open asks re-sort oldest-unclaimed-first with an age line
-  (client-side re-sort of the existing listener, zero reads); wantsAHand[] on
-  the summary doc orders longest-waiting first. Class G: "no open asks" and
-  "everything got claimed" are different sentences (the unblocked>0 trick
-  generalises).
-  (3) *Save for later* (Slack saved items): watches generalise — new ids
-  ${gid}_${kind}_${id}, docs gain kind ('repo'|'ask'|'idea') + title; missing
-  kind reads as 'repo' so every existing watch survives. pruneDecision() reused
-  verbatim per kind. PersonalHome "Watched repos" becomes "Saved", chip-filtered.
-  (4) *Notification levels* (Slack's three-option redesign): honest scope —
-  with no push, "notifications" means what the inbox shows. circlePrefs
-  {gid: 'all'|'mentions'|'mute'} on users/{uid}; fetchInbox filters query-side,
-  so mute *saves* reads (skips the gid's three queries entirely), 'mentions'
-  drops the interest queries. Exactly three options. Read cost: net negative.
+- **M18 · Triage (shipped 2026-09-06).** The personal layer; no new
+  collections. *Actionable inbox* (Slack Activity 2.0 — "recall is finding the
+  message you half-remembered; triage is processing everything that happened
+  while you were gone"): away-inbox rows gained Reply, Save and Dismiss, which
+  meant `InboxItem` had to stop discarding `actorUid` — a reply routes back to
+  whoever wrote the thing. A quick reply is plain text on purpose; the thread
+  is where mentions and repo refs get resolved against the roster. Dismissal is
+  per-device localStorage, a deliberate exception: triage state is ephemeral,
+  the hourly server watermark already supersedes it, and a cross-device array
+  would mean a write on every glance. *Untouched view* (Discord forums' named
+  failure mode): `watchLongestWaiting` is its own oldest-first query rather than
+  a re-sort, so it stays true past the twenty-five Home loads; it only speaks
+  about asks older than two days that the main list is not already showing, and
+  repos wanting help now say how long they have been asking (from M16's
+  `needsSince`). *Save for later* (Slack saved items): `users/{uid}/watches`
+  widened from repos to repo/ask/idea — repo ids keep their original two-part
+  shape and a missing `kind` reads as 'repo', so saves written before M18
+  resolve unchanged rather than being migrated. *Notification levels* (Slack's
+  three-option redesign): `circlePrefs` on `users/{uid}`, exactly three, and
+  muting **saves** reads because the circle's inbox queries are skipped before
+  they are built rather than fetched and filtered. Rules 152 → 161, unit 96 →
+  101.
 
 - **M19 · Gatherings.** The arc's only new collections; rules budget ~30–35
   emulator tests (shape/role/state/vote-once/foreign-write denials).

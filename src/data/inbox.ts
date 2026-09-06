@@ -16,6 +16,7 @@ import {
   type InboxItem,
   type InboxKind,
 } from '../util/inboxItems';
+import type { CirclePref } from './users';
 
 /**
  * M12 — "While you were away": replies to me, mentions of me, interest in my
@@ -35,7 +36,7 @@ function toCandidate(
   d: RawDoc,
   kind: InboxKind,
   lastSeen: Timestamp | null | undefined,
-): (InboxItem & { actorUid: string }) | null {
+): InboxItem | null {
   const s = parseSubjectPath(d.ref.path);
   if (!s) return null;
   const data = d.data();
@@ -55,6 +56,7 @@ function toCandidate(
     actorAvatarUrl: avatar,
     body: body.slice(0, 160),
     href: subjectHref(s),
+    subjectId: s.subjectId,
     at,
     isNew: isNewSince(at, lastSeen),
   };
@@ -65,13 +67,17 @@ export async function fetchInbox(
   myUid: string,
   myLogin: string,
   lastSeen: Timestamp | null | undefined,
+  prefs: Record<string, CirclePref> = {},
 ): Promise<InboxItem[]> {
-  const gids = groupIds.slice(0, GROUP_CAP);
-  const candidates: Array<InboxItem & { actorUid: string }> = [];
+  // Muted circles are skipped before any query is built, so the preference
+  // costs reads rather than spending them (M18).
+  const gids = groupIds.filter((g) => prefs[g] !== 'mute').slice(0, GROUP_CAP);
+  const candidates: InboxItem[] = [];
   await Promise.all(
     gids.flatMap((gid) => {
       const comments = collectionGroup(db(), 'comments');
       const interests = collectionGroup(db(), 'interests');
+      const mentionsOnly = prefs[gid] === 'mentions';
       const runs: Array<[InboxKind, ReturnType<typeof query>]> = [
         [
           'mention',
@@ -93,16 +99,20 @@ export async function fetchInbox(
             limit(PER_QUERY),
           ),
         ],
-        [
-          'interest',
-          query(
-            interests,
-            where('gid', '==', gid),
-            where('repoOwnerUid', '==', myUid),
-            orderBy('createdAt', 'desc'),
-            limit(PER_QUERY),
-          ),
-        ],
+        ...(mentionsOnly
+          ? []
+          : ([
+              [
+                'interest',
+                query(
+                  interests,
+                  where('gid', '==', gid),
+                  where('repoOwnerUid', '==', myUid),
+                  orderBy('createdAt', 'desc'),
+                  limit(PER_QUERY),
+                ),
+              ],
+            ] as Array<[InboxKind, ReturnType<typeof query>]>)),
       ];
       return runs.map(([kind, q]) =>
         getDocs(q)

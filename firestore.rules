@@ -89,21 +89,31 @@ service cloud.firestore {
       allow create, update: if signedIn() && me() == uid
         && request.resource.data.keys().hasOnly(
              ['githubId', 'login', 'name', 'avatarUrl', 'scopesGranted', 'groupIds',
-              'checklist', 'createdAt', 'lastSeenAt', 'v'])
+              'checklist', 'circlePrefs', 'createdAt', 'lastSeenAt', 'v'])
+        && (!('circlePrefs' in request.resource.data)
+            || request.resource.data.circlePrefs is map)
         && str(request.resource.data.login, 1, 60)
         // githubId immutable once set
         && (resource == null || !('githubId' in resource.data)
             || request.resource.data.githubId == resource.data.githubId);
     }
 
-    // ---------- users/{uid}/watches — repos I follow across circles ----------
+    // ---------- users/{uid}/watches — what I saved, across circles ----------
+    // M18 widened this from repos to anything worth coming back to. The old
+    // repoId/fullName keys stay allowed so watches written before then keep
+    // working; new documents carry kind/itemId/title.
     match /users/{uid}/watches/{watchId} {
       allow read, delete: if signedIn() && me() == uid;
       allow create, update: if signedIn() && me() == uid
-        && request.resource.data.keys().hasOnly(['gid', 'repoId', 'fullName', 'addedAt', 'v'])
+        && request.resource.data.keys().hasOnly(
+             ['gid', 'kind', 'itemId', 'title', 'repoId', 'fullName', 'addedAt', 'v'])
         && str(request.resource.data.gid, 1, 60)
-        && str(request.resource.data.repoId, 1, 20)
-        && str(request.resource.data.fullName, 3, 140);
+        && (!('kind' in request.resource.data)
+            || request.resource.data.kind in ['repo', 'ask', 'idea'])
+        && (!('itemId' in request.resource.data) || str(request.resource.data.itemId, 1, 60))
+        && (!('title' in request.resource.data) || str(request.resource.data.title, 1, 200))
+        && (!('repoId' in request.resource.data) || str(request.resource.data.repoId, 1, 20))
+        && (!('fullName' in request.resource.data) || str(request.resource.data.fullName, 3, 140));
     }
 
     // ---------- collection-group reads (recent discussion, away-inbox) ----------

@@ -1050,3 +1050,36 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* M18 — the away-inbox is somewhere to act, not only somewhere to look. */
+.inboxrow {
+  gap: 6px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.inboxrow:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.inboxrow__acts {
+  gap: 4px;
+}
+.phome__grouplink {
+  gap: 6px;
+}
+.phome__prefs {
+  gap: 4px;
+  margin-top: 8px;
+}
+
+/* M18 — asks that have been sitting there with nobody on them. */
+.waiting {
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px dashed var(--warn-soft);
+  border-radius: var(--r-input);
+}
+.waiting__row {
+  gap: 8px;
+  align-items: center;
+}

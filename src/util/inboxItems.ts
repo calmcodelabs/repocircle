@@ -18,6 +18,10 @@ export type InboxItem = {
   body?: string;
   /** App link to where it happened. */
   href: string;
+  /** Who did it — the reply from the inbox routes back to them. */
+  actorUid: string;
+  /** Doc path of the subject, so a reply knows what it is replying to. */
+  subjectId: string;
   at: Timestamp | null;
   isNew: boolean;
 };
@@ -45,12 +49,8 @@ export function subjectHref(s: Exclude<ParsedSubject, null>): string {
  * also mentions me is one moment, and 'reply' reads better than 'mention'),
  * newest first, capped.
  */
-export function mergeInbox(
-  candidates: Array<InboxItem & { actorUid: string }>,
-  myUid: string,
-  cap = 20,
-): InboxItem[] {
-  const byKey = new Map<string, InboxItem & { actorUid: string }>();
+export function mergeInbox(candidates: InboxItem[], myUid: string, cap = 20): InboxItem[] {
+  const byKey = new Map<string, InboxItem>();
   const rank: Record<InboxKind, number> = { reply: 0, interest: 1, mention: 2 };
   for (const c of candidates) {
     if (c.actorUid === myUid) continue;
@@ -59,8 +59,7 @@ export function mergeInbox(
   }
   return [...byKey.values()]
     .sort((a, b) => (b.at?.toMillis() ?? 0) - (a.at?.toMillis() ?? 0))
-    .slice(0, cap)
-    .map(({ actorUid: _drop, ...item }) => item);
+    .slice(0, cap);
 }
 
 export function isNewSince(at: Timestamp | null, lastSeen: Timestamp | null | undefined): boolean {

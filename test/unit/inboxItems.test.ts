@@ -11,7 +11,7 @@ import {
 
 const t = (ms: number) => Timestamp.fromMillis(ms);
 
-function item(over: Partial<InboxItem & { actorUid: string }>): InboxItem & { actorUid: string } {
+function item(over: Partial<InboxItem>): InboxItem {
   return {
     key: 'groups/g1/repos/1/comments/c1',
     kind: 'mention',
@@ -20,6 +20,7 @@ function item(over: Partial<InboxItem & { actorUid: string }>): InboxItem & { ac
     actorUid: 'u2',
     actorLogin: 'arjun',
     href: '#/g/g1/repo/1',
+    subjectId: '1',
     at: t(1000),
     isNew: false,
     ...over,
@@ -79,9 +80,13 @@ describe('mergeInbox', () => {
     );
     expect(merged.map((m) => m.key)).toEqual(['b', 'c']);
   });
-  it('strips actorUid from the result', () => {
+  it('keeps the actor, because a reply from the inbox routes back to them', () => {
     const merged = mergeInbox([item({})], 'me');
-    expect('actorUid' in (merged[0] ?? {})).toBe(false);
+    expect(merged[0]?.actorUid).toBe('u2');
+  });
+
+  it('keeps the subject id, so a reply knows what it is replying to', () => {
+    expect(mergeInbox([item({})], 'me')[0]?.subjectId).toBe('1');
   });
 });
 
@@ -104,8 +109,10 @@ describe('applyLocalWatermark', () => {
     kind: 'reply' as const,
     subject: 'repo' as const,
     gid: 'g',
+    actorUid: 'u2',
     actorLogin: 'a',
     href: '#/g/g/repo/1',
+    subjectId: '1',
   };
   it('clears newness for items seen locally', () => {
     const out = applyLocalWatermark([{ ...base, at: t(50), isNew: true }], 100);
