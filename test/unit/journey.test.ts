@@ -113,6 +113,20 @@ describe('idea origin (M15)', () => {
     });
     expect(j.map((m) => m.kind)).toEqual(['idea', 'germinated', 'started']);
     expect(j[0]?.text).toBe('born as an idea by @dana');
+    expect(j[1]?.text).toBe('the idea became this repo');
+  });
+
+  it('does not claim birth when the repo predates the idea', () => {
+    // Linking an existing repo to a later idea: "born" would be a lie, and the
+    // timeline would read as starting before being born.
+    const j = buildJourney(repo({ createdAt: t(100) }), [], [], [], 4, {
+      authorLogin: 'dana',
+      createdAt: t(300),
+      germinatedAt: t(400),
+    });
+    expect(j.map((m) => m.kind)).toEqual(['started', 'idea', 'germinated']);
+    expect(j[1]?.text).toBe('@dana pitched the idea behind this');
+    expect(j[2]?.text).toBe('the idea was linked here');
   });
   it('no idea → unchanged story', () => {
     const j = buildJourney(repo(), [], [], []);

@@ -26,18 +26,25 @@ export function buildJourney(
 ): Moment[] {
   const moments: Moment[] = [];
 
-  // Born before the code: the idea's chapter opens the story (M15).
+  // The idea's chapter — but only "born" when the idea actually came first.
+  // Linking an existing repo to a later idea is legitimate, and calling that
+  // birth would have the repo starting before it was born (found in testing).
   if (idea) {
+    const ideaMs = idea.createdAt?.toMillis() ?? 0;
+    const repoMs = repo.createdAt?.toMillis() ?? 0;
+    const cameFirst = ideaMs > 0 && repoMs > 0 && ideaMs < repoMs;
     moments.push({
       at: idea.createdAt ?? null,
       kind: 'idea',
-      text: `born as an idea by @${idea.authorLogin}`,
+      text: cameFirst
+        ? `born as an idea by @${idea.authorLogin}`
+        : `@${idea.authorLogin} pitched the idea behind this`,
       login: idea.authorLogin,
     });
     moments.push({
       at: idea.germinatedAt ?? null,
       kind: 'germinated',
-      text: 'the idea became this repo',
+      text: cameFirst ? 'the idea became this repo' : 'the idea was linked here',
     });
   }
 
