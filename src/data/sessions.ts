@@ -18,6 +18,7 @@ import {
 import { db } from '../firebase';
 import { randomToken } from './ids';
 import { resilientWatch } from './resilientWatch';
+import { log } from '../util/log';
 import type { MyProfile, RepoInterest, Session } from './types';
 
 /**
@@ -53,7 +54,12 @@ export function watchUpcomingSessions(
         },
         onErr,
       ),
-    { onGiveUp: () => cb([]) },
+    {
+      onGiveUp: (code) => {
+        log('warn', `sessions watch: ${code}`);
+        cb([]);
+      },
+    },
   );
 }
 

@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "vite",
+    "dev:emulator": "npx -y firebase-tools@14 emulators:exec --only firestore,auth \"node scripts/seed-emulator.mjs && vite --mode emulator\"",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "lint": "eslint .",

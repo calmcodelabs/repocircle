@@ -44,6 +44,8 @@ import { watchRecentComments, type RecentComment } from '../data/comments';
 import { CommentBody } from './CommentBody';
 import { AnnouncementBar, CircleLinks, PinnedRepo } from './CircleNotices';
 import { ChecklistCard } from './ChecklistCard';
+import { ComingUp } from './ComingUp';
+import { PollCard } from './PollCard';
 import { InviteSheet } from './InviteManager';
 import { CollabInbox } from './CollabInbox';
 import { sparkSeries } from '../poll/engine';
@@ -821,6 +823,8 @@ export function GroupHome({ gid }: { gid: string }) {
         </section>
       )}
 
+      <ComingUp gid={gid} />
+      <PollCard gid={gid} />
       {blocks.arrivals && <ArrivalsBlock gid={gid} members={members} uid={uid} />}
       {blocks.ideas && <IdeasBrewingBlock gid={gid} />}
       {blocks.newThisWeek && <NewThisWeekBlock gid={gid} />}

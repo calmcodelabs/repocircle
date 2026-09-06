@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks';
 import { isConfigured } from '../firebase';
-import { authBusy, authError, signInWithGitHub } from '../auth/session';
+import { authBusy, authError, signInAsEmulatorUser, signInWithGitHub } from '../auth/session';
+import { usingEmulators } from '../firebase';
 import { Icon } from '../ui/Icon';
 import { Mark } from '../ui/Mark';
 import { Pill } from '../ui/Pill';
@@ -64,6 +65,15 @@ export function SignIn({ invited = false }: { invited?: boolean }) {
             >
               Continue with GitHub
             </Pill>
+            {usingEmulators && (
+              <button
+                class="chip"
+                onClick={() => void signInAsEmulatorUser()}
+                title="Local emulators only — never present in a production build"
+              >
+                sign in as a test user (emulator)
+              </button>
+            )}
             {authError.value && <p class="small signin__error">{authError.value}</p>}
             <p class="small faint">
               Reads public repos only ·{' '}

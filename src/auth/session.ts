@@ -4,12 +4,13 @@ import {
   getAdditionalUserInfo,
   onAuthStateChanged,
   reauthenticateWithPopup,
+  signInWithCredential,
   signInWithPopup,
   signOut,
   type User,
 } from 'firebase/auth';
 import { arrayUnion, doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
-import { auth, db, isConfigured } from '../firebase';
+import { auth, db, isConfigured, usingEmulators } from '../firebase';
 import { startMyUserWatch, stopMyUserWatch } from '../data/users';
 import { clearToken, getToken, setToken } from './vault';
 import { log } from '../util/log';
@@ -108,6 +109,43 @@ export async function ensureGitHubToken(): Promise<string | null> {
     authError.value = friendlyAuthError(e);
     log('warn', `token refresh failed: ${codeOf(e) ?? 'unknown'}`);
     return null;
+  }
+}
+
+/**
+ * Emulator-only sign-in. `signInWithPopup` needs a real popup window with a
+ * live opener to relay the result back, which is exactly what headless and
+ * automated browsers do not give you — so local testing had no way in at all.
+ *
+ * The Auth emulator accepts a JSON claims blob in place of a provider token
+ * and mints a user from it. There is no real GitHub involved and no token that
+ * would work against api.github.com, so anything that talks to GitHub still
+ * needs a real session; everything Firestore-driven works.
+ *
+ * Guarded by `usingEmulators`, which is false in any production build and
+ * therefore tree-shaken out of the bundle entirely.
+ */
+export async function signInAsEmulatorUser(login = 'dev-tester'): Promise<void> {
+  if (!usingEmulators) return;
+  authBusy.value = true;
+  authError.value = null;
+  try {
+    const claims = JSON.stringify({
+      sub: `emulator-${login}`,
+      email: `${login}@example.com`,
+      name: login,
+      screen_name: login,
+      picture: `https://avatars.githubusercontent.com/${login}`,
+    });
+    const res = await signInWithCredential(auth(), GithubAuthProvider.credential(claims));
+    const info = getAdditionalUserInfo(res);
+    await upsertUser(res.user, (info?.profile ?? undefined) as GhProfile | undefined);
+    log('info', `signed in as ${login} (emulator)`);
+  } catch (e) {
+    authError.value = friendlyAuthError(e);
+    log('warn', `emulator sign-in failed: ${codeOf(e) ?? 'unknown'}`);
+  } finally {
+    authBusy.value = false;
   }
 }
 

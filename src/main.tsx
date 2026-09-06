@@ -20,7 +20,16 @@ window.addEventListener('securitypolicyviolation', (e) => {
 
 // Short-circuit before anything initialises: no auth listener, no Firestore
 // connection, no reads. The app is genuinely inert while paused.
-if (MAINTENANCE.on) {
+//
+// The pause is about the people using the app, not about the person building
+// it — so a dev run against the local emulators walks straight past it. The
+// guard is deliberately narrow: `npm run dev` pointed at production still
+// shows the pause screen, because that run would spend real read quota, which
+// is the thing that caused the pause in the first place.
+const pausedHere =
+  MAINTENANCE.on && !(import.meta.env.DEV && import.meta.env.VITE_EMULATORS === '1');
+
+if (pausedHere) {
   render(<Maintenance />, document.getElementById('app')!);
 } else {
   boot();

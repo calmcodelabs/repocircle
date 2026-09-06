@@ -7,6 +7,9 @@ dist/
 .env
 .env.*
 *.local
+# ...except the emulator switch, which is a mode flag rather than a secret and
+# has to be committed or `npm run dev:emulator` does nothing on a fresh clone.
+!.env.emulator
 
 # Firebase local artifacts
 .firebase/

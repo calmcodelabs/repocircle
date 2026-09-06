@@ -18,6 +18,7 @@ import {
 import { db } from '../firebase';
 import { randomToken } from './ids';
 import { resilientWatch } from './resilientWatch';
+import { log } from '../util/log';
 import type { MyProfile, Poll, PollVote } from './types';
 
 /**
@@ -45,7 +46,12 @@ export function watchOpenPoll(gid: string, cb: (p: Poll | null) => void): Unsubs
         },
         onErr,
       ),
-    { onGiveUp: () => cb(null) },
+    {
+      onGiveUp: (code) => {
+        log('warn', `poll watch: ${code}`);
+        cb(null);
+      },
+    },
   );
 }
 
