@@ -6,7 +6,7 @@
 
 **See what your circle is building. Ask to join in.**
 
-An invite-only space where a group of engineers can see each other's work in progress — and join in on it.
+For a department, a cohort, a build club — see what everyone is building, and join in on it.
 
 [Live app](https://calmcodelabs.github.io/repocircle/) · [How it works](#how-it-works) · [Documentation](#documentation) · [Run it yourself](#run-your-own)
 
@@ -29,7 +29,7 @@ Now is the best time to build. Tooling stopped being the bottleneck — an idea 
 
 What's scarce is everything around that. Which idea is worth the weekend. Whether anyone else finds it interesting. Whether the person who'd make it good ever hears about it.
 
-A circle is where those get answered. Ideas are argued over before they become code, work stays visible while it's still rough, and the path from *"that looks interesting"* to *"I'm building it with you"* is one tap long.
+A circle — a department, a cohort, one big Discord — is where those get answered. Ideas are argued over before they become code, work stays visible while it's still rough, and the path from *"that looks interesting"* to *"I'm building it with you"* is one tap long.
 
 **No leaderboards, no streaks, no contribution counts.** That's a rule, not an omission — nothing here ranks one member against another.
 
