@@ -190,7 +190,9 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
           {repo.needs && (
             <Chip tone="accent">{REPO_NEEDS.find((n) => n.key === repo.needs)?.label}</Chip>
           )}
-          {repo.ownerLeft && <Chip tone="warn">owner left the circle — up for adoption</Chip>}
+          {repo.ownerLeft && !liveOwner && (
+            <Chip tone="warn">owner left the circle — up for adoption</Chip>
+          )}
           {repo.adoptedByLogin && (
             <Chip tone="accent">
               taken over by @{repo.adoptedByLogin} · started by @{repo.adoptedFromLogin}
