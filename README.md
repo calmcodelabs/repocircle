@@ -89,15 +89,13 @@ RepoCircle is a static single-page app with no backend of its own.
 ```
 Browser (Preact + TypeScript)
    ├── Firebase Auth ......... GitHub sign-in
-   ├── Cloud Firestore ....... all data; security rules are the entire authorization layer
+   ├── Cloud Firestore ....... all data, behind per-circle security rules
    └── GitHub REST API ....... polled client-side with the signed-in user's token
 ```
 
-Two consequences worth knowing before you read the code:
+**Only public repositories are ever read.** The app requests no private-repository scope, and the GitHub token is held in memory and `sessionStorage` — never written to the database.
 
-**The security rules are the server.** There is no privileged backend to enforce anything, so every rule about who may read or write what lives in [`firestore.rules`](firestore.rules) and is covered by 117 tests against the Firestore emulator. A change there is a change to the product's guarantees.
-
-**Only public repositories are ever read.** The app requests no private-repository scope. The GitHub token is held in memory and `sessionStorage`, never written to the database.
+Circles are private: every read and write is gated on membership, enforced in [`firestore.rules`](firestore.rules) and covered by an emulator test suite in CI.
 
 Design decisions and their trade-offs are recorded as ADRs in [docs/DECISIONS.md](docs/DECISIONS.md).
 
