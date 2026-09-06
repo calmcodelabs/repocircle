@@ -53,11 +53,13 @@ function InboxRow({
   const [replying, setReplying] = useState(false);
   const [body, setBody] = useState('');
   const [busy, setBusy] = useState(false);
-  const canReply = item.kind === 'reply' || item.kind === 'mention';
+  const canReply = (item.kind === 'reply' || item.kind === 'mention') && item.subject !== 'session';
+  const savable = item.subject !== 'session' ? item.subject : null;
 
   async function send() {
     const profile = myProfile(uid);
-    if (!profile || !body.trim()) return;
+    // A session is a moment, not a thread — there is nothing to reply into.
+    if (!profile || !body.trim() || item.subject === 'session') return;
     setBusy(true);
     try {
       await addComment(item.gid, { kind: item.subject, id: item.subjectId }, profile, {
@@ -101,20 +103,22 @@ function InboxRow({
             Reply
           </Pill>
         )}
-        <Pill
-          variant="ghost"
-          onClick={() =>
-            void addWatch(uid, item.gid, {
-              kind: item.subject,
-              id: item.subjectId,
-              title: item.body?.slice(0, 80) || `${item.subject} from @${item.actorLogin}`,
-            })
-              .then(() => toast('Saved for later'))
-              .catch(() => toast('Could not save that.', { error: true }))
-          }
-        >
-          Save
-        </Pill>
+        {savable && (
+          <Pill
+            variant="ghost"
+            onClick={() =>
+              void addWatch(uid, item.gid, {
+                kind: savable,
+                id: item.subjectId,
+                title: item.body?.slice(0, 80) || `${savable} from @${item.actorLogin}`,
+              })
+                .then(() => toast('Saved for later'))
+                .catch(() => toast('Could not save that.', { error: true }))
+            }
+          >
+            Save
+          </Pill>
+        )}
         <span class="topbar__spacer" />
         <Pill variant="ghost" ariaLabel="Dismiss" onClick={onDismiss}>
           Dismiss
@@ -244,7 +248,9 @@ export function PersonalHome() {
         ? 'mentioned you'
         : i.subject === 'idea'
           ? 'would build your idea'
-          : 'raised a hand for your repo';
+          : i.subject === 'session'
+            ? 'is coming to your session'
+            : 'raised a hand for your repo';
 
   return (
     <div class="app">

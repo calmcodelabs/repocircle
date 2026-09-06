@@ -564,6 +564,105 @@ service cloud.firestore {
         allow delete: if isAdmin(gid); // group-deletion sweep only; app offers no per-request delete
       }
 
+      // ---------- sessions — gatherings (M19, ADR-023) ----------
+      // Any writing member may schedule one; the host or an admin may change
+      // or cancel it. RSVPs live in an `interests` subcollection so the
+      // away-inbox, its collection-group read rule and its index all apply
+      // unchanged — the same reuse that made ideas cheap in M15.
+      match /sessions/{sessionId} {
+        allow read: if isMember(gid);
+        allow create: if canWrite(gid)
+          && request.resource.data.keys().hasOnly(
+               ['title', 'detail', 'startsAt', 'durationMin', 'url', 'repoId',
+                'hostUid', 'hostLogin', 'hostAvatarUrl', 'cancelled', 'rsvpCount',
+                'createdAt', 'v'])
+          && request.resource.data.hostUid == me()
+          && str(request.resource.data.title, 3, 80)
+          && optStr(request.resource.data, 'detail', 500)
+          && request.resource.data.startsAt is timestamp
+          && request.resource.data.cancelled == false
+          && optHttpsUrl(request.resource.data, 'url')
+          && (!('durationMin' in request.resource.data)
+              || (request.resource.data.durationMin is int
+                  && request.resource.data.durationMin > 0
+                  && request.resource.data.durationMin <= 480));
+        allow update: if isMember(gid)
+          && request.resource.data.keys().hasOnly(
+               ['title', 'detail', 'startsAt', 'durationMin', 'url', 'repoId',
+                'hostUid', 'hostLogin', 'hostAvatarUrl', 'cancelled', 'rsvpCount',
+                'createdAt', 'v'])
+          && request.resource.data.hostUid == resource.data.hostUid
+          && str(request.resource.data.title, 3, 80)
+          && optHttpsUrl(request.resource.data, 'url')
+          && (
+            // Anyone may move the RSVP mirror; the gathering itself belongs to
+            // whoever called it, or to an admin.
+            !request.resource.data.diff(resource.data).affectedKeys()
+               .hasAny(['title', 'detail', 'startsAt', 'durationMin', 'url', 'repoId',
+                        'cancelled'])
+            || isAdmin(gid)
+            || resource.data.hostUid == me()
+          );
+        allow delete: if isAdmin(gid) || resource.data.hostUid == me();
+
+        match /interests/{uid} {
+          allow read: if isMember(gid);
+          allow create, update: if canWrite(gid) && me() == uid
+            && request.resource.data.keys().hasOnly(
+                 ['login', 'avatarUrl', 'note', 'gid', 'repoOwnerUid', 'createdAt', 'v'])
+            && request.resource.data.gid == gid
+            && request.resource.data.repoOwnerUid ==
+                 get(/databases/$(database)/documents/groups/$(gid)/sessions/$(sessionId)).data.hostUid
+            && optStr(request.resource.data, 'note', 140);
+          allow delete: if me() == uid || isAdmin(gid);
+        }
+      }
+
+      // ---------- polls — deciding together (M19, ADR-024) ----------
+      // A poll decides a question. It never rates people or their work; rules
+      // cannot read semantics, so that line is held by ADR-024 and the
+      // composer's framing, exactly as ADR-014 holds the availability tone.
+      match /polls/{pollId} {
+        allow read: if isMember(gid);
+        allow create: if canWrite(gid)
+          && request.resource.data.keys().hasOnly(
+               ['question', 'options', 'authorUid', 'authorLogin', 'authorAvatarUrl',
+                'state', 'createdAt', 'closedAt', 'v'])
+          && request.resource.data.authorUid == me()
+          && str(request.resource.data.question, 4, 120)
+          && request.resource.data.state == 'open'
+          && request.resource.data.options is map
+          && request.resource.data.options.keys().size() >= 2
+          && request.resource.data.options.keys().size() <= 5;
+        allow update: if isMember(gid)
+          && request.resource.data.keys().hasOnly(
+               ['question', 'options', 'authorUid', 'authorLogin', 'authorAvatarUrl',
+                'state', 'createdAt', 'closedAt', 'v'])
+          && request.resource.data.authorUid == resource.data.authorUid
+          && request.resource.data.question == resource.data.question
+          && request.resource.data.state in ['open', 'closed']
+          && (
+            // Voting moves the option mirrors; closing belongs to the author
+            // or an admin, and a closed poll stays closed as the record.
+            (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['options'])
+              && resource.data.state == 'open')
+            || ((isAdmin(gid) || resource.data.authorUid == me())
+                && request.resource.data.diff(resource.data).affectedKeys()
+                     .hasOnly(['state', 'closedAt']))
+          );
+        allow delete: if isAdmin(gid) || resource.data.authorUid == me();
+
+        match /votes/{uid} {
+          // One vote per member, made structural by the document id.
+          allow read: if isMember(gid);
+          allow create, update: if canWrite(gid) && me() == uid
+            && request.resource.data.keys().hasOnly(['optionKey', 'createdAt', 'v'])
+            && str(request.resource.data.optionKey, 1, 40)
+            && get(/databases/$(database)/documents/groups/$(gid)/polls/$(pollId)).data.state == 'open';
+          allow delete: if me() == uid || isAdmin(gid);
+        }
+      }
+
       // ---------- announcements — the circle's voice (M17) ----------
       // Admin-only, append-only. An announcement is a statement made at a
       // moment; correcting it means posting again, not rewriting history.

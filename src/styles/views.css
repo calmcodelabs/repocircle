@@ -1083,3 +1083,56 @@
   gap: 8px;
   align-items: center;
 }
+
+/* M19 — gatherings and polls. */
+.session {
+  gap: 6px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.session:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.session--off {
+  opacity: 0.55;
+}
+.session__when {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--accent);
+}
+.session__acts {
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.poll__opt {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  text-align: left;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-input);
+  background: transparent;
+  color: var(--text);
+  overflow: hidden;
+}
+.poll__opt--mine {
+  border-color: var(--accent-line);
+}
+.poll__bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--accent-soft);
+}
+.poll__label,
+.poll__pct {
+  position: relative;
+}
+.poll__pct {
+  margin-left: auto;
+}

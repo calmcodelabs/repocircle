@@ -26,7 +26,7 @@ export type InboxItem = {
   isNew: boolean;
 };
 
-export type SubjectKind = 'repo' | 'ask' | 'idea';
+export type SubjectKind = 'repo' | 'ask' | 'idea' | 'session';
 export type ParsedSubject = { gid: string; kind: SubjectKind; subjectId: string } | null;
 
 /** groups/G/(repos|asks|ideas)/ID/(comments|interests)/X → where that lives in the app. */
@@ -36,10 +36,13 @@ export function parseSubjectPath(path: string): ParsedSubject {
   if (p[2] === 'repos') return { gid: p[1], kind: 'repo', subjectId: p[3] };
   if (p[2] === 'asks') return { gid: p[1], kind: 'ask', subjectId: p[3] };
   if (p[2] === 'ideas') return { gid: p[1], kind: 'idea', subjectId: p[3] };
+  if (p[2] === 'sessions') return { gid: p[1], kind: 'session', subjectId: p[3] };
   return null;
 }
 
 export function subjectHref(s: Exclude<ParsedSubject, null>): string {
+  // Sessions have no screen of their own — they live on Home, in Coming up.
+  if (s.kind === 'session') return `#/g/${s.gid}`;
   const seg = s.kind === 'repo' ? 'repo' : s.kind === 'ask' ? 'ask' : 'idea';
   return `#/g/${s.gid}/${seg}/${s.subjectId}`;
 }

@@ -418,30 +418,26 @@ and each block states its read cost against the M16 target (<30/visit).
   they are built rather than fetched and filtered. Rules 152 → 161, unit 96 →
   101.
 
-- **M19 · Gatherings.** The arc's only new collections; rules budget ~30–35
-  emulator tests (shape/role/state/vote-once/foreign-write denials).
-  (1) *Sessions* (Discord Scheduled Events, ADR-023): groups/{gid}/sessions/{id}
-  {title ≤80, detail ≤500, startsAt, durationMin ≤480?, url? https, repoId?,
-  hostUid/Login/AvatarUrl, cancelled, rsvpCount (increment mirror), createdAt,
-  v}. Any canWrite member creates — "working on this Saturday 3pm, join me" is
-  a member ritual, not an admin act; edit/cancel by host or admin. RSVP =
-  sessions/{id}/interests/{uid} with repoOwnerUid: hostUid — the away-inbox,
-  its collection-group rule and its composite index cover RSVPs with zero new
-  code paths (the M15 trick); parseSubjectPath gains a sessions branch (unknown
-  paths already degrade to null in old clients — Class D safe). Home "Coming
-  up": startsAt >= now, asc, limit 3 (one composite index). *.ics download*
-  ships here: a pure buildIcs() string util (unit-tested: UTC, escaping) + Blob
-  download per session and all-upcoming. Reminders are visit-time only
-  ("you RSVP'd · starts in 3h" on PersonalHome); push waits for Phase 3.
-  (2) *Polls* (Viva Engage, ADR-024): groups/{gid}/polls/{id} {question ≤120,
-  options map key→{label ≤60, count} 2–5, author*, state open|closed, createdAt,
-  closedAt?, v}; vote = polls/{id}/votes/{uid} {optionKey} — doc-id-per-uid
-  makes one-vote-per-member structural. Counts are increment mirrors (Class C;
-  count() per option is truth if disputed — same note as unclaimAsk). Results
-  reveal only after your own vote is in (kills bandwagon and anchoring).
-  Closed polls collapse to one fact line: "decided: Tuesday demo night ·
-  14 voted." FAB gains row four; Home block gates on an open poll existing.
-  Read cost: +≤4 (sessions query + poll doc).
+- **M19 · Gatherings (shipped 2026-09-06).** The arc's only new collections.
+  *Sessions* (Discord Scheduled Events, ADR-023): `groups/{gid}/sessions/{id}`,
+  called by any writing member — "working on this Saturday, join me" is a
+  circle ritual, not an admin function — and edited or cancelled by the host or
+  an admin. **An RSVP is an `interests` document under the session with the
+  host in `repoOwnerUid`**, so the away-inbox, its collection-group read rule
+  and its composite index all cover RSVPs with no new plumbing; the rules
+  spoof-check the host field against the session exactly as M12 checks the repo
+  and idea versions against their parents. `parseSubjectPath` gained a sessions
+  branch, and since sessions have no screen of their own the inbox links to
+  Home. Calendar export is a pure client-side `.ics` builder (`src/util/ics.ts`,
+  15 unit tests) — a live subscription URL needs a server and stays in Phase 3.
+  *Polls* (Viva Engage, ADR-024): `groups/{gid}/polls/{id}` with 2–5 options and
+  one vote per member made structural by the vote document id being the uid.
+  Counts are increment mirrors (Class C). **Results appear only after your own
+  vote is in** — seeing the running total first is how a poll stops measuring
+  what people think and starts measuring what they think everyone else thinks.
+  Rules cannot tell a decision from a rating, so that line is held by ADR-024
+  and by the composer's framing, the same way ADR-014 holds the availability
+  tone. Rules 161 → 202, unit 101 → 115.
 
 - **M20 · Breadth.** Display-layer, near-zero risk.
   (1) *Gallery view* (Discord forum List/Gallery): Repos toggle persisted in

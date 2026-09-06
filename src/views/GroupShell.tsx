@@ -17,6 +17,8 @@ import { Pill } from '../ui/Pill';
 import { AskComposer } from './AskComposer';
 import { IdeaComposer } from './IdeaComposer';
 import { AnnouncementComposer } from './AnnouncementComposer';
+import { SessionComposer } from './SessionComposer';
+import { PollComposer } from './PollComposer';
 import { Sheet } from '../ui/Sheet';
 import { Icon } from '../ui/Icon';
 import { startPolling, stopPolling } from '../poll/engine';
@@ -40,6 +42,8 @@ export function GroupShell({ gid, children }: { gid: string; children: Component
   const [ideaOpen, setIdeaOpen] = useState(false);
   const [chooserOpen, setChooserOpen] = useState(false);
   const [announceOpen, setAnnounceOpen] = useState(false);
+  const [sessionOpen, setSessionOpen] = useState(false);
+  const [pollOpen, setPollOpen] = useState(false);
 
   useEffect(() => setActiveGroup(gid), [gid]);
   useEffect(() => {
@@ -212,6 +216,36 @@ export function GroupShell({ gid, children }: { gid: string; children: Component
                 <span class="small dim">You need a hand with something you're building.</span>
               </span>
             </button>
+            <button
+              class="row share__opt"
+              onClick={() => {
+                setChooserOpen(false);
+                setSessionOpen(true);
+              }}
+            >
+              <span class="tile">
+                <Icon name="users" size={19} />
+              </span>
+              <span class="share__text">
+                <b>A session</b>
+                <span class="small dim">A time you'll be building, that others can join.</span>
+              </span>
+            </button>
+            <button
+              class="row share__opt"
+              onClick={() => {
+                setChooserOpen(false);
+                setPollOpen(true);
+              }}
+            >
+              <span class="tile">
+                <Icon name="check" size={19} />
+              </span>
+              <span class="share__text">
+                <b>A decision</b>
+                <span class="small dim">A question for the circle to settle together.</span>
+              </span>
+            </button>
             {myMembership.value?.role === 'admin' && (
               <button
                 class="row share__opt"
@@ -237,6 +271,8 @@ export function GroupShell({ gid, children }: { gid: string; children: Component
       {askOpen && <AskComposer gid={gid} onClose={() => setAskOpen(false)} />}
       {ideaOpen && <IdeaComposer gid={gid} onClose={() => setIdeaOpen(false)} />}
       {announceOpen && <AnnouncementComposer gid={gid} onClose={() => setAnnounceOpen(false)} />}
+      {sessionOpen && <SessionComposer gid={gid} onClose={() => setSessionOpen(false)} />}
+      {pollOpen && <PollComposer gid={gid} onClose={() => setPollOpen(false)} />}
     </div>
   );
 }

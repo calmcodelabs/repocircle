@@ -278,3 +278,50 @@ export type CircleSummary = {
   pinnedRepoId: string | null;
   v: 1;
 };
+
+/**
+ * M19 — a gathering someone in the circle scheduled (ADR-023). Any writing
+ * member may create one: "working on this Saturday, join me" is a circle
+ * ritual, not an admin function. RSVPs are `interests` documents under the
+ * session, which is why the away-inbox already routes them.
+ */
+export type Session = {
+  id: string;
+  title: string;
+  detail?: string;
+  startsAt: Timestamp;
+  durationMin?: number;
+  /** Where it happens — a call link, a room, a repo. Validated https. */
+  url?: string | null;
+  repoId?: string | null;
+  hostUid: string;
+  hostLogin: string;
+  hostAvatarUrl?: string;
+  cancelled: boolean;
+  rsvpCount?: number;
+  createdAt: Timestamp | null;
+  v: 1;
+};
+
+/**
+ * M19 — the circle deciding something together (ADR-024). A poll decides a
+ * question; it never rates people or their work. Options are 2–5, one vote per
+ * member enforced by the document id, and counts are mirrors of the votes
+ * subcollection (Class C — they move by increment only).
+ */
+export type PollOption = { label: string; count: number };
+
+export type Poll = {
+  id: string;
+  question: string;
+  options: Record<string, PollOption>;
+  authorUid: string;
+  authorLogin: string;
+  authorAvatarUrl?: string;
+  state: 'open' | 'closed';
+  createdAt: Timestamp | null;
+  closedAt?: Timestamp | null;
+  v: 1;
+};
+
+export type PollVote = { optionKey: string; createdAt: Timestamp | null };
