@@ -162,6 +162,12 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
   const ownerMember = activeMembers.value?.find(
     (m) => m.login.toLowerCase() === repo.githubOwnerLogin.toLowerCase(),
   );
+  // Who owns it *here*. After an adoption the GitHub login still points at the
+  // original author, so keying "is this ownerless?" on that offered to re-open
+  // a repo somebody had just taken over.
+  const liveOwner = activeMembers.value?.find(
+    (m) => m.uid === repo.ownerUid || m.login.toLowerCase() === repo.githubOwnerLogin.toLowerCase(),
+  );
 
   return (
     <main class="stack">
@@ -184,14 +190,14 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
           {repo.needs && (
             <Chip tone="accent">{REPO_NEEDS.find((n) => n.key === repo.needs)?.label}</Chip>
           )}
-          {repo.adoptedByLogin ? (
+          {repo.ownerLeft && <Chip tone="warn">owner left the circle — up for adoption</Chip>}
+          {repo.adoptedByLogin && (
             <Chip tone="accent">
               taken over by @{repo.adoptedByLogin} · started by @{repo.adoptedFromLogin}
             </Chip>
-          ) : repo.ownerLeft ? (
-            <Chip tone="warn">owner left the circle — up for adoption</Chip>
-          ) : (
-            repo.seekingOwner && <Chip tone="warn">Looking for a new owner</Chip>
+          )}
+          {!repo.ownerLeft && !repo.adoptedByLogin && repo.seekingOwner && (
+            <Chip tone="warn">Looking for a new owner</Chip>
           )}
           {(repo.domainTags ?? []).map((t) => (
             <Chip key={t}>{t}</Chip>
@@ -242,7 +248,7 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
               Hand it over
             </Pill>
           )}
-          {!repo.seekingOwner && !ownerMember && iAmAdmin && (
+          {!repo.seekingOwner && !liveOwner && iAmAdmin && (
             <Pill
               onClick={() =>
                 void markRepoOwnerLeft(gid, repoId)
