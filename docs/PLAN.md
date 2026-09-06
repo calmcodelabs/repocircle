@@ -439,16 +439,18 @@ and each block states its read cost against the M16 target (<30/visit).
   and by the composer's framing, the same way ADR-014 holds the availability
   tone. Rules 161 → 202, unit 101 → 115.
 
-- **M20 · Breadth.** Display-layer, near-zero risk.
-  (1) *Gallery view* (Discord forum List/Gallery): Repos toggle persisted in
-  localStorage; cards use the M9 social-preview image (hide-when-absent logic
-  reused), name, language dot, needs chip; rides M16 pagination. No rules.
-  (2) *Cross-circle repos* (Slack Connect, ADR-025): mutual-membership only —
-  RepoDetail checks my other groups (groupIds ≤8) for the same GitHub repo id
-  via direct getDocs under existing rules, renders "also in <circle> →" links.
-  Nothing shows to non-mutual viewers, and that is the design: a circle's
-  existence is itself private. Zero rules changes; the badge resolves from
-  live reads, never a stored mirror (Class A). Read cost: +≤7, RepoDetail only.
+- **M20 · Breadth (shipped 2026-09-06).** Display-layer, no rules changes.
+  *List view* (Discord forum List/Gallery): the card grid we already had is the
+  gallery, so what was missing is the dense list — which is what you actually
+  want once a circle has three hundred repos. Toggle remembered in
+  localStorage, both views fed by the same windowed query and the same
+  per-reason empty states. *Cross-circle repos* (Slack Connect, ADR-025): a
+  repo registered in more than one circle now says so, resolved by reading one
+  document per circle I am a member of under the rules that already apply.
+  Mutual membership is the design rather than a limitation — a global
+  repo-to-circle index would leak the existence of private circles to anyone
+  holding a repo id — and the badge resolves at view time rather than from a
+  mirror (Class A), with the one-shot read stated as a Class E exception.
 
 - **Phase-3 additions from the arc:** live .ics subscription URLs and session
   push reminders join the Worker list (§7, ADR-011). Digest email, thanks-cards

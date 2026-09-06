@@ -17,6 +17,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { randomToken } from './ids';
+import { resilientWatch } from './resilientWatch';
 import type { MyProfile, RepoInterest, Session } from './types';
 
 /**
@@ -40,10 +41,19 @@ export function watchUpcomingSessions(
     orderBy('startsAt', 'asc'),
     limit(max),
   );
-  return onSnapshot(
-    q,
-    (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Session, 'id'>) }))),
-    () => cb([]),
+  // Class B: a plain listener dies for good on a transient denial, which is
+  // exactly what happens in the seconds after someone joins a circle.
+  return resilientWatch(
+    (onOk, onErr) =>
+      onSnapshot(
+        q,
+        (snap) => {
+          onOk();
+          cb(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Session, 'id'>) })));
+        },
+        onErr,
+      ),
+    { onGiveUp: () => cb([]) },
   );
 }
 

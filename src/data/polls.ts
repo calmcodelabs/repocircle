@@ -17,6 +17,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { randomToken } from './ids';
+import { resilientWatch } from './resilientWatch';
 import type { MyProfile, Poll, PollVote } from './types';
 
 /**
@@ -34,10 +35,17 @@ export function watchOpenPoll(gid: string, cb: (p: Poll | null) => void): Unsubs
     orderBy('createdAt', 'desc'),
     limit(1),
   );
-  return onSnapshot(
-    q,
-    (snap) => cb(snap.empty ? null : ({ id: snap.docs[0]!.id, ...snap.docs[0]!.data() } as Poll)),
-    () => cb(null),
+  return resilientWatch(
+    (onOk, onErr) =>
+      onSnapshot(
+        q,
+        (snap) => {
+          onOk();
+          cb(snap.empty ? null : ({ id: snap.docs[0]!.id, ...snap.docs[0]!.data() } as Poll));
+        },
+        onErr,
+      ),
+    { onGiveUp: () => cb(null) },
   );
 }
 

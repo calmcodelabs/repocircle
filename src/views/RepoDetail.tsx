@@ -26,6 +26,7 @@ import { Pill } from '../ui/Pill';
 import { Icon, type IconName } from '../ui/Icon';
 import { Avatar } from '../ui/Avatar';
 import { Chip } from '../ui/Chip';
+import { AlsoIn } from './AlsoIn';
 import { EmptyState } from '../ui/EmptyState';
 import { Spark } from '../ui/Spark';
 import { langClass } from '../util/lang';
@@ -181,6 +182,7 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
         <div class="row">
           <span class={`langdot ${langClass(repo.language)}`} />
           <h2 class="mono repodetail__name">{repo.fullName}</h2>
+          <AlsoIn gid={gid} repoId={repoId} />
           <Chip
             tone={
               repo.status === 'building' ? 'accent' : repo.status === 'paused' ? 'warn' : 'default'

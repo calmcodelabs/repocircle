@@ -39,12 +39,37 @@ const STATUS_TONE: Record<RepoStatus, 'default' | 'accent' | 'warn'> = {
 };
 
 const REPO_PAGE = 25;
+const VIEW_KEY = 'rc.repoView';
+
+/**
+ * M20 — Discord's forum channels offer the same posts as a text list or a
+ * media gallery, because browsing and scanning are different jobs. The card
+ * grid we already had is the gallery; this adds the list, which is what you
+ * want once a circle has three hundred repos.
+ */
+type RepoView = 'gallery' | 'list';
 
 export function Repos({ gid }: { gid: string }) {
   const [repos, setRepos] = useState<Repo[] | null>(null);
   // The browse window (M16). Widened by "Load more" rather than paged with a
   // cursor: one listener, one code path, and the filters keep working.
   const [windowSize, setWindowSize] = useState(REPO_PAGE);
+  const [view, setView] = useState<RepoView>('gallery');
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(VIEW_KEY) === 'list') setView('list');
+    } catch {
+      /* storage denied — the gallery is a fine default */
+    }
+  }, []);
+  function chooseView(v: RepoView) {
+    setView(v);
+    try {
+      localStorage.setItem(VIEW_KEY, v);
+    } catch {
+      /* remembering it is best-effort */
+    }
+  }
   const [importOpen, setImportOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [manage, setManage] = useState<Repo | null>(null);
@@ -155,6 +180,22 @@ export function Repos({ gid }: { gid: string }) {
 
       {repos && repos.length > 0 && (
         <div class="row wrap repofilter">
+          <div class="segmented" role="group" aria-label="How to show repos">
+            <button
+              class={view === 'gallery' ? 'segmented__on' : ''}
+              aria-pressed={view === 'gallery'}
+              onClick={() => chooseView('gallery')}
+            >
+              gallery
+            </button>
+            <button
+              class={view === 'list' ? 'segmented__on' : ''}
+              aria-pressed={view === 'list'}
+              onClick={() => chooseView('list')}
+            >
+              list
+            </button>
+          </div>
           {['all', 'needs help', 'new', ...tagsInUse].map((f) => (
             <button
               key={f}
@@ -218,7 +259,24 @@ export function Repos({ gid }: { gid: string }) {
           }
         />
       )}
-      <div class="repogrid">
+      {view === 'list' && (
+        <div class="stack repolist">
+          {visible.map((r) => (
+            <a key={r.id} class="row repolist__row" href={`#/g/${gid}/repo/${r.id}`}>
+              <span class={`langdot ${langClass(r.language)}`} />
+              <span class="mono repolist__name">{r.fullName.split('/')[1] ?? r.fullName}</span>
+              <span class="small dim repolist__pitch">{r.pitch || r.description}</span>
+              <span class="topbar__spacer" />
+              {r.needs && (
+                <Chip tone="accent">{REPO_NEEDS.find((n) => n.key === r.needs)?.label}</Chip>
+              )}
+              <span class="small faint">{r.lastEventAt ? relTime(r.lastEventAt) : ''}</span>
+            </a>
+          ))}
+        </div>
+      )}
+
+      <div class={view === 'gallery' ? 'repogrid' : 'repogrid repogrid--off'}>
         {visible.map((r) => (
           <RepoCard
             key={r.id}
