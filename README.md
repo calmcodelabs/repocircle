@@ -25,7 +25,7 @@ An invite-only space where a group of engineers can see each other's work in pro
 
 ## The problem
 
-Someone in your circle is building the thing you need. You'll find out in six months, by accident.
+Half your circle would help with what you're building. None of them know you're building it.
 
 Work stays invisible until it happens to come up in conversation. Ideas stay in one head because pitching them feels like an interruption. And a request for help, posted to a busy channel, is gone within the hour.
 
