@@ -11,7 +11,7 @@ For a department, a cohort, a build club — see what everyone is building, and 
 [Live app](https://calmcodelabs.github.io/repocircle/) · [How it works](#how-it-works) · [Documentation](#documentation) · [Run it yourself](#run-your-own)
 
 [![ci](https://github.com/calmcodelabs/repocircle/actions/workflows/deploy.yml/badge.svg)](https://github.com/calmcodelabs/repocircle/actions/workflows/deploy.yml)
-![tests](https://img.shields.io/badge/tests-117%20rules%20%2B%2080%20unit-3dd68c)
+![tests](https://img.shields.io/badge/tests-202%20rules%20%2B%20115%20unit-3dd68c)
 ![license](https://img.shields.io/badge/license-MIT-6b7679)
 ![architecture](https://img.shields.io/badge/architecture-static%20PWA-6b7679)
 
@@ -63,16 +63,28 @@ Post what you're stuck on; someone claims it. On resolution the ask names who ha
 
 ![A resolved ask](docs/slides/crops/ask-resolved.png)
 
+### Things a circle does together
+
+Not everything belongs to one person's project. A circle can call a **session** — "working on this Saturday, join me" — and anyone can say they'll be there; it downloads as a calendar file, and the people coming are named, never counted into a score.
+
+It can **decide something**: a question, two to five options, one vote each. The result appears only once you've voted, because seeing the running total first is how a poll stops measuring what people think and starts measuring what they think everyone else thinks. Polls choose what the circle does next — never who is doing best.
+
+And an admin can simply **say something** — demo night is Thursday — which sits at the top of everyone's home page until they dismiss it.
+
 ### And the rest
 
 | | |
 |---|---|
 | **Live activity** | Commits, pull requests and releases arrive as sparklines, polled in the browser — no webhooks to configure |
 | **People, not usernames** | What each member offers, what they're learning, and the languages they actually write — read from their repositories, not self-reported |
-| **While you were away** | Replies, mentions and raised hands, collected for your next visit rather than pushed at you all day |
+| **While you were away** | Replies, mentions and raised hands, collected for your next visit rather than pushed at you all day — and answerable where they sit, so catching up is one pass rather than a tour of the app |
+| **Saved for later** | Any repository, idea or ask, kept on your own page across every circle you're in |
+| **Per-circle quiet** | Everything, mentions only, or muted — three settings, because more of them makes people feel less in control, not more |
+| **A first page that fits** | New members get the essentials rather than every block at once, and one tap opens the rest |
 | **Collaborator requests** | One tap opens a real GitHub issue; accepting it sends a real collaborator invitation |
 | **Discord** | An optional webhook, so the conversation stays where your circle already talks |
 | **Installable** | A progressive web app on phone and laptop, with an offline shell |
+| **Browse or scan** | Repositories as a gallery of cards, or a dense list once there are hundreds |
 
 ## How it works
 
@@ -89,6 +101,8 @@ Browser (Preact + TypeScript)
 
 Circles are private, and membership gates every read and write — enforced in [`firestore.rules`](firestore.rules) and held there by an emulator test suite in CI.
 
+Nothing reads a whole collection. Opening the home page costs the same on a circle of three hundred as on a circle of thirty — a property the app did not have until it lost a day to learning why it needed one. The measurements, and what they still don't solve, are in [SCALING.md](docs/SCALING.md).
+
 Each significant decision, and what it cost, is recorded as an ADR in [docs/DECISIONS.md](docs/DECISIONS.md).
 
 ## Run your own
@@ -97,7 +111,13 @@ Each significant decision, and what it cost, is recorded as an ADR in [docs/DECI
 git clone https://github.com/calmcodelabs/repocircle
 cd repocircle
 npm install
-npm run dev          # Vite dev server
+npm run dev:emulator # everything local: emulators, a seeded circle, no cloud project
+```
+
+That last command is the one to use. It starts the Firestore and Auth emulators, seeds a circle worth clicking around — members, repositories, ideas, asks, a session, a poll — and serves the app against them, so you need no Firebase project and can break nothing that matters. Sign in with the emulator-only button and open `#/join/demo-circle/devtoken`.
+
+```bash
+npm run dev          # against a real Firebase project instead
 ```
 
 To point it at your own Firebase project, follow [docs/SETUP.md](docs/SETUP.md): a GitHub OAuth app, a Firebase project, one config file. Then:
@@ -132,6 +152,8 @@ Every push to `main` builds and deploys to GitHub Pages.
 
 ## Status
 
-Deployed and under active development. The core is complete: circles and invites, the repository registry, activity, asks, collaborator requests, profiles and skill matching, discussion, and the full idea lifecycle. Every change is swept against the failure classes in [REVIEW.md](docs/REVIEW.md).
+Deployed and under active development. The core is complete: circles and invites, the repository registry, activity, asks, collaborator requests, profiles and skill matching, discussion, the full idea lifecycle, sessions and polls, and an away-inbox you can act in.
+
+Every change is swept against the failure classes in [REVIEW.md](docs/REVIEW.md) — a list this codebase earned rather than inherited, and the reason most of the bugs here got fixed as a class instead of one at a time.
 
 The screenshots and demo video show a fabricated community — no real account, project or conversation appears in them. Details in [docs/screenshots/README.md](docs/screenshots/README.md).
