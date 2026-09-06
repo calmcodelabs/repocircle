@@ -134,5 +134,14 @@ select {
   *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+    /* Shortening the animation is not enough on its own. The entrance
+       animations use `fill-mode: both` with a stagger delay, so content is held
+       at the keyframe's opacity 0 until the animation actually starts — a
+       reduced-motion reader was still waiting through 120ms of nothing, and a
+       browser that never composites the animation shows nothing at all. Zeroing
+       the delay and dropping the fill makes content simply be there. */
+    animation-delay: 0ms !important;
+    animation-fill-mode: none !important;
+    transition-delay: 0ms !important;
   }
 }
