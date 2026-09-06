@@ -13,6 +13,11 @@ name: full suite
 on:
   push:
     branches: [main]
+  # Also on pull requests, so the expensive layers get a chance to fail on a
+  # branch rather than first on main — where a merge also deploys. It roughly
+  # doubles the CI minutes a PR costs, which is the right trade for finding an
+  # emulator or browser problem before it is on the deploy path.
+  pull_request:
   schedule:
     # 02:30 UTC ≈ 08:00 IST — the numbers are waiting by the time anyone looks.
     - cron: '30 2 * * *'
