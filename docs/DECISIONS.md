@@ -260,3 +260,49 @@ registry. A circle's existence is itself private information; a
 publicRepos/{id} index would leak it to anyone holding a repo id. Nothing
 renders for non-mutual viewers, and that is the design, not a gap. The badge
 resolves from live reads at view time, never from a stored mirror (Class A).
+
+**ADR-026 · One build artifact; test affordances are compile-time flags.**
+The app is built once and that build is what ships. Anything a test needs from
+the app itself (emulator wiring, and later test ids and a pinned clock) lives
+behind an `import.meta.env` flag that vite folds to a literal and tree-shakes,
+never behind a second "testing build" of the product. Testing a different
+artifact than you ship forfeits the assurance the tests exist to buy, and two
+builds here would mean two sw.js BUILD_IDs — the Class D failure that already
+cost days — plus an E2E run that never exercises the CSP, which only exists in
+production builds. Deploy speed is protected instead by staging CI: a fast gate
+blocks the deploy, the full suite publishes reports beside it (TESTING.md §8).
+
+The single contained exception is `vite build --mode emulator`, which E2E needs
+because a static SPA's backend choice is made at compile time; runtime config
+would put emulator code in the production bundle, which is worse. Its delta from
+production is exactly one define plus the loopback `connect-src`, it builds to
+`dist-emulator/` so it can never be mistaken for the deployable output, and
+`scripts/verify-build-delta.mjs` asserts both bundles emit the same chunk set,
+that production contains no emulator marker, and that the emulator build
+actually does — otherwise E2E would be testing nothing.
+
+Found while implementing: the guard was `import.meta.env.DEV &&
+import.meta.env.VITE_EMULATORS === '1'`, and `DEV` is false in *every* build, so
+no built bundle could reach the emulators at all. The `DEV` term is gone; the
+`VITE_EMULATORS` term alone is what production folds to false, so the tree-shake
+is unchanged — and it is now asserted on every build rather than assumed, which
+is Class D's own rule applied to itself.
+
+**ADR-027 · The report store: CTRF leaves, layered index, no server.**
+Test runs emit raw JSON that a converter turns into CTRF — an open, tool-neutral
+schema — and everything human-readable is generated from it. Reports are written
+under `reports/` as append-only run directories plus one `history.jsonl`, with a
+three-hop contract: INDEX → a feature/layer/area summary → the failing assertion.
+Paths and anchors are stable (`reports/latest/features/asks.md#e2e`), so an agent
+reaches any fact without a discovery pass, and failures always precede passes.
+
+CTRF rather than JUnit XML because the schema is extensible and we need to carry
+a field nothing off-the-shelf knows about: the feature tag that joins a test to
+the registry. That join is also why the converter is ours rather than a reporter
+package — roughly sixty lines, no new dependency, and the tag lifting is the
+part that matters.
+
+Local-first and generated-not-committed: the tree is reproducible from a run, so
+committing it would only produce merge conflicts. Moving it to a cloud store
+later is a sync of the same directory, not a redesign. Nothing in the system
+needs a process running — consistent with ADR-002.
