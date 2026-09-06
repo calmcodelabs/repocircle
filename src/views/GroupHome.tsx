@@ -438,7 +438,16 @@ export function GroupHome({ gid }: { gid: string }) {
         </div>
         {needsHelp === null && <span class="skeleton" />}
         {needsHelp?.length === 0 && (
-          <EmptyState icon="ask" line="No asks yet — post the first one with the + button." />
+          <EmptyState
+            icon="ask"
+            // The query filters to open+claimed, so an empty list has two very
+            // different meanings. `unblocked` (resolved in 7d) proves asks exist.
+            line={
+              unblocked > 0
+                ? 'Nothing open right now — everything asked this week got picked up.'
+                : 'No asks yet — post the first one with the + button.'
+            }
+          />
         )}
         {needsHelp?.map((a) => (
           <div key={a.id} class={`row ask ${a.kind === 'stuck' ? 'ask--stuck' : ''}`}>
@@ -499,7 +508,7 @@ export function GroupHome({ gid }: { gid: string }) {
           <span class="sectionhead__title">Your activity</span>
         </div>
         {myAsks.length === 0 && myClaims.length === 0 && (
-          <EmptyState line="Asks you post and claims you make show up here." />
+          <EmptyState line="Nothing from you yet — asks you post and claims you make land here." />
         )}
         {myAsks.slice(0, 5).map((a) => (
           <a key={a.id} class="row home__repo" href={`#/g/${gid}/ask/${a.id}`}>

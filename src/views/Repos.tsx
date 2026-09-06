@@ -167,7 +167,7 @@ export function Repos({ gid }: { gid: string }) {
           line={
             filter === 'needs help'
               ? 'Nobody has asked for help yet — owners can set that from the card menu.'
-              : 'Nothing under this filter yet.'
+              : 'Nothing added in the last 7 days — the rest are still under “all”.'
           }
         />
       )}
@@ -415,7 +415,15 @@ function ImportSheet({ gid, onClose }: { gid: string; onClose: () => void }) {
             </Pill>
           </div>
         )}
-        {list?.length === 0 && <EmptyState line="No public repos on your account yet." />}
+        {list?.length === 0 && (
+          <EmptyState
+            line={
+              existing.size > 0
+                ? 'No public repos on your account that aren’t already here.'
+                : 'No public repos on your account yet.'
+            }
+          />
+        )}
         {list && list.length > 0 && (
           <>
             <div class="import__list stack">

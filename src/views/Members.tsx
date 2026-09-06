@@ -121,7 +121,13 @@ export function Members({ gid }: { gid: string }) {
       )}
       {members === null && <span class="skeleton" />}
       {members?.length === 0 && (
-        <EmptyState line="Nobody here yet — share an invite link from Settings." />
+        <EmptyState
+          line={
+            iAmAdmin
+              ? 'Nobody here yet — use Invite people above to create a link.'
+              : 'Nobody here yet — an admin can invite people.'
+          }
+        />
       )}
       {members?.map((m) => {
         const isMe = m.uid === sessionUser.value?.uid;

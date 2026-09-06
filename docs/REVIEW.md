@@ -87,6 +87,24 @@ are the only spellings of those rules.
 
 Sweep: grep for role/ownership/permission expressions outside util helpers.
 
+## Class G — An empty state must name the real reason it is empty
+
+A list is usually filtered, derived, or capped. "Nothing yet" is only true when
+the underlying set is genuinely empty; when the *filter* is what is hiding
+things, the same words are a lie, and they send people looking for a bug that
+isn't there. Every empty state gets one branch per reason the list can be empty,
+and any instruction inside it ("invite from Settings") must still be true.
+
+Bit us: "No asks yet — post the first one" showed while a resolved ask sat right
+there; Members pointed at Settings after invites moved to Members; repo activity
+promised arrival "within ~15 minutes" while the poller was erroring; the import
+sheet said "no public repos" when the truth was "all of them are already added".
+
+Sweep: for each EmptyState, list the distinct states that reach it (empty set /
+filtered out / all completed / failing source / permission) and confirm the copy
+matches each one. The "Active this week" block is the model — it already
+distinguished no-repos, all-paused and quiet-week.
+
 ## Deliberate exceptions
 
 - Best-effort writes (checklist ticks, audit lines, markSeen) swallow errors by

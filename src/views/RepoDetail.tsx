@@ -329,7 +329,14 @@ export function RepoDetail({ gid, repoId }: { gid: string; repoId: string }) {
         </div>
         {events === null && <span class="skeleton" />}
         {events?.length === 0 && (
-          <EmptyState line="Nothing captured yet — activity appears within ~15 minutes of happening on GitHub." />
+          <EmptyState
+            // Promising a ~15 minute arrival is false while the poller is erroring.
+            line={
+              repo.poll?.failing
+                ? 'Nothing captured — GitHub polling is failing for this repo, so activity isn’t coming through.'
+                : 'Nothing captured yet — activity appears within ~15 minutes of happening on GitHub.'
+            }
+          />
         )}
         {events?.map((ev) => (
           <a

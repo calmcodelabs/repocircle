@@ -382,8 +382,8 @@ GitLab (I-04), archive automation (A-05), lead analytics (A-06 — group-level o
 ## §10 · Definition of Done (every feature, every milestone)
 
 - [ ] **docs/REVIEW.md failure-class sweep run against the diff** (added 2026-09-06;
-      classes A–F: mirror-as-truth, latched errors, counter races, stale bundles,
-      one-shot-on-live-page, duplicated predicates)
+      classes A–G: mirror-as-truth, latched errors, counter races, stale bundles,
+      one-shot-on-live-page, duplicated predicates, lying empty states)
 
 Works on phone *and* laptop on the live site · rules deny everything the UI doesn't
 offer · empty/loading/error states exist · keyboard reachable · strings match voice ·
