@@ -27,24 +27,17 @@ import type { Idea, MyProfile, Repo, RepoInterest, RepoNeed } from './types';
  * open → germinated (linked to a real repo) | parked. Germination links both
  * ways and leaves the idea doc in place — facts never move (ADR-019).
  */
+/** Newest first, in a window (M16) — never the whole collection. */
 export function watchIdeas(
   gid: string,
   cb: (ideas: Idea[]) => void,
   onError: (code: string) => void,
+  max = 50,
 ): Unsubscribe {
-  return resilientWatch(
-    (onOk, onErr) =>
-      onSnapshot(
-        collection(db(), `groups/${gid}/ideas`),
-        (snap) => {
-          onOk();
-          const ideas = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Idea, 'id'>) }));
-          ideas.sort((a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0));
-          cb(ideas);
-        },
-        onErr,
-      ),
-    { onGiveUp: onError },
+  return boundedIdeaWatch(
+    query(collection(db(), `groups/${gid}/ideas`), orderBy('createdAt', 'desc'), limit(max)),
+    cb,
+    onError,
   );
 }
 

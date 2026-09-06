@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { sessionUser } from '../auth/session';
-import { useCircleMembers } from '../data/activeGroup';
-import { setSkills } from '../data/members';
+import { setSkills, watchMember } from '../data/members';
 import { watchIdeas } from '../data/ideas';
-import { watchRepos } from '../data/repos';
+import { watchReposOf } from '../data/repos';
 import {
   HELP_AREAS,
   REPO_NEEDS,
@@ -36,8 +35,7 @@ import { AvailabilitySheet } from './Members';
  * purpose; there is no cross-circle profile, no counters, no comparison.
  */
 export function Profile({ gid, uid }: { gid: string; uid: string }) {
-  const members = useCircleMembers(gid);
-  const m = members?.find((x) => x.uid === uid);
+  const [m, setM] = useState<Member | null | undefined>(undefined);
   const [repos, setRepos] = useState<Repo[] | null>(null);
   const [ideas, setIdeas] = useState<Idea[] | null>(null);
   const [editSkills, setEditSkills] = useState(false);
@@ -45,14 +43,17 @@ export function Profile({ gid, uid }: { gid: string; uid: string }) {
   const myUid = sessionUser.value?.uid;
   const isMe = myUid === uid;
 
-  useEffect(
-    () =>
-      watchRepos(gid, setRepos, (code) => {
-        log('warn', `profile repos watch: ${code}`);
-        noteServerError(code, 'repos'); // Class B
-      }),
-    [gid],
-  );
+  useEffect(() => watchMember(gid, uid, setM), [gid, uid]);
+  // Their repos, not the circle's: two queries because ownership has two
+  // spellings, and the profile is about exactly one person.
+  useEffect(() => {
+    const login = m?.login;
+    if (!login) return;
+    return watchReposOf(gid, uid, login, setRepos, (code) => {
+      log('warn', `profile repos watch: ${code}`);
+      noteServerError(code, 'repos'); // Class B
+    });
+  }, [gid, uid, m?.login]);
   useEffect(
     () =>
       watchIdeas(gid, setIdeas, (code) => {
@@ -62,7 +63,7 @@ export function Profile({ gid, uid }: { gid: string; uid: string }) {
     [gid],
   );
 
-  if (members === null) return <span class="skeleton" />;
+  if (m === undefined) return <span class="skeleton" />;
   if (!m)
     return (
       <EmptyState

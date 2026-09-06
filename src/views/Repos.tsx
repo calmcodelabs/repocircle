@@ -38,8 +38,13 @@ const STATUS_TONE: Record<RepoStatus, 'default' | 'accent' | 'warn'> = {
   done: 'default',
 };
 
+const REPO_PAGE = 25;
+
 export function Repos({ gid }: { gid: string }) {
   const [repos, setRepos] = useState<Repo[] | null>(null);
+  // The browse window (M16). Widened by "Load more" rather than paged with a
+  // cursor: one listener, one code path, and the filters keep working.
+  const [windowSize, setWindowSize] = useState(REPO_PAGE);
   const [importOpen, setImportOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [manage, setManage] = useState<Repo | null>(null);
@@ -201,10 +206,15 @@ export function Repos({ gid }: { gid: string }) {
       {visible.length === 0 && repos && repos.length > 0 && (
         <EmptyState
           icon="repo"
+          // Class G: the filters run over the loaded window, so when the window
+          // is full "nobody has asked for help" would be a claim about
+          // twenty-five repos dressed as a claim about the circle.
           line={
-            filter === 'needs help'
-              ? 'Nobody has asked for help yet — owners can set that from the card menu.'
-              : 'Nothing added in the last 7 days — the rest are still under “all”.'
+            repos.length >= windowSize
+              ? `Nothing matching in the first ${repos.length} repos — load more to keep looking.`
+              : filter === 'needs help'
+                ? 'Nobody has asked for help yet — owners can set that from the card menu.'
+                : 'Nothing added in the last 7 days — the rest are still under “all”.'
           }
         />
       )}
@@ -222,6 +232,12 @@ export function Repos({ gid }: { gid: string }) {
           />
         ))}
       </div>
+
+      {repos !== null && repos.length >= windowSize && (
+        <div class="row center">
+          <Pill onClick={() => setWindowSize((w) => w + REPO_PAGE)}>Load more repos</Pill>
+        </div>
+      )}
 
       {importOpen && (
         <ImportSheet

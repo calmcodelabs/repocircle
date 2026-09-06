@@ -3,7 +3,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Timestamp } from 'firebase/firestore';
 import { sessionUser } from '../auth/session';
-import { myMembership, useCircleMembers } from '../data/activeGroup';
+import { activeSummary, myMembership, useCircleMembers } from '../data/activeGroup';
 import { removeMember, setAvailability, setRole } from '../data/members';
 import { myProfile } from '../data/users';
 import {
@@ -31,9 +31,15 @@ const STATUSES: AvailabilityStatus[] = ['free', 'heads_down', 'away', 'custom'];
 const ROLES: Role[] = ['admin', 'mentor', 'member', 'guest', 'alumnus'];
 
 /** S9 — member list with self availability + admin role/remove controls. */
+const MEMBER_PAGE = 50;
+
 export function Members({ gid }: { gid: string }) {
-  const members = useCircleMembers(gid);
+  // Windowed (M16): a two-hundred-person circle should not cost two hundred
+  // reads to open the roster.
+  const [windowSize, setWindowSize] = useState(MEMBER_PAGE);
+  const members = useCircleMembers(gid, windowSize);
   const me = myMembership.value;
+  const memberCount = activeSummary.value?.memberCount ?? null;
   const iAmAdmin = me?.role === 'admin';
   const [editAvail, setEditAvail] = useState(false);
   const [manage, setManage] = useState<Member | null>(null);
@@ -51,7 +57,7 @@ export function Members({ gid }: { gid: string }) {
     <main class="stack">
       <div class="row">
         <h2>Members</h2>
-        {members && <span class="sectionhead__count">{members.length}</span>}
+        {memberCount !== null && <span class="sectionhead__count">{memberCount}</span>}
         <span class="topbar__spacer" />
         {iAmAdmin && (
           <Pill variant="primary" onClick={() => setInviteOpen(true)}>
@@ -104,7 +110,7 @@ export function Members({ gid }: { gid: string }) {
         </section>
       )}
 
-      {iAmAdmin && members?.length === 1 && (
+      {iAmAdmin && memberCount === 1 && (
         <section class="hero hero--dim stack rise">
           <span class="hero__label">It’s just you so far</span>
           <h3>Bring your circle in</h3>
@@ -177,6 +183,12 @@ export function Members({ gid }: { gid: string }) {
           </div>
         );
       })}
+
+      {members !== null && members.length >= windowSize && (
+        <div class="row center">
+          <Pill onClick={() => setWindowSize((w) => w + MEMBER_PAGE)}>Load more members</Pill>
+        </div>
+      )}
 
       {editAvail && me && (
         <AvailabilitySheet

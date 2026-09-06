@@ -46,25 +46,72 @@ export function toRepoDoc(gh: GhRepo, me: MyProfile) {
   };
 }
 
+/**
+ * The circle's repos, most recently active first, in a window (M16). `max` is
+ * a window rather than a page cursor: the browse screen widens it on "Load
+ * more", which re-reads the window but keeps one listener and one code path.
+ * Nothing may read this collection unbounded — that is what took the app down.
+ */
 export function watchRepos(
   gid: string,
   cb: (repos: Repo[]) => void,
   onError: (code: string) => void,
+  max = 50,
 ): Unsubscribe {
-  return resilientWatch(
-    (onOk, onErr) =>
-      onSnapshot(
-        collection(db(), `groups/${gid}/repos`),
-        (snap) => {
-          onOk();
-          const repos = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Repo, 'id'>) }));
-          repos.sort((a, b) => (b.lastEventAt?.toMillis() ?? 0) - (a.lastEventAt?.toMillis() ?? 0));
-          cb(repos);
-        },
-        onErr,
-      ),
-    { onGiveUp: onError },
+  return boundedRepoWatch(
+    query(collection(db(), `groups/${gid}/repos`), orderBy('lastEventAt', 'desc'), limit(max)),
+    cb,
+    onError,
   );
+}
+
+/**
+ * One member's repos in this circle — what a profile shows. Two queries
+ * because ownership has two spellings (Class F, ownsRepo): the in-app owner
+ * uid, and the GitHub author login for repos registered before that person
+ * joined. Merged by id, so a repo matching both appears once.
+ */
+export function watchReposOf(
+  gid: string,
+  uid: string,
+  login: string,
+  cb: (repos: Repo[]) => void,
+  onError: (code: string) => void,
+  max = 20,
+): Unsubscribe {
+  const byUid = new Map<string, Repo>();
+  const byLogin = new Map<string, Repo>();
+  const emit = () => {
+    const merged = new Map([...byUid, ...byLogin]);
+    cb(
+      [...merged.values()].sort(
+        (a, b) => (b.lastEventAt?.toMillis() ?? 0) - (a.lastEventAt?.toMillis() ?? 0),
+      ),
+    );
+  };
+  const collect = (into: Map<string, Repo>) => (repos: Repo[]) => {
+    into.clear();
+    for (const r of repos) into.set(r.id, r);
+    emit();
+  };
+  const a = boundedRepoWatch(
+    query(collection(db(), `groups/${gid}/repos`), where('ownerUid', '==', uid), limit(max)),
+    collect(byUid),
+    onError,
+  );
+  const b = boundedRepoWatch(
+    query(
+      collection(db(), `groups/${gid}/repos`),
+      where('githubOwnerLogin', '==', login),
+      limit(max),
+    ),
+    collect(byLogin),
+    onError,
+  );
+  return () => {
+    a();
+    b();
+  };
 }
 
 /**

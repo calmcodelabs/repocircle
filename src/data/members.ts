@@ -26,8 +26,13 @@ export function watchMembers(
   gid: string,
   cb: (members: Member[]) => void,
   onError: (code: string) => void,
+  max = 50,
 ): Unsubscribe {
-  const q = query(collection(db(), `groups/${gid}/members`), orderBy('joinedAt', 'asc'));
+  const q = query(
+    collection(db(), `groups/${gid}/members`),
+    orderBy('joinedAt', 'asc'),
+    limit(max),
+  );
   return resilientWatch(
     (onOk, onErr) =>
       onSnapshot(
@@ -69,6 +74,15 @@ export function watchRecentMembers(
         onErr,
       ),
     { onGiveUp: onError },
+  );
+}
+
+/** A single member — a profile is about one person, so it reads one document. */
+export function watchMember(gid: string, uid: string, cb: (m: Member | null) => void): Unsubscribe {
+  return onSnapshot(
+    doc(db(), `groups/${gid}/members/${uid}`),
+    (snap) => cb(snap.exists() ? ({ uid: snap.id, ...snap.data() } as Member) : null),
+    () => cb(null),
   );
 }
 

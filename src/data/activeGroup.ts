@@ -167,7 +167,7 @@ function subscribe(gid: string, retriedDenied: boolean): void {
  * Deliberately explicit: reading every member is the single most expensive
  * thing a page can do, so a page pays for it only by asking.
  */
-export function useCircleMembers(gid: string): Member[] | null {
+export function useCircleMembers(gid: string, max = 50): Member[] | null {
   useEffect(() => {
     let alive = true;
     const un = watchMembers(
@@ -176,13 +176,14 @@ export function useCircleMembers(gid: string): Member[] | null {
         if (alive) activeMembers.value = m;
       },
       (code) => log('warn', `members watch: ${code}`),
+      max,
     );
     return () => {
       alive = false;
       un();
       activeMembers.value = null;
     };
-  }, [gid]);
+  }, [gid, max]);
   return activeMembers.value;
 }
 
