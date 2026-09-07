@@ -716,12 +716,16 @@ legitimately emits them and the check is about shipped code.
 
 ### What this turned up
 
-**`deleteGroupEverything` orphans four collections.** It sweeps repos, asks,
-invites, collabRequests, integrations, auditLog and meta — it predates M15
-(ideas), M17 (announcements) and M19 (sessions, polls), and nobody extended it
-when those shipped. Deleting a circle leaves them behind: unreachable, but
-present and still costing storage. `circle.test.ts` documents the gap with a
-test that goes red when it is fixed, so closing it forces the comment to be read.
+**`deleteGroupEverything` orphaned four collections — since fixed.** It swept
+repos, asks, invites, collabRequests, integrations, auditLog and meta. It
+predated M15 (ideas), M17 (announcements) and M19 (sessions, polls), and nobody
+extended it when those shipped, so deleting a circle left them behind:
+unreachable, but stored and billable. It also never swept the comments and
+interests hanging under repos, asks and ideas, the RSVPs under sessions, or the
+votes under polls — Firestore does not cascade, so those outlive their parents.
+
+The fix is in §9g: the sweep now works from a declared `CIRCLE_SHAPE`, and a
+static gate checks that list against the match blocks in `firestore.rules`.
 
 **Two fixture gaps that looked like app bugs.** The scenario seeded no
 `users/{uid}` documents, so `forgetGroup` updated a missing document and
@@ -755,6 +759,40 @@ One test was written and then deleted rather than kept: the delete-circle
 confirmation could not be located deterministically, and a test that passes for
 reasons it cannot state is worse than none. That path is covered at the
 integration layer instead.
+
+## 9g. Fixing the delete sweep (2026-09-07)
+
+`deleteGroupEverything` now removes everything a circle contains, including the
+subcollections that Firestore will not cascade into: comments and interests
+under repos, asks and ideas, RSVPs under sessions, votes under polls, and the
+four top-level collections it had never heard of.
+
+**The fix is the gate, not the list.** Adding four names would have left the
+next milestone free to make the same mistake a fourth time — nothing connected
+the new collection to this file, and a comment asking the next person to
+remember is not a mechanism. So the sweep is now driven by an exported
+`CIRCLE_SHAPE`, and `test/static/shape.test.ts` derives the circle's real shape
+from `firestore.rules` and compares the two.
+
+That works because the rules already describe the shape exactly: a collection
+that has no match block cannot be written at all, so every collection that can
+hold data must appear there. The check runs both ways — a collection in the
+rules that the sweep does not know about fails the build, and an entry in
+`CIRCLE_SHAPE` with no match block fails too, so the list cannot quietly go
+stale either.
+
+Verified by seeding both failures. Deleting the four names back out reproduces
+the original bug and the gate names all four; adding a `reactions`
+subcollection to the rules fails with `sessions/{id}/reactions`.
+
+`members` stays outside `CIRCLE_SHAPE` and is swept last, because the caller's
+own membership has to outlive every rule check that needs it — that ordering was
+already right and is covered by the rules suite.
+
+The integration test that documented the gap now asserts the opposite: it seeds
+a vote, an idea interest and a repo comment, deletes the circle, and requires
+every path to be empty. It was written to go red on the fix, which is what made
+this change start from a failing test rather than from a hopeful one.
 
 ## 10. Dependencies and scripts
 

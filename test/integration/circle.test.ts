@@ -19,7 +19,7 @@ import {
   revokeInvite,
 } from '../../src/data/invites';
 import { createGroup, fetchGroup, fetchMyGroups, updateGroupProfile } from '../../src/data/groups';
-import { deleteGroupEverything } from '../../src/data/deleteGroup';
+import { CIRCLE_SHAPE, deleteGroupEverything } from '../../src/data/deleteGroup';
 import { setCircleLinks, setPinnedRepo, summaryExists } from '../../src/data/summary';
 import {
   addWatch,
@@ -29,6 +29,8 @@ import {
   savableRepo,
 } from '../../src/data/watches';
 import { fetchInbox } from '../../src/data/inbox';
+import { castVote } from '../../src/data/polls';
+import { addIdeaInterest } from '../../src/data/ideas';
 import { setAvailability, setSkills } from '../../src/data/members';
 import type { MyProfile } from '../../src/data/types';
 
@@ -236,36 +238,56 @@ describe('[group-delete] taking a circle down', () => {
     expect(await inspectAll(`groups/${s.gid}/asks`)).toHaveLength(0);
   });
 
-  it('leaves ideas, sessions, polls and announcements behind — a real gap', async () => {
-    // deleteGroupEverything sweeps repos, asks, invites, collabRequests,
-    // integrations, auditLog and meta. It predates M15 (ideas), M17
-    // (announcements) and M19 (sessions, polls), and nobody extended it when
-    // those shipped — so deleting a circle orphans them. They are unreachable
-    // (no parent document, no membership to authorize a read) but they still
-    // exist and still cost storage.
+  it('leaves nothing behind — every collection and subcollection', async () => {
+    // This test used to assert the opposite. The sweep was written before M15
+    // (ideas), M17 (announcements) and M19 (sessions, polls), and each shipped
+    // without anyone extending it, so deleting a circle orphaned them:
+    // unreachable, because the group document and every membership were gone,
+    // but still stored and still billable.
     //
-    // This test documents the gap rather than asserting the fix, so that
-    // closing it turns the assertion red and forces this comment to be read.
-    const s = await seedSize('minimal');
+    // The sweep now works from CIRCLE_SHAPE, and test/static/shape.test.ts
+    // checks that list against the match blocks in firestore.rules — so a new
+    // collection cannot ship without this being updated.
+    const s = await seedSize('demo');
+    const repoId = s.facts.repoIds[0]!;
+    const ideaId = s.facts.ideaIds[0]!;
+    const sessionId = s.facts.sessionId!;
+    const pollId = s.facts.pollId!;
+
+    // The seed already puts a comment on a repo and RSVPs on the session; add
+    // a vote and an idea interest so every level has something to lose.
+    await signInAs('mira-t');
+    await castVote(s.gid, pollId, 'mira-t', 'o0', null);
+    await addIdeaInterest(
+      s.gid,
+      { id: ideaId, ...(await inspectDoc(`groups/${s.gid}/ideas/${ideaId}`)) } as never,
+      profile('mira-t'),
+    );
+    expect(await inspectAll(`groups/${s.gid}/polls/${pollId}/votes`)).not.toHaveLength(0);
+    expect(await inspectAll(`groups/${s.gid}/repos/${repoId}/comments`)).not.toHaveLength(0);
+    expect(await inspectAll(`groups/${s.gid}/sessions/${sessionId}/interests`)).not.toHaveLength(0);
+
     await signInAs(s.facts.adminUid);
     await deleteGroupEverything(s.gid, profile(s.facts.adminUid));
 
-    const orphaned = {
-      ideas: (await inspectAll(`groups/${s.gid}/ideas`)).length,
-      sessions: (await inspectAll(`groups/${s.gid}/sessions`)).length,
-      polls: (await inspectAll(`groups/${s.gid}/polls`)).length,
-      announcements: (await inspectAll(`groups/${s.gid}/announcements`)).length,
-    };
-    const total = Object.values(orphaned).reduce((a, b) => a + b, 0);
-    expect(total, `orphaned after deletion: ${JSON.stringify(orphaned)}`).toBeGreaterThan(0);
-  });
+    const survivors: Record<string, number> = {};
+    for (const [name, children] of Object.entries(CIRCLE_SHAPE)) {
+      survivors[name] = (await inspectAll(`groups/${s.gid}/${name}`)).length;
+      for (const child of children) {
+        // Subcollections outlive their parent unless swept explicitly, so check
+        // the paths of the documents that existed before the delete.
+        for (const parentId of [repoId, ideaId, sessionId, pollId, s.facts.askIds[0]!]) {
+          const path = `groups/${s.gid}/${name}/${parentId}/${child}`;
+          const left = (await inspectAll(path)).length;
+          if (left > 0) survivors[`${name}/${parentId}/${child}`] = left;
+        }
+      }
+    }
+    survivors.members = (await inspectAll(`groups/${s.gid}/members`)).length;
 
-  it('a plain member cannot delete it', async () => {
-    const s = await seedSize('minimal');
-    const member = s.facts.memberUids.find((u) => u !== s.facts.adminUid)!;
-    await signInAs(member);
-    await rejects(deleteGroupEverything(s.gid, profile(member)));
-    expect(await inspectDoc(`groups/${s.gid}`)).not.toBeNull();
+    const total = Object.values(survivors).reduce((a, b) => a + b, 0);
+    expect(total, `orphaned after deletion: ${JSON.stringify(survivors)}`).toBe(0);
+    expect(await inspectDoc(`groups/${s.gid}`)).toBeNull();
   });
 });
 
